@@ -1,0 +1,4 @@
+{"clOrderId": "1001", "market": "XSHG", "securityId": "600000", "side": "B", "price": 10.0, "qty": 100, "shareholderId": "U001"}
+{"clOrderId": "1002", "market": "XSHG", "securityId": "600000", "side": "S", "price": 10.0, "qty": 100, "shareholderId": "U002"}
+{"clOrderId": "1003", "market": "XSHG", "securityId": "600000", "side": "B", "price": 11.0, "qty": 500, "shareholderId": "U001"}
+{"clOrderId": "1004", "market": "XSHG", "securityId": "600000", "side": "S", "price": 11.0, "qty": 500, "shareholderId": "U001"}
