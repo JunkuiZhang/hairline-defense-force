@@ -75,6 +75,18 @@ inline void from_json(const nlohmann::json &j, Order &o) {
     j.at("price").get_to(o.price);
     j.at("qty").get_to(o.qty);
     j.at("shareholderId").get_to(o.shareholderId);
+
+    if (o.price <= 0) {
+        throw std::invalid_argument("price must be positive, got: " +
+                                    std::to_string(o.price));
+    }
+    if (o.qty == 0) {
+        throw std::invalid_argument("qty must be positive");
+    }
+    if (o.side == Side::BUY && o.qty % 100 != 0) {
+        throw std::invalid_argument("buy qty must be a multiple of 100, got: " +
+                                    std::to_string(o.qty));
+    }
 }
 
 // 3.2 交易撤单

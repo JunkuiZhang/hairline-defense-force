@@ -47,6 +47,7 @@ add_executable(unit_tests
   tests/example_test.cc
   tests/risk_test.cpp
   tests/matching_test.cpp
+  tests/json_test.cpp
 )
 target_link_libraries(unit_tests gtest_main trade_engine)
 

@@ -28,11 +28,14 @@ TEST_F(MatchingEngineTest, SimpleMatch) {
     sellOrder.side = Side::SELL;
     sellOrder.price = 10.0;
     sellOrder.qty = 500;
-    sellOrder.shareholderId = "SH001"; // Self-match scenario
+    sellOrder.shareholderId = "SH002";
 
     auto result = engine.match(sellOrder);
 
-    // Expect executions
-    // EXPECT_EQ(result.executions.size(), 1);
-    // EXPECT_EQ(result.remainingQty, 0);
+    // 应该匹配成功，成交500股，剩余500股未成交
+    EXPECT_TRUE(result.has_value());
+    EXPECT_EQ(result->executions.size(), 1);
+    EXPECT_EQ(result->executions[0].clOrderId, "2001");
+    EXPECT_EQ(result->executions[0].execQty, 500);
+    EXPECT_EQ(result->remainingQty, 0); // 卖单完全成交，无剩余
 }

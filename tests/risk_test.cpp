@@ -9,34 +9,7 @@ class RiskControllerTest : public ::testing::Test {
     RiskController riskController;
 };
 
-TEST_F(RiskControllerTest, BasicOrderValidation) {
-    Order order;
-    order.clOrderId = "1001";
-    order.market = Market::XSHG;
-    order.securityId = "600000";
-    order.side = Side::BUY;
-    order.price = 10.0;
-    order.qty = 100;
-    order.shareholderId = "SH001";
-
-    // Assuming default implementation returns PASSED for now,
-    // or checks basic validity (Price > 0, Qty > 0).
-    // Adjust expectations based on what you plan to implement.
-    EXPECT_EQ(riskController.checkOrder(order),
-              RiskController::RiskCheckResult::PASSED);
-
-    // Invalid Price
-    order.price = -1.0;
-    // EXPECT_EQ(riskController.checkOrder(order),
-    // RiskController::RiskCheckResult::REJECTED); // Uncomment when implemented
-}
-
 TEST_F(RiskControllerTest, CrossTradeDetection) {
-    // Setup: Simulate an existing order in the system (if RiskController tracks
-    // state) Or if RiskController is stateless regarding the book, this test
-    // might need MatchingEngine context. However, the interface has
-    // `onOrderAccepted`.
-
     Order buyOrder;
     buyOrder.clOrderId = "1001";
     buyOrder.market = Market::XSHG;
@@ -46,6 +19,10 @@ TEST_F(RiskControllerTest, CrossTradeDetection) {
     buyOrder.qty = 1000;
     buyOrder.shareholderId = "SH001";
 
+    // 目前订单簿为空，因此不应该检测到对敲
+    EXPECT_EQ(riskController.checkOrder(buyOrder),
+              RiskController::RiskCheckResult::PASSED);
+
     riskController.onOrderAccepted(buyOrder);
 
     Order sellOrder;
@@ -53,12 +30,15 @@ TEST_F(RiskControllerTest, CrossTradeDetection) {
     sellOrder.market = Market::XSHG;
     sellOrder.securityId = "600000";
     sellOrder.side = Side::SELL;
-    sellOrder.price = 9.0; // Crosses price
+    sellOrder.price = 9.0;
     sellOrder.qty = 500;
-    sellOrder.shareholderId = "SH001"; // Same shareholder
+    sellOrder.shareholderId = "SH002"; // 不同股东id，非对敲
 
-    // Should detect cross trade
-    // EXPECT_EQ(riskController.checkOrder(sellOrder),
-    // RiskController::RiskCheckResult::CROSS_TRADE); // Uncomment when
-    // implemented
+    // 应该检测到对敲
+    EXPECT_EQ(riskController.checkOrder(sellOrder),
+              RiskController::RiskCheckResult::PASSED);
+
+    sellOrder.shareholderId = "SH001"; // 同一股东id，构成对敲
+    EXPECT_EQ(riskController.checkOrder(sellOrder),
+              RiskController::RiskCheckResult::CROSS_TRADE);
 }
