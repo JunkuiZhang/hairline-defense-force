@@ -34,4 +34,10 @@ CancelResponse MatchingEngine::cancelOrder(const std::string &clOrderId) {
     return response;
 }
 
+void MatchingEngine::reduceOrderQty(const std::string &clOrderId,
+                                    uint32_t qty) {
+    // TODO: 在订单簿中找到clOrderId对应的订单，减少qty
+    // 若减少后数量为0，则从订单簿中移除
+}
+
 } // namespace hdf

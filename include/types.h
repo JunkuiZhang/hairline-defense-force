@@ -1,6 +1,8 @@
 #pragma once
 
 #include <cstdint>
+#include <nlohmann/json.hpp>
+#include <stdexcept>
 #include <string>
 #include <utility>
 
@@ -20,6 +22,14 @@ inline std::string to_string(Side s) {
     }
 }
 
+inline Side side_from_string(const std::string &s) {
+    if (s == "B")
+        return Side::BUY;
+    if (s == "S")
+        return Side::SELL;
+    throw std::invalid_argument("Invalid side: " + s);
+}
+
 enum class Market { XSHG, XSHE, BJSE, UNKNOWN };
 
 inline std::string to_string(Market m) {
@@ -36,6 +46,16 @@ inline std::string to_string(Market m) {
     }
 }
 
+inline Market market_from_string(const std::string &s) {
+    if (s == "XSHG")
+        return Market::XSHG;
+    if (s == "XSHE")
+        return Market::XSHE;
+    if (s == "BJSE")
+        return Market::BJSE;
+    throw std::invalid_argument("Invalid market: " + s);
+}
+
 // 3.1 交易订单
 struct Order {
     std::string clOrderId;
@@ -47,6 +67,16 @@ struct Order {
     std::string shareholderId;
 };
 
+inline void from_json(const nlohmann::json &j, Order &o) {
+    j.at("clOrderId").get_to(o.clOrderId);
+    o.market = market_from_string(j.at("market").get<std::string>());
+    j.at("securityId").get_to(o.securityId);
+    o.side = side_from_string(j.at("side").get<std::string>());
+    j.at("price").get_to(o.price);
+    j.at("qty").get_to(o.qty);
+    j.at("shareholderId").get_to(o.shareholderId);
+}
+
 // 3.2 交易撤单
 struct CancelOrder {
     std::string clOrderId;
@@ -56,6 +86,15 @@ struct CancelOrder {
     std::string shareholderId;
     Side side;
 };
+
+inline void from_json(const nlohmann::json &j, CancelOrder &o) {
+    j.at("clOrderId").get_to(o.clOrderId);
+    j.at("origClOrderId").get_to(o.origClOrderId);
+    o.market = market_from_string(j.at("market").get<std::string>());
+    j.at("securityId").get_to(o.securityId);
+    j.at("shareholderId").get_to(o.shareholderId);
+    o.side = side_from_string(j.at("side").get<std::string>());
+}
 
 // 3.3 行情信息
 struct MarketData {

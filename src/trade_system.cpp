@@ -18,10 +18,20 @@ void TradeSystem::setSendToExchange(SendToExchange callback) {
 
 void TradeSystem::handleOrder(const nlohmann::json &input) {
     Order order;
-    // TODO: 解析Json输入到Order结构体
-    // 在这里同时要检测订单格式是否正确，缺少必要字段等，若不正确则直接输出Reject
-    // Report order.clOrderId = input["clOrderId"].get<std::string>();
-    // ...
+    try {
+        order = input.get<Order>();
+    } catch (const std::exception &e) {
+        // JSON解析失败：缺少字段、类型错误、枚举值非法等
+        if (sendToClient_) {
+            nlohmann::json response;
+            response["clOrderId"] = input.value("clOrderId", "");
+            response["rejectCode"] = ORDER_INVALID_FORMAT_REJECT_CODE;
+            response["rejectText"] =
+                ORDER_INVALID_FORMAT_REJECT_REASON + ": " + e.what();
+            sendToClient_(response);
+        }
+        return;
+    }
 
     // 风控
     auto riskResult = riskController_.checkOrder(order);
@@ -113,29 +123,37 @@ void TradeSystem::handleOrder(const nlohmann::json &input) {
                 // 更新主动方风控状态
                 riskController_.onOrderExecuted(order.clOrderId, totalExecQty);
 
-                // 部分成交：剩余数量已由撮合引擎入簿，生成确认回报
-                if (matchResult->remainingQty > 0 && sendToClient_) {
-                    nlohmann::json confirmResponse;
-                    confirmResponse["clOrderId"] = order.clOrderId;
-                    confirmResponse["market"] = to_string(order.market);
-                    confirmResponse["securityId"] = order.securityId;
-                    confirmResponse["side"] = to_string(order.side);
-                    confirmResponse["qty"] = matchResult->remainingQty;
-                    confirmResponse["price"] = order.price;
-                    confirmResponse["shareholderId"] = order.shareholderId;
-                    sendToClient_(confirmResponse);
+                // 部分成交：剩余数量需要显式入簿，并生成确认回报
+                if (matchResult->remainingQty > 0) {
+                    // 由调用方显式将剩余量加入订单簿
+                    Order remainingOrder = order;
+                    remainingOrder.qty = matchResult->remainingQty;
+                    matchingEngine_.addOrder(remainingOrder);
+
+                    if (sendToClient_) {
+                        nlohmann::json confirmResponse;
+                        confirmResponse["clOrderId"] = order.clOrderId;
+                        confirmResponse["market"] = to_string(order.market);
+                        confirmResponse["securityId"] = order.securityId;
+                        confirmResponse["side"] = to_string(order.side);
+                        confirmResponse["qty"] = matchResult->remainingQty;
+                        confirmResponse["price"] = order.price;
+                        confirmResponse["shareholderId"] = order.shareholderId;
+                        sendToClient_(confirmResponse);
+                    }
                 }
             }
         } else {
             // 没有匹配成功：
             // 如果此系统是交易所前置，则转发给交易所；
-            // 如果是纯撮合系统，则生成确认回报。
-            // 添加到订单簿的操作应该在撮合引擎内部进行。
+            // 如果是纯撮合系统，则入订单簿并生成确认回报。
             if (sendToExchange_) {
-                // 系统是交易所前置
+                // 系统是交易所前置：入内部簿（供后续内部撮合）+ 转发交易所
+                matchingEngine_.addOrder(order);
                 sendToExchange_(input);
             } else {
-                // 纯撮合系统，生成确认回报
+                // 纯撮合系统：显式入订单簿，生成确认回报
+                matchingEngine_.addOrder(order);
                 nlohmann::json response;
                 response["clOrderId"] = order.clOrderId;
                 response["market"] = to_string(order.market);
@@ -153,9 +171,22 @@ void TradeSystem::handleOrder(const nlohmann::json &input) {
 }
 
 void TradeSystem::handleCancel(const nlohmann::json &input) {
-    // TODO: 解析Json输入到CancelOrder结构体，在这里同时要检测撤单格式
-    // 是否正确，缺少必要字段等，若不正确则return
     CancelOrder order;
+    try {
+        order = input.get<CancelOrder>();
+    } catch (const std::exception &e) {
+        // JSON解析失败
+        if (sendToClient_) {
+            nlohmann::json response;
+            response["clOrderId"] = input.value("clOrderId", "");
+            response["origClOrderId"] = input.value("origClOrderId", "");
+            response["rejectCode"] = ORDER_INVALID_FORMAT_REJECT_CODE;
+            response["rejectText"] =
+                ORDER_INVALID_FORMAT_REJECT_REASON + ": " + e.what();
+            sendToClient_(response);
+        }
+        return;
+    }
 
     if (sendToExchange_) {
         // 系统是交易所前置，转发给交易所
@@ -192,8 +223,12 @@ void TradeSystem::handleResponse(const nlohmann::json &input) {
         if (sendToClient_) {
             sendToClient_(input);
         }
-        // TODO: 更新风控状态
-        // riskController_.onOrderExecuted(...);
+        // 交易所主动成交了订单，需要从内部订单簿中减少对应订单数量
+        // 同时更新风控状态
+        std::string clOrderId = input["clOrderId"].get<std::string>();
+        uint32_t execQty = input["execQty"].get<uint32_t>();
+        matchingEngine_.reduceOrderQty(clOrderId, execQty);
+        riskController_.onOrderExecuted(clOrderId, execQty);
     } else if (input.contains("origClOrderId")) {
         // 处理撤单回报
         std::string origClOrderId = input["origClOrderId"].get<std::string>();
@@ -295,13 +330,19 @@ void TradeSystem::resolvePendingMatch(const std::string &activeOrderId) {
                                         confirmedQty);
     }
 
-    // 若有作废部分或撮合时的剩余量，将未成交的量转发给交易所
+    // 若有作废部分或撮合时的剩余量，将未成交的量转发给交易所并入内部簿
     uint32_t totalUnfilledQty = rejectedQty + pending.remainingQty;
-    if (totalUnfilledQty > 0 && sendToExchange_) {
-        nlohmann::json newOrder = pending.activeOrderRawInput;
-        newOrder["qty"] = totalUnfilledQty;
-        // TODO: 可能需要生成新的 clOrderId
-        sendToExchange_(newOrder);
+    if (totalUnfilledQty > 0) {
+        Order remainingOrder = pending.activeOrder;
+        remainingOrder.qty = totalUnfilledQty;
+        // 入内部簿，供后续内部撮合
+        matchingEngine_.addOrder(remainingOrder);
+        if (sendToExchange_) {
+            nlohmann::json newOrder = pending.activeOrderRawInput;
+            newOrder["qty"] = totalUnfilledQty;
+            // TODO: 可能需要生成新的 clOrderId
+            sendToExchange_(newOrder);
+        }
     }
 
     // 主动方订单的风控状态更新
