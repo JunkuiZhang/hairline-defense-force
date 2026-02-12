@@ -13,7 +13,7 @@ class MatchingEngine {
 
     struct MatchResult {
         std::vector<OrderResponse> executions; // 有可能匹配多个订单
-        // ...
+        uint32_t remainingQty = 0;             // 未成交剩余数量
     };
 
     /**
@@ -36,7 +36,7 @@ class MatchingEngine {
     /**
      * @brief 从内部订单簿中移除订单。
      */
-    void cancelOrder(const std::string &clOrderId);
+    CancelResponse cancelOrder(const std::string &clOrderId);
 
   private:
     // 订单簿

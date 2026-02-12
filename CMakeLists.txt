@@ -33,9 +33,13 @@ add_library(trade_engine
 target_link_libraries(trade_engine nlohmann_json::nlohmann_json)
 target_include_directories(trade_engine PUBLIC include)
 
-# Main Application
-add_executable(main src/main.cpp)
-target_link_libraries(main trade_engine)
+# Examples
+# exchange.cpp演示了一个纯撮合系统的实现，用户端发送订单指令，系统处理后直接输出结果，不与交易所交互。
+add_executable(exchange examples/exchange.cpp)
+target_link_libraries(exchange trade_engine)
+# pre-exchange.cpp演示了一个预交易系统的实现，用户端发送订单指令，系统进行风险控制和撮合处理后，再将结果发送到交易所。
+add_executable(pre_exchange examples/pre_exchange.cpp)
+target_link_libraries(pre_exchange trade_engine)
 
 # Tests
 enable_testing()

@@ -1,4 +1,5 @@
 #include "matching_engine.h"
+#include "types.h"
 
 namespace hdf {
 
@@ -17,8 +18,20 @@ void MatchingEngine::addOrder(const Order &order) {
     // TODO: 此函数为参考实现，可以随意删除更改
 }
 
-void MatchingEngine::cancelOrder(const std::string &clOrderId) {
+CancelResponse MatchingEngine::cancelOrder(const std::string &clOrderId) {
     // TODO: 此函数为参考实现，可以随意删除更改
+    CancelResponse response;
+    // response.clOrderId = ...;
+    response.origClOrderId = clOrderId;
+    // response.market = ...;
+    // response.securityId = ...;
+    // response.shareholderId = ...;
+    // response.side = ...;
+    // response.qty = ...;
+    // response.price = ...;
+    // response.cumQty = ...;
+    // response.canceledQty = ...;
+    return response;
 }
 
 } // namespace hdf

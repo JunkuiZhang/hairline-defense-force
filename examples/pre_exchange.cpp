@@ -1,16 +1,15 @@
 #include "nlohmann/json_fwd.hpp"
 #include "trade_system.h"
 #include <iostream>
-#include <string>
 
 int main() {
     hdf::TradeSystem system;
 
-    system.setOrderCallback([](const nlohmann::json &output) {
+    system.setSendToClient([](const nlohmann::json &output) {
         std::cout << "[Ord]: " << output.dump() << std::endl;
     });
 
-    system.setResponseCallback([](const nlohmann::json &output) {
+    system.setSendToExchange([](const nlohmann::json &output) {
         std::cout << "[Res]: " << output.dump() << std::endl;
     });
 
