@@ -18,7 +18,7 @@ inline std::string to_string(Side s) {
         return "S";
     case Side::UNKNOWN:
     default:
-        std::unreachable(); // 执行到此处为UB
+        throw std::runtime_error("Invalid Side value");
     }
 }
 
@@ -42,7 +42,7 @@ inline std::string to_string(Market m) {
         return "BJSE";
     case Market::UNKNOWN:
     default:
-        std::unreachable(); // 执行到此处为UB
+        throw std::runtime_error("Invalid Market value");
     }
 }
 

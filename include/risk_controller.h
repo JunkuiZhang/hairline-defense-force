@@ -1,6 +1,9 @@
 #pragma once
 
 #include "types.h"
+#include <unordered_map>
+#include <string>
+#include <vector>
 
 namespace hdf {
 
@@ -32,7 +35,19 @@ class RiskController {
     void onOrderExecuted(const std::string &clOrderId, uint32_t execQty);
 
   private:
-    // 为了实现对敲检测而维护的内部状态
+    struct OrderInfo {
+        std::string clOrderId;
+        std::string securityId;
+        Side side;
+        double price;
+        uint32_t remainingQty;
+    };
+
+    using SideOrders = std::unordered_map<Side, std::vector<OrderInfo>>;
+    using SecurityOrders = std::unordered_map<std::string, SideOrders>;
+    using ShareholderOrders = std::unordered_map<std::string, SecurityOrders>;
+
+    ShareholderOrders activeOrders_;
 };
 
 } // namespace hdf
