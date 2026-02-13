@@ -22,6 +22,11 @@ jobs:
       - name: Install dependencies
         run: sudo apt-get update && sudo apt-get install -y ninja-build ccache
 
+      - name: Setup ccache
+        run: |
+          echo "CCACHE_DIR=$HOME/.ccache" >> $GITHUB_ENV
+          mkdir -p $HOME/.ccache
+
       - name: Cache build artifacts
         uses: actions/cache@v4
         with:
