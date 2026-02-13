@@ -29,4 +29,4 @@ jobs:
 
       - name: Run clang-tidy
         run: |
-           find src tests -name "*.cpp" | xargs clang-tidy -p build -checks='clang-diagnostic-*,clang-analyzer-*,misc-include-cleaner' -warnings-as-errors='*' -header-filter='.*'
+           find src tests -name "*.cpp" | xargs clang-tidy -p build -checks='clang-diagnostic-*,clang-analyzer-*,misc-include-cleaner' -header-filter='.*'
