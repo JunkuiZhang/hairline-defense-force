@@ -358,16 +358,16 @@ cmake --build build --target unit_tests
 
 ```bash
 # 运行所有测试
-.\bin\unit_tests.exe
+./bin/unit_tests
 
 # 运行风控引擎测试
-.\bin\unit_tests.exe --gtest_filter=RiskControllerTest*
+./bin/unit_tests --gtest_filter=RiskControllerTest*
 
 # 运行特定测试用例
-.\bin\unit_tests.exe --gtest_filter=RiskControllerTest.CrossTradeDetectionSameShareholder
+./bin/unit_tests --gtest_filter=RiskControllerTest.CrossTradeDetectionSameShareholder
 
 # 详细输出
-.\bin\unit_tests.exe --gtest_filter=RiskControllerTest* --gtest_print_time=1
+./bin/unit_tests --gtest_filter=RiskControllerTest* --gtest_print_time=1
 ```
 
 ### 3.3 测试输出说明
@@ -409,7 +409,7 @@ cmake --build build --target unit_tests
 
 ## 附录：相关文件链接
 
-- [risk_controller.h](../include/risk_controller.h) - 风控引擎头文件
-- [risk_controller.cpp](../src/risk_controller.cpp) - 风控引擎实现
-- [risk_test.cpp](../tests/risk_test.cpp) - 单元测试
-- [types.h](../include/types.h) - 数据类型定义
+- [risk_controller.h](include/risk_controller.h) - 风控引擎头文件
+- [risk_controller.cpp](src/risk_controller.cpp) - 风控引擎实现
+- [risk_test.cpp](tests/risk_test.cpp) - 单元测试
+- [types.h](include/types.h) - 数据类型定义
