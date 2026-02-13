@@ -1,6 +1,6 @@
 Checks:          'clang-diagnostic-*,clang-analyzer-*,misc-include-cleaner'
 WarningsAsErrors: '*'
 HeaderFilterRegex: '.*'
-
-misc-include-cleaner.MissingIncludes: false
-misc-include-cleaner.UnusedIncludes: true
+CheckOptions:
+  misc-include-cleaner.MissingIncludes: false
+  misc-include-cleaner.UnusedIncludes: true
