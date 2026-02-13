@@ -145,7 +145,7 @@
 
 | 任务编号 | 认领人 | 状态 | 备注 |
 |----------|--------|------|------|
-| 模块A |[@包一帆](https://github.com/LegendFan1104) | 基本完成 | |
+| 模块A | [@包一帆](https://github.com/LegendFan1104) [@赵俊岚](https://github.com/zjl619) | 基本完成 | |
 | 模块B | | 未开始 | |
 | 模块C | [@张峻魁](https://github.com/junkuizhang) | 未开始 | |
 
