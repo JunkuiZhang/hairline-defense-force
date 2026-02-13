@@ -12,11 +12,11 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Check Formatting
-        uses: DoozyX/clang-format-lint-action@v0.16
+        uses: DoozyX/clang-format-lint-action@v0.20
         with:
           source: '.'
           extensions: 'hpp,h,cpp,cc,cxx'
-          clangFormatVersion: 17
+          # clangFormatVersion: 17
           style: file
 
       # - name: Install dependencies
