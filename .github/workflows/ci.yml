@@ -16,7 +16,7 @@ jobs:
         with:
           source: '.'
           extensions: 'hpp,h,cpp,cc,cxx'
-          # clangFormatVersion: 17
+          clangFormatVersion: 20
           style: file
 
       # - name: Install dependencies
