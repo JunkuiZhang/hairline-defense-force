@@ -19,8 +19,19 @@ jobs:
           clangFormatVersion: 17
           style: file
 
+      # - name: Install dependencies
+      #   run: sudo apt-get update && sudo apt-get install -y ninja-build ccache
+
+      - name: Cache build artifacts
+        uses: actions/cache@v4
+        with:
+          path: ~/.ccache
+          key: ${{ runner.os }}-ccache-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-ccache-
+
       - name: Configure
-        run: cmake -B build -G Ninja -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+        run: cmake -B build -G Ninja -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
 
       - name: Build
         run: cmake --build build
