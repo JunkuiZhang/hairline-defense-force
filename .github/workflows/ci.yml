@@ -31,4 +31,4 @@ jobs:
         # Only run standard diagnostics and static analysis
         # Relaxing strict IWYU checks to allow transitive includes (matching VS Code default)
         run: |
-           find src tests -name "*.cpp" | xargs clang-tidy -p build -checks='clang-diagnostic-*,clang-analyzer-*' -warnings-as-errors='*' -header-filter='.*'
+           find src tests -name "*.cpp" | xargs clang-tidy -p build -checks='clang-diagnostic-*,clang-analyzer-*' misc-include-cleaner-unused-includes -warnings-as-errors='*' -header-filter='.*'
