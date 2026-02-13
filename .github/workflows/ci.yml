@@ -1,0 +1,32 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # - name: Install dependencies
+      #   run: |
+      #     sudo apt-get update
+      #     sudo apt-get install -y ninja-build software-properties-common
+      #     wget https://apt.llvm.org/llvm.sh
+      #     chmod +x llvm.sh
+      #     sudo ./llvm.sh 17
+      #     sudo apt-get install -y clang-tidy-17
+      #     sudo ln -sf /usr/bin/clang-tidy-17 /usr/bin/clang-tidy
+
+      - name: Configure
+        run: cmake -B build -G Ninja -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+
+      - name: Build
+        run: cmake --build build
+
+      - name: Run clang-tidy
+        run: |
+           find src tests -name "*.cpp" | xargs clang-tidy -p build -checks='clang-diagnostic-*,clang-analyzer-*,misc-include-cleaner' -warnings-as-errors='*' -header-filter='.*'
