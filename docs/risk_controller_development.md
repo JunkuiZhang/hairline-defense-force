@@ -25,22 +25,25 @@
 在 `include/risk_controller.h` 中设计了三层索引结构：
 
 ```cpp
-// 第一层：股东号 -> 股票订单
-using SecurityOrders = std::unordered_map<std::string, SideOrders>;
-
-// 第二层：股票代码 -> 买卖方订单
-using SideOrders = std::unordered_map<Side, std::vector<OrderInfo>>;
-
-// 第三层：买卖方向 -> 订单列表
+// 订单基础信息结构
 struct OrderInfo {
     std::string clOrderId;      // 客户订单ID
     std::string securityId;     // 股票代码
-    Side side;                 // 买卖方向
-    double price;              // 价格
-    uint32_t remainingQty;     // 剩余数量
+    Side side;                  // 买卖方向
+    double price;               // 价格
+    uint32_t remainingQty;      // 剩余数量
 };
 
-// 完整的活跃订单索引
+// 第三层：买卖方向 -> 订单列表
+using SideOrders = std::unordered_map<Side, std::vector<OrderInfo>>;
+
+// 第二层：股票代码 -> 买卖方订单映射
+using SecurityOrders = std::unordered_map<std::string, SideOrders>;
+
+// 第一层：股东号 -> 股票订单的映射（股东号 -> 股票代码 -> 买卖方订单）
+using ShareholderOrders = std::unordered_map<std::string, SecurityOrders>;
+
+// 完整的活跃订单索引（按股东号组织）
 ShareholderOrders activeOrders_;
 ```
 
