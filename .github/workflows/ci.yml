@@ -1,0 +1,46 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  lint-and-check:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check Formatting
+        uses: DoozyX/clang-format-lint-action@v0.20
+        with:
+          source: '.'
+          extensions: 'hpp,h,cpp,cc,cxx'
+          clangFormatVersion: 20
+          style: file
+
+      - name: Install dependencies
+        run: sudo apt-get update && sudo apt-get install -y ninja-build ccache
+
+      - name: Setup ccache
+        run: |
+          echo "CCACHE_DIR=$HOME/.ccache" >> $GITHUB_ENV
+          mkdir -p $HOME/.ccache
+
+      - name: Cache build artifacts
+        uses: actions/cache@v4
+        with:
+          path: ~/.ccache
+          key: ${{ runner.os }}-ccache-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-ccache-
+
+      - name: Configure
+        run: cmake -B build -G Ninja -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+
+      - name: Build
+        run: cmake --build build
+
+      - name: Run clang-tidy
+        run: |
+           find src tests -name "*.cpp" | xargs clang-tidy -p build

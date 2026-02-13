@@ -1,8 +1,8 @@
 #pragma once
 
 #include "types.h"
-#include <unordered_map>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 namespace hdf {
@@ -11,7 +11,7 @@ class RiskController {
   public:
     enum class RiskCheckResult {
         PASSED,      // 风控检查通过
-        CROSS_TRADE,  // 检测到对敲风险
+        CROSS_TRADE, // 检测到对敲风险
     };
 
     RiskController();
@@ -70,11 +70,11 @@ class RiskController {
      * 存储订单的关键信息，用于对敲检测。
      */
     struct OrderInfo {
-        std::string clOrderId;      // 客户订单ID
-        std::string securityId;     // 股票代码
-        Side side;                 // 买卖方向（BUY/SELL）
-        double price;              // 订单价格
-        uint32_t remainingQty;     // 剩余未成交数量
+        std::string clOrderId;  // 客户订单ID
+        std::string securityId; // 股票代码
+        Side side;              // 买卖方向（BUY/SELL）
+        double price;           // 订单价格
+        uint32_t remainingQty;  // 剩余未成交数量
     };
 
     // 买卖方向 -> 订单列表的映射

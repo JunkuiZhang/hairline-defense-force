@@ -1,0 +1,6 @@
+WarningsAsErrors: '*'
+HeaderFilterRegex: '.*'
+
+Checks: >
+  clang-diagnostic-*,
+  clang-analyzer-*,

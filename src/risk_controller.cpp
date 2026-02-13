@@ -57,7 +57,8 @@ void RiskController::onOrderAccepted(const Order &order) {
 
     // 将订单添加到三层索引结构中
     // 路径：股东号 -> 股票代码 -> 买卖方向 -> 订单列表
-    activeOrders_[order.shareholderId][order.securityId][order.side].push_back(orderInfo);
+    activeOrders_[order.shareholderId][order.securityId][order.side].push_back(
+        orderInfo);
 }
 
 void RiskController::onOrderCanceled(const std::string &origClOrderId) {
