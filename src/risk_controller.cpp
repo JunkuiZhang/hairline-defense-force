@@ -28,6 +28,7 @@ bool RiskController::isCrossTrade(const Order &order) {
     }
 
     // 第三步：确定反方向（买单查卖单，卖单查买单）
+    // 这里由调用方保证不会有 Side::Unknown
     Side oppositeSide = (order.side == Side::BUY) ? Side::SELL : Side::BUY;
     auto oppositeIt = securityIt->second.find(oppositeSide);
     if (oppositeIt == securityIt->second.end()) {
