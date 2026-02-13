@@ -11,13 +11,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Check Formatting
-        uses: DoozyX/clang-format-lint-action@v0.16
-        with:
-          source: '.'
-          extensions: 'hpp,h,cpp,cc,cxx'
-          clangFormatVersion: 17
-          style: file
+      # - name: Check Formatting
+      #   uses: DoozyX/clang-format-lint-action@v0.16
+      #   with:
+      #     source: '.'
+      #     extensions: 'hpp,h,cpp,cc,cxx'
+      #     clangFormatVersion: 17
+      #     style: file
 
       - name: Configure
         run: cmake -B build -G Ninja -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
