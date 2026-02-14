@@ -65,30 +65,32 @@ class RiskController {
 
   private:
     /**
-     * @brief 订单信息结构体。
-     *
-     * 存储订单的关键信息，用于对敲检测。
+     * @brief 订单详细信息，用于内部维护状态。
      */
     struct OrderInfo {
-        std::string clOrderId;  // 客户订单ID
-        std::string securityId; // 股票代码
-        Side side;              // 买卖方向（BUY/SELL）
-        double price;           // 订单价格
-        uint32_t remainingQty;  // 剩余未成交数量
+        std::string clOrderId;     // 客户订单ID
+        std::string shareholderId; // 股东ID
+        Market market;             // 交易市场
+        std::string securityId;    // 股票代码
+        Side side;                 // 买卖方向
+        double price;              // 订单价格
+        uint32_t remainingQty;     // 剩余未成交数量
     };
 
-    // 买卖方向 -> 订单列表的映射
-    using SideOrders = std::unordered_map<Side, std::vector<OrderInfo>>;
+    // 辅助函数：生成组合键
+    // Key: shareholderId + securityId + market
+    std::string makeKey(const std::string &shareholderId, Market market,
+                        const std::string &securityId);
 
-    // 股票代码 -> 买卖方订单的映射
-    using SecurityOrders = std::unordered_map<std::string, SideOrders>;
+    // 组合键 -> 该方向的总挂单数量
+    // 只有买单会存入 buySide_，卖单存入 sellSide_
+    // 用于 O(1) 快速检查反方向是否存在挂单量
+    std::unordered_map<std::string, uint32_t> buySide_;
+    std::unordered_map<std::string, uint32_t> sellSide_;
 
-    // 股东号 -> 股票订单的映射
-    using ShareholderOrders = std::unordered_map<std::string, SecurityOrders>;
-
-    // 活跃订单的三层索引结构
-    // 结构：股东号 -> 股票代码 -> 买卖方向 -> 订单列表
-    ShareholderOrders activeOrders_;
+    // orderId -> 订单详细信息，用于快速查找订单归属
+    // 用于撤单和成交时快速定位订单
+    std::unordered_map<std::string, OrderInfo> orderMap_;
 };
 
 } // namespace hdf
