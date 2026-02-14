@@ -4,7 +4,6 @@
 #include <nlohmann/json.hpp>
 #include <stdexcept>
 #include <string>
-#include <utility>
 
 namespace hdf {
 
