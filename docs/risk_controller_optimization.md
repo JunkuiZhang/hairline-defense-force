@@ -17,7 +17,7 @@
     - 格式：`ShareholderId + "_" + Market(int) + "_" + SecurityId`。
     - 作用：将多维度的风控条件压缩为唯一的字符串键，实现 O(1) 定位。
 - **对敲检测 (`isCrossTrade`)**：
-    - 逻辑：根据当前订单生成 Key，直接查询**反方向** Map 中无论是否有存量 (`value > 0`)。
+    - 逻辑：根据当前订单生成 Key，直接查询**反方向** Map 中是否有存量 (`value > 0`)。
     - 复杂度：由 O(L) (L为层数) 降低为 O(1)。
 - **生命周期管理**：
     - `onOrderAccepted`：累加对应 Key 的总挂单量。
