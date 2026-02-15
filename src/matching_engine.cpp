@@ -1,6 +1,7 @@
 #include "matching_engine.h"
 #include "types.h"
 #include <iomanip>
+#include <iostream>
 #include <sstream>
 
 namespace hdf {
@@ -15,7 +16,10 @@ MatchingEngine::~MatchingEngine() {}
 // ============================================================
 std::string MatchingEngine::generateExecId() {
     std::ostringstream oss;
-    oss << "EXEC" << std::setw(16) << std::setfill('0') << nextExecId_++;
+    // 对 10^16 取模以保证始终为 16 位十进制数
+    const uint64_t currentId = nextExecId_ % 10000000000000000ULL;
+    ++nextExecId_;
+    oss << "EXEC" << std::setw(16) << std::setfill('0') << currentId;
     return oss.str();
 }
 
@@ -25,6 +29,11 @@ std::string MatchingEngine::generateExecId() {
 // 并建立 orderIndex_ 反向索引以支持快速查找。
 // ============================================================
 void MatchingEngine::addOrder(const Order &order) {
+    // 检查重复 clOrderId，防止索引覆盖导致旧订单不可管理
+    if (orderIndex_.find(order.clOrderId) != orderIndex_.end()) {
+        return; // 重复订单，忽略
+    }
+
     BookEntry entry;
     entry.order = order;
     entry.remainingQty = order.qty;
@@ -194,11 +203,23 @@ MatchingEngine::match(const Order &order,
                 uint32_t matchQty =
                     std::min(remainingQty, entryIt->remainingQty);
 
-                // B6: 零股处理
-                // 卖出单可以是零股（不需要是100的整数倍）
-                // 但买方（对手方 / 被动方）在成交时，如果被动方剩余足够
-                // 依然按正常规则成交，零股约束只在下单时验证
-                // 此处不需要额外的零股处理逻辑，因为卖单本身可以是零股
+                // B6: 零股处理（卖出主动方 vs 买入被动方）
+                // 卖出单本身可以为零股；但买方（被动方）应尽量保持
+                // 100 股的整数倍数量，防止买单被留下零股余量。
+                // 当被动方（买单）剩余数量 >= 100 时，若此次成交会在
+                // 其订单上留下 [1, 99] 股的零股，则向下调整 matchQty。
+                if (entryIt->remainingQty >= 100 && matchQty > 0) {
+                    uint32_t tentativeMakerRemaining =
+                        entryIt->remainingQty - matchQty;
+                    // 仅在会留下 1~99 股的零股时进行调整
+                    if (tentativeMakerRemaining > 0 &&
+                        tentativeMakerRemaining < 100) {
+                        uint32_t reduceBy = 100 - tentativeMakerRemaining;
+                        if (matchQty > reduceBy) {
+                            matchQty -= reduceBy;
+                        }
+                    }
+                }
 
                 if (matchQty == 0) {
                     ++entryIt;
@@ -344,7 +365,11 @@ CancelResponse MatchingEngine::cancelOrder(const std::string &clOrderId) {
         }
     }
 
-    // 理论上不应到此处（索引存在但订单簿中找不到），安全兜底
+    // 理论上不应到此处（索引存在但订单簿中找不到），说明内部状态不一致
+    // 这是严重的内部错误，应当引起关注
+    std::cerr << "[MatchingEngine] CRITICAL: Order index inconsistency for "
+                 "clOrderId="
+              << clOrderId << std::endl;
     response.type = CancelResponse::Type::REJECT;
     response.rejectCode = 2;
     response.rejectText = "Order index inconsistency";
