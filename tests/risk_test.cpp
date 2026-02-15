@@ -146,6 +146,31 @@ TEST_F(RiskControllerTest, NoCrossTradeDifferentSecurity) {
 }
 
 /**
+ * @brief 测试：不同市场不应误报对敲
+ *
+ * 验证当同一股东在不同市场交易同一代码股票时，不应检测到对敲。
+ */
+TEST_F(RiskControllerTest, NoCrossTradeDifferentMarket) {
+    // 第一步：创建并接受 XSHG 市场的买单
+    Order buyOrder = createOrder("1001", "SH001", "600000", Side::BUY, 10.0,
+                                 1000); // 默认XSHG
+    buyOrder.market = Market::XSHG;
+    EXPECT_EQ(riskController.checkOrder(buyOrder),
+              RiskController::RiskCheckResult::PASSED);
+
+    riskController.onOrderAccepted(buyOrder);
+
+    // 第二步：创建 XSHE 市场的卖单（虽然代码相同）
+    Order sellOrder =
+        createOrder("1002", "SH001", "600000", Side::SELL, 9.0, 500);
+    sellOrder.market = Market::XSHE; // 显式设置为深市
+
+    // 验证：不同市场不应检测到对敲
+    EXPECT_EQ(riskController.checkOrder(sellOrder),
+              RiskController::RiskCheckResult::PASSED);
+}
+
+/**
  * @brief 测试：订单撤销后对敲状态应更新
  *
  * 验证当订单被撤销后，对敲检测状态应正确更新。
