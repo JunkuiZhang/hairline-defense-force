@@ -146,7 +146,7 @@
 | 任务编号 | 认领人 | 状态 | 备注 |
 |----------|--------|------|------|
 | 模块A | [@包一帆](https://github.com/LegendFan1104) [@赵俊岚](https://github.com/zjl619) | 基本完成 | |
-| 模块B | [@汤语涵](https://github.com/Animnia) [@梁家栋](https://github.com/du0729)| 未开始 | |
+| 模块B | [@汤语涵](https://github.com/Animnia) [@梁家栋](https://github.com/du0729)| @KKBEIBEI | |
 | 模块C | [@张峻魁](https://github.com/junkuizhang) | 未开始 | |
 
 模块D和E我建议先别管
