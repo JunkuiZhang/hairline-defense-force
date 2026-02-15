@@ -104,8 +104,8 @@ class MatchingEngine {
      * 避免遍历整个订单簿。存储了订单所在的价格和买卖方向。
      */
     struct OrderLocation {
-        double price;    // 订单价格（用于在 bidBook_/askBook_ 中定位）
-        Side side;       // 买卖方向（决定查 bidBook_ 还是 askBook_）
+        double price; // 订单价格（用于在 bidBook_/askBook_ 中定位）
+        Side side;    // 买卖方向（决定查 bidBook_ 还是 askBook_）
     };
     std::unordered_map<std::string, OrderLocation> orderIndex_;
 

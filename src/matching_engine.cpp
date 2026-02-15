@@ -83,7 +83,8 @@ MatchingEngine::match(const Order &order,
 
             // B10（可选）行情约束：如果有行情数据，买价不能高于行情卖价
             if (marketData.has_value()) {
-                if (order.price > marketData->askPrice && marketData->askPrice > 0) {
+                if (order.price > marketData->askPrice &&
+                    marketData->askPrice > 0) {
                     break;
                 }
             }
@@ -99,7 +100,8 @@ MatchingEngine::match(const Order &order,
                 }
 
                 // 计算可成交数量
-                uint32_t matchQty = std::min(remainingQty, entryIt->remainingQty);
+                uint32_t matchQty =
+                    std::min(remainingQty, entryIt->remainingQty);
 
                 // B6: 零股处理
                 // 买入单成交数量必须是100的整数倍（除非对手方剩余不足100股）
@@ -108,7 +110,8 @@ MatchingEngine::match(const Order &order,
                     // 对手方充足，成交量向下取整到100的整数倍
                     matchQty = (matchQty / 100) * 100;
                 }
-                // 如果对手方剩余量 < 100（零股），则直接全部成交（零股可以不是100的倍数）
+                // 如果对手方剩余量 <
+                // 100（零股），则直接全部成交（零股可以不是100的倍数）
 
                 if (matchQty == 0) {
                     ++entryIt;
@@ -124,12 +127,12 @@ MatchingEngine::match(const Order &order,
                 exec.market = entryIt->order.market;
                 exec.securityId = entryIt->order.securityId;
                 exec.side = entryIt->order.side;
-                exec.qty = entryIt->order.qty;            // 原始委托数量
-                exec.price = entryIt->order.price;        // 原始委托价格
+                exec.qty = entryIt->order.qty;     // 原始委托数量
+                exec.price = entryIt->order.price; // 原始委托价格
                 exec.shareholderId = entryIt->order.shareholderId;
-                exec.execId = generateExecId();           // B9: 唯一成交编号
-                exec.execQty = matchQty;                  // 本笔成交数量
-                exec.execPrice = execPrice;               // 成交价格
+                exec.execId = generateExecId(); // B9: 唯一成交编号
+                exec.execQty = matchQty;        // 本笔成交数量
+                exec.execPrice = execPrice;     // 成交价格
                 exec.type = OrderResponse::Type::EXECUTION;
 
                 result.executions.push_back(exec);
@@ -172,7 +175,8 @@ MatchingEngine::match(const Order &order,
 
             // B10（可选）行情约束：如果有行情数据，卖价不能低于行情买价
             if (marketData.has_value()) {
-                if (order.price < marketData->bidPrice && marketData->bidPrice > 0) {
+                if (order.price < marketData->bidPrice &&
+                    marketData->bidPrice > 0) {
                     break;
                 }
             }
@@ -187,7 +191,8 @@ MatchingEngine::match(const Order &order,
                 }
 
                 // 计算可成交数量
-                uint32_t matchQty = std::min(remainingQty, entryIt->remainingQty);
+                uint32_t matchQty =
+                    std::min(remainingQty, entryIt->remainingQty);
 
                 // B6: 零股处理
                 // 卖出单可以是零股（不需要是100的整数倍）
@@ -280,7 +285,8 @@ CancelResponse MatchingEngine::cancelOrder(const std::string &clOrderId) {
         auto priceIt = bidBook_.find(loc.price);
         if (priceIt != bidBook_.end()) {
             auto &priceLevel = priceIt->second;
-            for (auto entryIt = priceLevel.begin(); entryIt != priceLevel.end(); ++entryIt) {
+            for (auto entryIt = priceLevel.begin(); entryIt != priceLevel.end();
+                 ++entryIt) {
                 if (entryIt->order.clOrderId == clOrderId) {
                     // 填充撤单回报信息
                     response.clOrderId = entryIt->order.clOrderId;
@@ -310,7 +316,8 @@ CancelResponse MatchingEngine::cancelOrder(const std::string &clOrderId) {
         auto priceIt = askBook_.find(loc.price);
         if (priceIt != askBook_.end()) {
             auto &priceLevel = priceIt->second;
-            for (auto entryIt = priceLevel.begin(); entryIt != priceLevel.end(); ++entryIt) {
+            for (auto entryIt = priceLevel.begin(); entryIt != priceLevel.end();
+                 ++entryIt) {
                 if (entryIt->order.clOrderId == clOrderId) {
                     // 填充撤单回报信息
                     response.clOrderId = entryIt->order.clOrderId;
@@ -368,7 +375,8 @@ void MatchingEngine::reduceOrderQty(const std::string &clOrderId,
             return;
         }
         auto &priceLevel = priceIt->second;
-        for (auto entryIt = priceLevel.begin(); entryIt != priceLevel.end(); ++entryIt) {
+        for (auto entryIt = priceLevel.begin(); entryIt != priceLevel.end();
+             ++entryIt) {
             if (entryIt->order.clOrderId == clOrderId) {
                 // 更新累计成交量
                 entryIt->cumQty += qty;
