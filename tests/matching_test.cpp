@@ -384,13 +384,18 @@ TEST_F(MatchingEngineTest, MixedOddAndRoundLot) {
 
     ASSERT_TRUE(result.has_value());
     // 先匹配50股零股，然后匹配剩余150→100股（取100的整数倍）
-    EXPECT_GE(result->executions.size(), 1u);
+    ASSERT_EQ(result->executions.size(), 2u); // 应该有两笔成交：50 + 100
+    EXPECT_EQ(result->executions[0].execQty, 50u);
+    EXPECT_EQ(result->executions[1].execQty, 100u);
+
     uint32_t totalExecQty = 0;
     for (const auto &exec : result->executions) {
         totalExecQty += exec.execQty;
     }
-    // 50 + 100 = 150 或其他合理值
-    EXPECT_GT(totalExecQty, 0u);
+    // 50 + 100 = 150
+    EXPECT_EQ(totalExecQty, 150u);
+    // 剩余未成交数量应为 50 股
+    EXPECT_EQ(result->remainingQty, 50u);
 }
 
 // ============================================================
@@ -795,4 +800,60 @@ TEST_F(MatchingEngineTest, ExecutionResponseFieldsCorrect) {
     EXPECT_DOUBLE_EQ(exec.execPrice, 10.5); // 成交价
     EXPECT_FALSE(exec.execId.empty());      // execId 非空
     EXPECT_EQ(exec.type, OrderResponse::Type::EXECUTION);
+}
+
+// ============================================================
+// 卖方零股吃单测试（Review 反馈补充）
+// ============================================================
+
+/**
+ * @brief 测试：卖出零股作为吃单方与买方挂单撮合
+ *
+ * 买方订单簿有200股整手买单，卖方提交150股卖单作为吃单。
+ * 预期：为防止买方被留下零股余量，撮合数量调整为100股。
+ */
+TEST_F(MatchingEngineTest, OddLotSellTakerAgainstBuyOrder) {
+    // 先挂200股买单作为挂单方
+    Order buyOrder = createOrder("30001", "600030", Side::BUY, 10.0, 200);
+    engine.addOrder(buyOrder);
+
+    // 卖方提交150股作为吃单方
+    Order sellOrder =
+        createOrder("30002", "600030", Side::SELL, 10.0, 150, "SH002");
+    auto result = engine.match(sellOrder);
+
+    ASSERT_TRUE(result.has_value());
+    EXPECT_GE(result->executions.size(), 1u);
+
+    uint32_t totalExecQty = 0;
+    for (const auto &exec : result->executions) {
+        totalExecQty += exec.execQty;
+    }
+
+    // 卖出150股，仅成交100股（防止买方被留下50股零股）
+    EXPECT_EQ(totalExecQty, 100u);
+}
+
+// ============================================================
+// 重复 clOrderId 测试（Review 反馈补充）
+// ============================================================
+
+/**
+ * @brief 测试：重复 clOrderId 的订单应被忽略
+ *
+ * 同一个 clOrderId 添加两次，第二次应被忽略，
+ * 订单簿中只保留第一笔订单。
+ */
+TEST_F(MatchingEngineTest, DuplicateClOrderIdIgnored) {
+    Order order1 = createOrder("31001", "600030", Side::BUY, 10.0, 100);
+    Order order2 = createOrder("31001", "600030", Side::BUY, 11.0, 200);
+
+    engine.addOrder(order1);
+    engine.addOrder(order2); // 重复 ID，应被忽略
+
+    // 撤单应返回第一笔订单的信息
+    CancelResponse resp = engine.cancelOrder("31001");
+    EXPECT_EQ(resp.type, CancelResponse::Type::CONFIRM);
+    EXPECT_EQ(resp.qty, 100);           // 应为第一笔订单的数量
+    EXPECT_DOUBLE_EQ(resp.price, 10.0); // 应为第一笔订单的价格
 }

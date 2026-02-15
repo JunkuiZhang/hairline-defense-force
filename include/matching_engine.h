@@ -11,6 +11,13 @@
 
 namespace hdf {
 
+/**
+ * @brief 撮合引擎，负责订单簿管理、订单撮合、撤单等操作。
+ *
+ * @note 线程安全：此类不是线程安全的。所有对 MatchingEngine
+ *       实例的访问必须在外部进行同步。对于高性能交易系统，
+ *       建议使用单线程事件循环来串行化对引擎的访问。
+ */
 class MatchingEngine {
   public:
     MatchingEngine();
