@@ -44,3 +44,9 @@ jobs:
       - name: Run clang-tidy
         run: |
            find src tests -name "*.cpp" | xargs clang-tidy -p build
+
+      - name: Run tests
+        run: |
+          cd build
+          ctest --output-on-failure
+          
