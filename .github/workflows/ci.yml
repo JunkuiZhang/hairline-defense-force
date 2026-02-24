@@ -31,7 +31,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.ccache
-          key: ${{ runner.os }}-ccache-${{ github.sha }}
+          key: ${{ runner.os }}-ccache-${{ hashFiles('**/*.cpp','**/*.h') }}
           restore-keys: |
             ${{ runner.os }}-ccache-
 
@@ -49,4 +49,3 @@ jobs:
         run: |
           cd build
           ctest --output-on-failure
-          
