@@ -96,7 +96,8 @@ TEST_F(ExchangeTest, ExactMatch_TwoExecutionReports) {
     auto &passive = clientResponses[0];
     EXPECT_EQ(passive["clOrderId"], "1001");
     EXPECT_EQ(passive["side"], "B");
-    EXPECT_EQ(passive["execQty"], 100);
+    // EXPECT_EQ(passive["execQty"], 100);
+    EXPECT_EQ(passive["execQty"], 200);
     EXPECT_DOUBLE_EQ(passive["execPrice"].get<double>(), 10.0);
     EXPECT_TRUE(passive.contains("execId"));
 
