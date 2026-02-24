@@ -49,6 +49,7 @@ add_executable(unit_tests
   tests/matching_test.cpp
   tests/json_test.cpp
   tests/exchange_test.cc
+  tests/gateway_test.cc
 )
 target_link_libraries(unit_tests gtest_main trade_engine)
 
