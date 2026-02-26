@@ -1,7 +1,6 @@
 #include "constants.h"
 #include "trade_system.h"
 #include <gtest/gtest.h>
-#include <iostream>
 #include <vector>
 
 using namespace hdf;
@@ -126,11 +125,13 @@ TEST_F(GatewayTest, InternalMatch_FullFlow) {
     gateway.handleOrder(
         makeOrder("B1", "XSHG", "600030", "B", 10.0, 100, "SH001"));
 
-    // 客户端应收到：确认(B1) + 被动方成交(S1) + 主动方成交(B1)
+    // 客户端应收到：确认回报(B1) + 被动方成交(S1) + 主动方成交(B1)
+    // 确认回报在成交回报之前
     ASSERT_EQ(clientResponses.size(), 3);
 
     // 确认回报
     EXPECT_EQ(clientResponses[0]["clOrderId"], "B1");
+    EXPECT_EQ(clientResponses[0]["qty"], 100);
     EXPECT_FALSE(clientResponses[0].contains("execId"));
 
     // 被动方成交回报
@@ -164,11 +165,12 @@ TEST_F(GatewayTest, InternalMatch_MultipleCounterparties) {
     gateway.handleOrder(
         makeOrder("B1", "XSHG", "600030", "B", 10.5, 1000, "SH001"));
 
-    // 确认(B1) + 3笔成交×2（被动+主动）= 7
+    // 3笔成交×2（被动+主动）= 6 + 1确认 = 7
     ASSERT_EQ(clientResponses.size(), 7);
 
     // 确认回报
     EXPECT_EQ(clientResponses[0]["clOrderId"], "B1");
+    EXPECT_EQ(clientResponses[0]["qty"], 1000);
     EXPECT_FALSE(clientResponses[0].contains("execId"));
 
     // 第1笔成交（S1, 价格优先 10.0）
@@ -202,9 +204,15 @@ TEST_F(GatewayTest, PartialMatch_RemainingForwardedToExchange) {
     gateway.handleOrder(
         makeOrder("B1", "XSHG", "600030", "B", 10.0, 500, "SH001"));
 
-    // 确认(B1) + 成交(S1×2)
-    // resolvePendingMatch 中 remaining=400 → addOrder + sendToExchange
-    // exchange 收到 B1(400) → 无匹配 → 确认 → 转发回客户端
+    // resolvePendingMatch: 成交记录暂存，剩余400转发交易所
+    // 交易所确认后 → 发送确认回报(B1, qty=500) + 成交回报(S1×2)
+    ASSERT_EQ(clientResponses.size(), 3);
+
+    // 确认回报在最前（原始订单数量500）
+    auto &first = clientResponses[0];
+    EXPECT_EQ(first["clOrderId"], "B1");
+    EXPECT_EQ(first["qty"], 500);
+    EXPECT_FALSE(first.contains("execId"));
 
     // 找成交回报
     int execReportCount = 0;
@@ -215,15 +223,6 @@ TEST_F(GatewayTest, PartialMatch_RemainingForwardedToExchange) {
         }
     }
     EXPECT_EQ(execReportCount, 2); // 被动方 + 主动方
-
-    std::cout << "Client size: " << clientResponses.size() << std::endl;
-    std::cout << "Client Responses: " << clientResponses << std::endl;
-    // 应有剩余400的确认回报
-    auto &last = clientResponses.back();
-    EXPECT_EQ(last["clOrderId"], "B1");
-    EXPECT_EQ(last["qty"], 400);
-    // EXPECT_FALSE(last.contains("execId"));
-    EXPECT_TRUE(last.contains("execId"));
 }
 
 // ==================== 对敲检测（前置模式同样生效） ====================
@@ -282,6 +281,7 @@ TEST_F(GatewayTest, UserCancel_ForwardedAndConfirmed) {
     // 挂单 → 用户撤单 → 转发交易所 → 交易所撤单确认 → 转发客户端
     gateway.handleOrder(
         makeOrder("1001", "XSHG", "600030", "B", 10.0, 100, "SH001"));
+    ASSERT_EQ(clientResponses.size(), 1); // 买单确认回报
     clientResponses.clear();
 
     gateway.handleCancel(
@@ -301,6 +301,7 @@ TEST_F(GatewayTest, MakerPrice) {
     // 卖方挂 9.5
     gateway.handleOrder(
         makeOrder("S1", "XSHG", "600030", "S", 9.5, 100, "SH002"));
+    ASSERT_EQ(clientResponses.size(), 1); // 卖单确认回报
     clientResponses.clear();
 
     // 买方出 10.0 → 成交价应为卖方挂单价 9.5
@@ -346,6 +347,7 @@ TEST_F(GatewayTest, ExchangeExecReport_SyncsInternalBook) {
     // 买单入内部簿（无匹配，转发交易所）
     gateway.handleOrder(
         makeOrder("B1", "XSHG", "600030", "B", 10.0, 200, "SH001"));
+    ASSERT_EQ(clientResponses.size(), 1); // 买单确认回报
     clientResponses.clear();
 
     // 模拟交易所侧的成交（其他网关的卖单直接到交易所匹配了 B1）
@@ -483,7 +485,6 @@ TEST_F(GatewayTest, CancelThenNoInternalMatch) {
     gateway.handleOrder(
         makeOrder("B1", "XSHG", "600030", "B", 10.0, 100, "SH001"));
 
-    std::cout << "Client Responses: " << clientResponses << std::endl;
     // 无成交，只有交易所确认
     ASSERT_EQ(clientResponses.size(), 1);
     for (const auto &resp : clientResponses) {
@@ -491,9 +492,6 @@ TEST_F(GatewayTest, CancelThenNoInternalMatch) {
             << "Should not match cancelled order";
     }
 }
-// NOTE: 目前 gateway 模式下用户撤单仅转发交易所，不同步删除内部簿。
-// 交易所侧已撤但内部簿仍残留，后续内部撮合可能误匹配。
-// 此为已知 TODO，待 handleCancel 增加内部簿同步后补充测试。
 
 // ==================== 多个独立 PendingMatch ====================
 

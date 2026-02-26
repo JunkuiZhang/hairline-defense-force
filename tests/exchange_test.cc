@@ -1,7 +1,6 @@
 #include "constants.h"
 #include "trade_system.h"
 #include <gtest/gtest.h>
-#include <iostream>
 #include <vector>
 
 using namespace hdf;

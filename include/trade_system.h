@@ -86,9 +86,28 @@ class TradeSystem {
     std::unordered_map<std::string, std::string> cancelToActiveOrder_;
 
     /**
+     * 前置模式下，部分内部成交后剩余量转发给交易所时，
+     * 需要等待交易所的确认回报后再向客户端发送确认回报和成交回报。
+     */
+    struct PendingConfirm {
+        Order activeOrder;                              // 主动方原始订单
+        std::vector<OrderResponse> confirmedExecutions; // 已确认的内部成交
+    };
+
+    // key: 主动方订单的 clOrderId
+    std::unordered_map<std::string, PendingConfirm> pendingConfirms_;
+
+    /**
      * @brief 所有撤单回报都回来后，处理最终结果
      */
     void resolvePendingMatch(const std::string &activeOrderId);
+
+    /**
+     * @brief 向客户端发送确认回报和成交回报
+     */
+    void
+    sendConfirmAndExecReports(const Order &activeOrder,
+                              const std::vector<OrderResponse> &executions);
 };
 
 } // namespace hdf
