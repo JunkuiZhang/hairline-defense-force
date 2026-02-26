@@ -267,13 +267,19 @@ void TradeSystem::handleResponse(const nlohmann::json &input) {
                 resolvePendingMatch(activeOrderId);
             }
         } else {
-            // 更新风控状态
-            riskController_.onOrderCanceled(origClOrderId);
-            // 更新撮合引擎订单状态
-            matchingEngine_.cancelOrder(origClOrderId);
-            // 普通撤单回报（用户主动撤单的确认），直接转发
-            if (sendToClient_) {
-                sendToClient_(input);
+            // 普通撤单回报（用户主动撤单）
+            if (input.contains("rejectCode")) {
+                // 撤单被交易所拒绝：仅转发给客户端，不更新内部状态
+                if (sendToClient_) {
+                    sendToClient_(input);
+                }
+            } else {
+                // 撤单成功：更新风控和撮合引擎，并转发给客户端
+                riskController_.onOrderCanceled(origClOrderId);
+                matchingEngine_.cancelOrder(origClOrderId);
+                if (sendToClient_) {
+                    sendToClient_(input);
+                }
             }
         }
     } else {
