@@ -72,6 +72,21 @@ class GatewayTest : public testing::Test {
     }
 };
 
+// 用于模拟交易所拒绝的情况
+class PureGatewayTest : public testing::Test {
+  protected:
+    TradeSystem system;                 // 交易所前置
+    std::vector<json> clientResponses;  // 最终发给客户端的回报
+    std::vector<json> exchangeRequests; // gateway转发给交易所的请求
+
+    void SetUp() override {
+        system.setSendToClient(
+            [this](const json &resp) { clientResponses.push_back(resp); });
+        system.setSendToExchange(
+            [this](const json &req) { exchangeRequests.push_back(req); });
+    }
+};
+
 // ==================== 无匹配 → 转发交易所 → 交易所确认 ====================
 
 TEST_F(GatewayTest, NoMatch_ExchangeConfirmForwarded) {
@@ -529,4 +544,187 @@ TEST_F(GatewayTest, MultiplePendingMatches_DifferentSecurities) {
     EXPECT_TRUE(foundS2Exec);
     EXPECT_TRUE(foundB1Exec);
     EXPECT_TRUE(foundB2Exec);
+}
+
+// ==================== PendingMatch: 全部确认 ====================
+
+TEST_F(PureGatewayTest, PendingMatch_AllConfirmed_ExecReportsSent) {
+    // 挂卖单（转发交易所+入内部簿）
+    system.handleOrder(
+        makeOrder("S1", "XSHG", "600030", "S", 10.0, 100, "SH002"));
+    clientResponses.clear();
+    exchangeRequests.clear();
+
+    // 买单撮合成功 → 发撤单请求
+    system.handleOrder(
+        makeOrder("B1", "XSHG", "600030", "B", 10.0, 100, "SH001"));
+    ASSERT_EQ(exchangeRequests.size(), 1);
+    clientResponses.clear();
+    exchangeRequests.clear();
+
+    // 交易所回报：撤单确认（S1撤单成功）
+    json cancelConfirm = {
+        {"origClOrderId", "S1"}, {"canceledQty", 100}, {"cumQty", 0}};
+    system.handleResponse(cancelConfirm);
+
+    // B1的确认回报 + S1的成交回报 + B1的成交回报
+    ASSERT_EQ(clientResponses.size(), 3);
+
+    // 被动方（S1）成交回报
+    auto &resp_first = clientResponses[1];
+    EXPECT_EQ(resp_first["clOrderId"], "S1");
+    EXPECT_EQ(resp_first["side"], "S");
+    EXPECT_TRUE(resp_first.contains("execId"));
+    EXPECT_EQ(resp_first["execQty"], 100);
+
+    // 主动方（B1）成交回报
+    auto &resp_second = clientResponses[2];
+    EXPECT_EQ(resp_second["clOrderId"], "B1");
+    EXPECT_EQ(resp_second["side"], "B");
+    EXPECT_EQ(resp_second["execQty"], 100);
+
+    // 成交回报的 execId 应相同
+    EXPECT_EQ(resp_first["execId"], resp_second["execId"]);
+
+    // 不应有新的交易所请求（全部确认，无剩余）
+    EXPECT_EQ(exchangeRequests.size(), 0);
+}
+
+// ==================== PendingMatch: 全部拒绝 ====================
+
+TEST_F(PureGatewayTest, PendingMatch_AllRejected_RemainingForwarded) {
+    // 挂卖单
+    system.handleOrder(
+        makeOrder("S1", "XSHG", "600030", "S", 10.0, 100, "SH002"));
+
+    // 买单撮合
+    system.handleOrder(
+        makeOrder("B1", "XSHG", "600030", "B", 10.0, 100, "SH001"));
+    clientResponses.clear();
+    exchangeRequests.clear();
+
+    // 交易所回报：撤单被拒（对手方已在交易所被他人成交）
+    json cancelReject = {{"origClOrderId", "S1"},
+                         {"rejectCode", 99},
+                         {"rejectText", "order already filled"}};
+    system.handleResponse(cancelReject);
+
+    // 不应有成交回报（撤单被拒表示无法在内部成交）
+    // 应把全部数量转发给交易所
+    ASSERT_GE(exchangeRequests.size(), 1);
+    auto &forwarded = exchangeRequests.back();
+    EXPECT_EQ(forwarded["clOrderId"], "B1");
+    EXPECT_EQ(forwarded["qty"], 100);
+
+    // 客户端不应收到成交回报
+    for (const auto &resp : clientResponses) {
+        EXPECT_FALSE(resp.contains("execId"))
+            << "Should not send exec report when cancel is rejected";
+    }
+}
+
+// ==================== PendingMatch: 部分确认部分拒绝 ====================
+
+TEST_F(PureGatewayTest, PendingMatch_PartialConfirm_PartialReject) {
+    // 两个卖单挂簿
+    system.handleOrder(
+        makeOrder("S1", "XSHG", "600030", "S", 10.0, 200, "SH002"));
+    system.handleOrder(
+        makeOrder("S2", "XSHG", "600030", "S", 10.0, 300, "SH003"));
+    clientResponses.clear();
+    exchangeRequests.clear();
+
+    // 买单500股，匹配 S1(200) + S2(300)
+    system.handleOrder(
+        makeOrder("B1", "XSHG", "600030", "B", 10.0, 500, "SH001"));
+    ASSERT_EQ(exchangeRequests.size(), 2);
+    clientResponses.clear();
+    exchangeRequests.clear();
+
+    // S1 撤单确认
+    json confirmS1 = {
+        {"origClOrderId", "S1"}, {"canceledQty", 200}, {"cumQty", 0}};
+    system.handleResponse(confirmS1);
+
+    // 还在等S2的回报，不应发成交回报
+    EXPECT_EQ(clientResponses.size(), 0);
+
+    // S2 撤单被拒
+    json rejectS2 = {{"origClOrderId", "S2"},
+                     {"rejectCode", 99},
+                     {"rejectText", "order already filled"}};
+    system.handleResponse(rejectS2);
+
+    // 现在所有撤单回报都回来了：
+    // S1确认 → 成交200（暂存）
+    // S2被拒 → 300股未成交，转发交易所
+    // 成交回报需等交易所确认剩余300股后才发
+
+    // 被拒部分（300股）应转发给交易所
+    ASSERT_GE(exchangeRequests.size(), 1);
+    EXPECT_EQ(exchangeRequests.back()["qty"], 300);
+
+    // 此时客户端不应收到成交回报（等交易所确认）
+    for (const auto &resp : clientResponses) {
+        EXPECT_FALSE(resp.contains("execId"));
+    }
+
+    // 模拟交易所确认剩余300股
+    clientResponses.clear();
+    json exchangeConfirm = {{"clOrderId", "B1"},
+                            {"market", "XSHG"},
+                            {"securityId", "600030"},
+                            {"side", "B"},
+                            {"qty", 300},
+                            {"price", 10.0},
+                            {"shareholderId", "SH001"}};
+    system.handleResponse(exchangeConfirm);
+
+    // 交易所确认后：确认回报(B1) + S1成交回报 + B1成交回报
+    ASSERT_EQ(clientResponses.size(), 3);
+
+    // 确认回报（原始订单数量500）
+    EXPECT_EQ(clientResponses[0]["clOrderId"], "B1");
+    EXPECT_EQ(clientResponses[0]["qty"], 500);
+    EXPECT_FALSE(clientResponses[0].contains("execId"));
+
+    // 找成交回报（S1 确认的部分）
+    int execReportCount = 0;
+    for (const auto &resp : clientResponses) {
+        if (resp.contains("execId")) {
+            execReportCount++;
+            EXPECT_EQ(resp["execQty"], 200);
+        }
+    }
+    EXPECT_EQ(execReportCount, 2); // 被动方 + 主动方
+}
+
+// ==================== PendingMatch: 撮合有剩余 + 部分拒绝 ====================
+
+TEST_F(PureGatewayTest, PendingMatch_WithRemaining_SomeRejected) {
+    // 卖100挂簿
+    system.handleOrder(
+        makeOrder("S1", "XSHG", "600030", "S", 10.0, 100, "SH002"));
+    exchangeRequests.clear();
+
+    // 买500来撮合 → 成交100 + 剩余400
+    system.handleOrder(
+        makeOrder("B1", "XSHG", "600030", "B", 10.0, 500, "SH001"));
+    clientResponses.clear();
+    exchangeRequests.clear();
+
+    // S1 撤单被拒
+    json rejectS1 = {{"origClOrderId", "S1"},
+                     {"rejectCode", 99},
+                     {"rejectText", "already filled"}};
+    system.handleResponse(rejectS1);
+
+    // 无成交回报
+    for (const auto &resp : clientResponses) {
+        EXPECT_FALSE(resp.contains("execId"));
+    }
+
+    // 被拒100 + 剩余400 = 500 → 全部转发交易所
+    ASSERT_GE(exchangeRequests.size(), 1);
+    EXPECT_EQ(exchangeRequests.back()["qty"], 500);
 }
