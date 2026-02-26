@@ -85,6 +85,7 @@ TEST_F(ExchangeTest, ExactMatch_TwoExecutionReports) {
     // 先挂买单，再来等价等量卖单 → 完全匹配
     system.handleOrder(
         makeOrder("1001", "XSHG", "600030", "B", 10.0, 100, "SH001"));
+    ASSERT_EQ(clientResponses.size(), 1); // 买单确认回报
     clientResponses.clear();
 
     system.handleOrder(
@@ -126,38 +127,41 @@ TEST_F(ExchangeTest, PartialMatch_RemainingEntersBook) {
     // 买1000股，卖300股 → 成交300，剩余700入簿
     system.handleOrder(
         makeOrder("1001", "XSHG", "600030", "B", 10.0, 1000, "SH001"));
+    ASSERT_EQ(clientResponses.size(), 1); // 买单确认回报
     clientResponses.clear();
 
     system.handleOrder(
         makeOrder("2001", "XSHG", "600030", "S", 10.0, 300, "SH002"));
 
-    // 2个成交回报（被动方+主动方），无剩余确认（卖方全部成交）
-    ASSERT_EQ(clientResponses.size(), 2);
-    EXPECT_EQ(clientResponses[0]["execQty"], 300);
+    // 1个确认回报：主动方
+    // 2个成交回报：被动方 + 主动方
+    ASSERT_EQ(clientResponses.size(), 3);
     EXPECT_EQ(clientResponses[1]["execQty"], 300);
+    EXPECT_EQ(clientResponses[2]["execQty"], 300);
 }
 
 TEST_F(ExchangeTest, PartialMatch_ActiveHasRemaining) {
     // 卖300股挂簿，买1000股来撮合 → 成交300，买方剩余700入簿+确认回报
     system.handleOrder(
         makeOrder("2001", "XSHG", "600030", "S", 10.0, 300, "SH002"));
+    ASSERT_EQ(clientResponses.size(), 1); // 卖单确认回报
     clientResponses.clear();
 
     system.handleOrder(
         makeOrder("1001", "XSHG", "600030", "B", 10.0, 1000, "SH001"));
 
-    // 2个成交回报 + 1个剩余入簿确认 = 3
+    // 1个确认回报 + 2个成交回报 = 3
     ASSERT_EQ(clientResponses.size(), 3);
 
-    // 成交回报
-    EXPECT_EQ(clientResponses[0]["execQty"], 300); // 被动方
-    EXPECT_EQ(clientResponses[1]["execQty"], 300); // 主动方
-
-    // 剩余入簿确认
-    auto &confirm = clientResponses[2];
+    // 入簿确认
+    auto &confirm = clientResponses[0];
     EXPECT_EQ(confirm["clOrderId"], "1001");
-    EXPECT_EQ(confirm["qty"], 700);
+    EXPECT_EQ(confirm["qty"], 1000);
     EXPECT_FALSE(confirm.contains("execId"));
+
+    // 成交回报
+    EXPECT_EQ(clientResponses[1]["execQty"], 300); // 被动方
+    EXPECT_EQ(clientResponses[2]["execQty"], 300); // 主动方
 }
 
 // ==================== 多对手方匹配 ====================
@@ -170,30 +174,32 @@ TEST_F(ExchangeTest, MultipleCounterparties) {
         makeOrder("S2", "XSHG", "600030", "S", 10.0, 300, "SH003"));
     system.handleOrder(
         makeOrder("S3", "XSHG", "600030", "S", 10.5, 500, "SH004"));
+    ASSERT_EQ(clientResponses.size(), 3); // 3个卖单确认回报
     clientResponses.clear();
 
     system.handleOrder(
         makeOrder("B1", "XSHG", "600030", "B", 10.5, 1000, "SH001"));
 
+    // 1个确认回报 + 6个成交回报（3个卖方 + 1个买方）= 7
     // S1成交200, S2成交300, S3成交500 → 各2个回报 = 6个
-    ASSERT_EQ(clientResponses.size(), 6);
+    ASSERT_EQ(clientResponses.size(), 7);
 
     // 第一笔成交（S1, 价格优先 10.0）
-    EXPECT_EQ(clientResponses[0]["clOrderId"], "S1");
-    EXPECT_EQ(clientResponses[0]["execQty"], 200);
-    EXPECT_DOUBLE_EQ(clientResponses[0]["execPrice"].get<double>(), 10.0);
-    EXPECT_EQ(clientResponses[1]["clOrderId"], "B1");
+    EXPECT_EQ(clientResponses[1]["clOrderId"], "S1");
     EXPECT_EQ(clientResponses[1]["execQty"], 200);
+    EXPECT_DOUBLE_EQ(clientResponses[1]["execPrice"].get<double>(), 10.0);
+    EXPECT_EQ(clientResponses[2]["clOrderId"], "B1");
+    EXPECT_EQ(clientResponses[2]["execQty"], 200);
 
     // 第二笔成交（S2, 同价时间优先）
-    EXPECT_EQ(clientResponses[2]["clOrderId"], "S2");
-    EXPECT_EQ(clientResponses[2]["execQty"], 300);
-    EXPECT_DOUBLE_EQ(clientResponses[2]["execPrice"].get<double>(), 10.0);
+    EXPECT_EQ(clientResponses[3]["clOrderId"], "S2");
+    EXPECT_EQ(clientResponses[3]["execQty"], 300);
+    EXPECT_DOUBLE_EQ(clientResponses[3]["execPrice"].get<double>(), 10.0);
 
     // 第三笔成交（S3, 价格 10.5）
-    EXPECT_EQ(clientResponses[4]["clOrderId"], "S3");
-    EXPECT_EQ(clientResponses[4]["execQty"], 500);
-    EXPECT_DOUBLE_EQ(clientResponses[4]["execPrice"].get<double>(), 10.5);
+    EXPECT_EQ(clientResponses[5]["clOrderId"], "S3");
+    EXPECT_EQ(clientResponses[5]["execQty"], 500);
+    EXPECT_DOUBLE_EQ(clientResponses[5]["execPrice"].get<double>(), 10.5);
 }
 
 // ==================== 价格优先 ====================
@@ -204,15 +210,17 @@ TEST_F(ExchangeTest, PricePriority_BestPriceFirst) {
         makeOrder("S1", "XSHG", "600030", "S", 11.0, 100, "SH002"));
     system.handleOrder(
         makeOrder("S2", "XSHG", "600030", "S", 10.0, 100, "SH003"));
+    ASSERT_EQ(clientResponses.size(), 2); // 2个卖单确认回报
     clientResponses.clear();
 
     // 买单价格11.0，应优先匹配更便宜的S2
     system.handleOrder(
         makeOrder("B1", "XSHG", "600030", "B", 11.0, 100, "SH001"));
 
-    ASSERT_EQ(clientResponses.size(), 2);
-    EXPECT_EQ(clientResponses[0]["clOrderId"], "S2"); // 10.0先匹配
-    EXPECT_DOUBLE_EQ(clientResponses[0]["execPrice"].get<double>(), 10.0);
+    // 1个确认回报 + 2个成交回报 = 3
+    ASSERT_EQ(clientResponses.size(), 3);
+    EXPECT_EQ(clientResponses[1]["clOrderId"], "S2"); // 10.0先匹配
+    EXPECT_DOUBLE_EQ(clientResponses[1]["execPrice"].get<double>(), 10.0);
 }
 
 // ==================== 时间优先 ====================
@@ -223,13 +231,15 @@ TEST_F(ExchangeTest, TimePriority_EarlierFirst) {
         makeOrder("S1", "XSHG", "600030", "S", 10.0, 100, "SH002"));
     system.handleOrder(
         makeOrder("S2", "XSHG", "600030", "S", 10.0, 100, "SH003"));
+    ASSERT_EQ(clientResponses.size(), 2); // 2个卖单确认回报
     clientResponses.clear();
 
     system.handleOrder(
         makeOrder("B1", "XSHG", "600030", "B", 10.0, 100, "SH001"));
 
-    ASSERT_EQ(clientResponses.size(), 2);
-    EXPECT_EQ(clientResponses[0]["clOrderId"], "S1"); // S1先挂单先成交
+    // 1个确认回报 + 2个成交回报 = 3
+    ASSERT_EQ(clientResponses.size(), 3);
+    EXPECT_EQ(clientResponses[1]["clOrderId"], "S1"); // S1先挂单先成交
 }
 
 // ==================== 成交价（maker price） ====================
@@ -238,14 +248,16 @@ TEST_F(ExchangeTest, ExecutionPrice_MakerPrice) {
     // 卖方挂9.5，买方出10.0 → 成交价应为卖方挂单价9.5
     system.handleOrder(
         makeOrder("S1", "XSHG", "600030", "S", 9.5, 100, "SH002"));
+    ASSERT_EQ(clientResponses.size(), 1); // 卖单确认回报
     clientResponses.clear();
 
     system.handleOrder(
         makeOrder("B1", "XSHG", "600030", "B", 10.0, 100, "SH001"));
 
-    ASSERT_EQ(clientResponses.size(), 2);
-    EXPECT_DOUBLE_EQ(clientResponses[0]["execPrice"].get<double>(), 9.5);
+    // 1个确认回报 + 2个成交回报 = 3
+    ASSERT_EQ(clientResponses.size(), 3);
     EXPECT_DOUBLE_EQ(clientResponses[1]["execPrice"].get<double>(), 9.5);
+    EXPECT_DOUBLE_EQ(clientResponses[2]["execPrice"].get<double>(), 9.5);
 }
 
 // ==================== 价格不满足不成交 ====================
@@ -420,14 +432,16 @@ TEST_F(ExchangeTest, OddLot_SellCanBeOddLot) {
     // 买方100股挂簿，卖方50股来 → 应能成交（卖方可零股）
     system.handleOrder(
         makeOrder("B1", "XSHG", "600030", "B", 10.0, 100, "SH001"));
+    ASSERT_EQ(clientResponses.size(), 1); // 买单确认回报
     clientResponses.clear();
 
     system.handleOrder(
         makeOrder("S1", "XSHG", "600030", "S", 10.0, 50, "SH002"));
 
+    // 1个确认回报 + 2个成交回报 = 3
+    ASSERT_GE(clientResponses.size(), 3);
     // 应成交50股
-    ASSERT_GE(clientResponses.size(), 2);
-    EXPECT_EQ(clientResponses[0]["execQty"], 50);
+    EXPECT_EQ(clientResponses[1]["execQty"], 50);
 }
 
 // ==================== 连续交易 ====================
