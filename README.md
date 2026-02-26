@@ -21,6 +21,8 @@
 │   ├── json_test.cpp          # JSON 解析 / 枚举转换测试
 │   ├── matching_test.cpp      # 撮合引擎测试
 │   ├── risk_test.cpp          # 风控引擎测试
+│   ├── exchange_test.cc       # 纯撮合模式集成测试
+│   ├── gateway_test.cc        # 交易所前置模式集成测试
 │   └── example_test.cc        # 示例测试
 ├── examples/                 # 示例程序
 │   ├── exchange.cpp           # 纯撮合模式示例
