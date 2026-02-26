@@ -179,7 +179,7 @@ TEST_F(ExchangeTest, MultipleCounterparties) {
     system.handleOrder(
         makeOrder("B1", "XSHG", "600030", "B", 10.5, 1000, "SH001"));
 
-    // 1个确认回报 + 6个成交回报（3个卖方 + 1个买方）= 7
+    // 1个确认回报 + 6个成交回报（3个卖方 + 3个买方）= 7
     // S1成交200, S2成交300, S3成交500 → 各2个回报 = 6个
     ASSERT_EQ(clientResponses.size(), 7);
 
