@@ -90,7 +90,7 @@ TEST_F(ExchangeTest, ExactMatch_TwoExecutionReports) {
     system.handleOrder(
         makeOrder("2001", "XSHG", "600030", "S", 10.0, 100, "SH002"));
 
-    // 应产生1个确认回报：主动方的取人回报
+    // 应产生1个确认回报：主动方的确认回报
     // 2个成交回报：主动方 + 被动方
     ASSERT_EQ(clientResponses.size(), 3);
 
