@@ -1,6 +1,7 @@
 #include "constants.h"
 #include "trade_system.h"
 #include <gtest/gtest.h>
+#include <iostream>
 #include <vector>
 
 using namespace hdf;
@@ -89,11 +90,19 @@ TEST_F(ExchangeTest, ExactMatch_TwoExecutionReports) {
     system.handleOrder(
         makeOrder("2001", "XSHG", "600030", "S", 10.0, 100, "SH002"));
 
-    // 应产生2个成交回报：被动方 + 主动方
-    ASSERT_EQ(clientResponses.size(), 2);
+    // 应产生1个确认回报：主动方的取人回报
+    // 2个成交回报：主动方 + 被动方
+    ASSERT_EQ(clientResponses.size(), 3);
+
+    // 主动方（卖方）确认回报
+    auto &confirm = clientResponses[0];
+    EXPECT_EQ(confirm["clOrderId"], "2001");
+    EXPECT_EQ(confirm["side"], "S");
+    EXPECT_EQ(confirm["qty"], 100);
+    EXPECT_FALSE(confirm.contains("execId"));
 
     // 被动方（买方）成交回报
-    auto &passive = clientResponses[0];
+    auto &passive = clientResponses[1];
     EXPECT_EQ(passive["clOrderId"], "1001");
     EXPECT_EQ(passive["side"], "B");
     EXPECT_EQ(passive["execQty"], 100);
@@ -101,7 +110,7 @@ TEST_F(ExchangeTest, ExactMatch_TwoExecutionReports) {
     EXPECT_TRUE(passive.contains("execId"));
 
     // 主动方（卖方）成交回报
-    auto &active = clientResponses[1];
+    auto &active = clientResponses[2];
     EXPECT_EQ(active["clOrderId"], "2001");
     EXPECT_EQ(active["side"], "S");
     EXPECT_EQ(active["execQty"], 100);

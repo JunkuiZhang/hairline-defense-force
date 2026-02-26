@@ -52,11 +52,36 @@ void TradeSystem::handleOrder(const nlohmann::json &input) {
             sendToClient_(response);
         }
     } else {
+        // 纯撮合模式，首先发送确认回报
+        // 对于交易所前置模式，需要考虑情况，比如，如果需要转发至交易所，则应该等交易所的确认回报收到后再发给客户端。
+        if (!sendToExchange_ && sendToClient_) {
+            nlohmann::json response;
+            response["clOrderId"] = order.clOrderId;
+            response["market"] = to_string(order.market);
+            response["securityId"] = order.securityId;
+            response["side"] = to_string(order.side);
+            response["qty"] = order.qty;
+            response["price"] = order.price;
+            response["shareholderId"] = order.shareholderId;
+            sendToClient_(response);
+        }
         // 尝试撮合交易
         auto matchResult = matchingEngine_.match(order);
         if (matchResult.has_value()) {
             auto &executions = matchResult->executions;
             if (sendToExchange_) {
+                // 交易所前置模式：不需要转发给交易所，首先发送确认回报
+                if (sendToClient_) {
+                    nlohmann::json response;
+                    response["clOrderId"] = order.clOrderId;
+                    response["market"] = to_string(order.market);
+                    response["securityId"] = order.securityId;
+                    response["side"] = to_string(order.side);
+                    response["qty"] = order.qty;
+                    response["price"] = order.price;
+                    response["shareholderId"] = order.shareholderId;
+                    sendToClient_(response);
+                }
                 // 交易所前置模式：对手方订单之前已转发给交易所，
                 // 需要先向交易所发送撤单请求，等待所有撤单确认后才发成交回报。
                 PendingMatch pending;
@@ -129,18 +154,6 @@ void TradeSystem::handleOrder(const nlohmann::json &input) {
                     Order remainingOrder = order;
                     remainingOrder.qty = matchResult->remainingQty;
                     matchingEngine_.addOrder(remainingOrder);
-
-                    if (sendToClient_) {
-                        nlohmann::json confirmResponse;
-                        confirmResponse["clOrderId"] = order.clOrderId;
-                        confirmResponse["market"] = to_string(order.market);
-                        confirmResponse["securityId"] = order.securityId;
-                        confirmResponse["side"] = to_string(order.side);
-                        confirmResponse["qty"] = matchResult->remainingQty;
-                        confirmResponse["price"] = order.price;
-                        confirmResponse["shareholderId"] = order.shareholderId;
-                        sendToClient_(confirmResponse);
-                    }
                 }
             }
         } else {
@@ -154,15 +167,6 @@ void TradeSystem::handleOrder(const nlohmann::json &input) {
             } else {
                 // 纯撮合系统：显式入订单簿，生成确认回报
                 matchingEngine_.addOrder(order);
-                nlohmann::json response;
-                response["clOrderId"] = order.clOrderId;
-                response["market"] = to_string(order.market);
-                response["securityId"] = order.securityId;
-                response["side"] = to_string(order.side);
-                response["qty"] = order.qty;
-                response["price"] = order.price;
-                response["shareholderId"] = order.shareholderId;
-                sendToClient_(response);
             }
             // 更新风控系统订单状态
             riskController_.onOrderAccepted(order);
