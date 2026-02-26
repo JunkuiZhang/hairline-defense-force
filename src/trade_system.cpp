@@ -261,12 +261,14 @@ void TradeSystem::handleResponse(const nlohmann::json &input) {
                 resolvePendingMatch(activeOrderId);
             }
         } else {
+            // 更新风控状态
+            riskController_.onOrderCanceled(origClOrderId);
+            // 更新撮合引擎订单状态
+            matchingEngine_.cancelOrder(origClOrderId);
             // 普通撤单回报（用户主动撤单的确认），直接转发
             if (sendToClient_) {
                 sendToClient_(input);
             }
-            // TODO: 更新风控状态
-            // riskController_.onOrderCanceled(origClOrderId);
         }
     } else {
         // 确认回报等，直接转发给客户端
