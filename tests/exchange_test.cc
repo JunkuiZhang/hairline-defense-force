@@ -469,3 +469,26 @@ TEST_F(ExchangeTest, SequentialTrades) {
     }
     EXPECT_TRUE(foundS2Exec);
 }
+
+// ==================== 部分成交后对敲检测 ====================
+
+TEST_F(ExchangeTest, PartialMatch_CrossTradeDetectedOnRemainder) {
+    // SH002 挂卖100
+    system.handleOrder(
+        makeOrder("S1", "XSHG", "600030", "S", 10.0, 100, "SH002"));
+    clientResponses.clear();
+
+    // SH001 买500 → 部分成交100，剩余400入簿
+    system.handleOrder(
+        makeOrder("B1", "XSHG", "600030", "B", 10.0, 500, "SH001"));
+    clientResponses.clear();
+
+    // SH001 反向卖单 → 应被风控拦截（买方剩余400在簿中）
+    system.handleOrder(
+        makeOrder("S2", "XSHG", "600030", "S", 10.0, 200, "SH001"));
+
+    ASSERT_EQ(clientResponses.size(), 1);
+    EXPECT_EQ(clientResponses[0]["clOrderId"], "S2");
+    EXPECT_EQ(clientResponses[0]["rejectCode"], ORDER_CROSS_TRADE_REJECT_CODE)
+        << "Remaining 400 shares of B1 should trigger cross-trade detection";
+}

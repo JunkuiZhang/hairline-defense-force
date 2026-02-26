@@ -142,6 +142,8 @@ void TradeSystem::handleOrder(const nlohmann::json &input) {
                     Order remainingOrder = order;
                     remainingOrder.qty = matchResult->remainingQty;
                     matchingEngine_.addOrder(remainingOrder);
+                    // 更新风控状态：剩余量入簿后需要被对敲检测追踪
+                    riskController_.onOrderAccepted(remainingOrder);
                 }
             }
         } else {
