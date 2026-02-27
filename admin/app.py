@@ -160,14 +160,14 @@ elif page == "市场行情":
                     x=alt.X("价格:Q", title="价格 (¥)", scale=alt.Scale(zero=False)),
                 )
                 bid_area = bid_base.mark_area(
-                    interpolate="step-after", opacity=0.4, color="#22c55e",
+                    interpolate="monotone", opacity=0.35, color="#22c55e",
                 ).encode(
                     y=alt.Y("累积量:Q", title="累积数量"),
                     tooltip=[alt.Tooltip("价格:Q", title="价格"),
                              alt.Tooltip("累积量:Q", title="买盘累积")],
                 )
                 bid_line = bid_base.mark_line(
-                    interpolate="step-after", color="#16a34a", strokeWidth=2,
+                    interpolate="monotone", color="#16a34a", strokeWidth=2,
                 ).encode(y="累积量:Q")
                 layers += [bid_area, bid_line]
 
@@ -182,14 +182,14 @@ elif page == "市场行情":
                     x=alt.X("价格:Q", title="价格 (¥)", scale=alt.Scale(zero=False)),
                 )
                 ask_area = ask_base.mark_area(
-                    interpolate="step-after", opacity=0.4, color="#ef4444",
+                    interpolate="monotone", opacity=0.35, color="#ef4444",
                 ).encode(
                     y=alt.Y("累积量:Q", title="累积数量"),
                     tooltip=[alt.Tooltip("价格:Q", title="价格"),
                              alt.Tooltip("累积量:Q", title="卖盘累积")],
                 )
                 ask_line = ask_base.mark_line(
-                    interpolate="step-after", color="#dc2626", strokeWidth=2,
+                    interpolate="monotone", color="#dc2626", strokeWidth=2,
                 ).encode(y="累积量:Q")
                 layers += [ask_area, ask_line]
 
