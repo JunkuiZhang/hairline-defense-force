@@ -17,6 +17,7 @@ TODO: 由组员完善各页面的具体展示逻辑
 
 import time
 
+import pandas as pd
 import requests
 import streamlit as st
 
@@ -61,7 +62,7 @@ def api_post(path: str, data: dict):
 st.sidebar.title("📊 HDF 管理界面")
 page = st.sidebar.radio(
     "导航",
-    ["仪表盘", "成交记录", "手动下单", "手动撤单", "风控日志"],
+    ["仪表盘", "市场行情", "手动下单", "手动撤单", "风控日志"],
     index=0,
 )
 
@@ -104,30 +105,206 @@ if page == "仪表盘":
         st.info("暂无回报记录")
 
 
-# ======================== 页面：成交记录 ========================
+# ======================== 页面：市场行情 ========================
 
-elif page == "成交记录":
-    st.title("💹 成交记录")
+elif page == "市场行情":
+    st.title("📈 市场行情")
 
-    # TODO: 组员实现
-    # 1. 从 /api/responses 获取所有回报
-    # 2. 过滤出含 execId 的成交回报
-    # 3. 展示字段：execId, clOrderId, side, securityId, execQty, execPrice, market
-    # 4. 按时间倒序排列
-    # 5. 可选：添加搜索/过滤功能（按证券代码、方向等）
+    # 证券筛选
+    market_data = api_get("/api/market")
+    if not market_data:
+        st.warning("无法获取市场数据")
+    else:
+        # 证券选择
+        securities = market_data.get("securities", [])
+        filter_col1, filter_col2 = st.columns([1, 3])
+        with filter_col1:
+            sec_options = ["全部"] + securities
+            sec_filter = st.selectbox("证券代码", sec_options)
+        with filter_col2:
+            if st.button("🔄 刷新行情"):
+                st.rerun()
 
-    responses = api_get("/api/responses", limit=200)
-    if responses:
-        exec_reports = [
-            r for r in responses.get("responses", []) if "execId" in r
-        ]
-        if exec_reports:
-            st.dataframe(exec_reports, use_container_width=True)
+        # 如果选了具体证券，重新请求
+        if sec_filter != "全部":
+            market_data = api_get("/api/market", security_id=sec_filter) or market_data
+
+        bid_depth = market_data.get("bidDepth", [])
+        ask_depth = market_data.get("askDepth", [])
+        trades = market_data.get("trades", [])
+        last_price = market_data.get("lastPrice")
+
+        # ---- 概览指标 ----
+        m1, m2, m3, m4 = st.columns(4)
+        m1.metric("最新成交价", f"¥{last_price:.2f}" if last_price else "—")
+        m2.metric("买盘挂单量", sum(b["qty"] for b in bid_depth))
+        m3.metric("卖盘挂单量", sum(a["qty"] for a in ask_depth))
+        m4.metric("总成交笔数", len(trades))
+
+        # ---- 深度图（Steam 风格） ----
+        st.subheader("🏔️ 市场深度")
+
+        if bid_depth or ask_depth:
+            import altair as alt
+
+            layers = []
+
+            # 买盘：独立 DataFrame，价格从低到高，cumQty 递减（从高价最大到低价最小）
+            if bid_depth:
+                bid_rows = []
+                for b in reversed(bid_depth):  # 低价 → 高价
+                    bid_rows.append({"价格": b["price"], "累积量": b["cumQty"]})
+                df_bid = pd.DataFrame(bid_rows)
+
+                bid_base = alt.Chart(df_bid).encode(
+                    x=alt.X("价格:Q", title="价格 (¥)", scale=alt.Scale(zero=False)),
+                )
+                bid_area = bid_base.mark_area(
+                    interpolate="step-after", opacity=0.4, color="#22c55e",
+                ).encode(
+                    y=alt.Y("累积量:Q", title="累积数量"),
+                    tooltip=[alt.Tooltip("价格:Q", title="价格"),
+                             alt.Tooltip("累积量:Q", title="买盘累积")],
+                )
+                bid_line = bid_base.mark_line(
+                    interpolate="step-after", color="#16a34a", strokeWidth=2,
+                ).encode(y="累积量:Q")
+                layers += [bid_area, bid_line]
+
+            # 卖盘：独立 DataFrame，价格从低到高，cumQty 递增
+            if ask_depth:
+                ask_rows = []
+                for a in ask_depth:  # 低价 → 高价
+                    ask_rows.append({"价格": a["price"], "累积量": a["cumQty"]})
+                df_ask = pd.DataFrame(ask_rows)
+
+                ask_base = alt.Chart(df_ask).encode(
+                    x=alt.X("价格:Q", title="价格 (¥)", scale=alt.Scale(zero=False)),
+                )
+                ask_area = ask_base.mark_area(
+                    interpolate="step-after", opacity=0.4, color="#ef4444",
+                ).encode(
+                    y=alt.Y("累积量:Q", title="累积数量"),
+                    tooltip=[alt.Tooltip("价格:Q", title="价格"),
+                             alt.Tooltip("累积量:Q", title="卖盘累积")],
+                )
+                ask_line = ask_base.mark_line(
+                    interpolate="step-after", color="#dc2626", strokeWidth=2,
+                ).encode(y="累积量:Q")
+                layers += [ask_area, ask_line]
+
+            # 最新成交价竖线
+            if last_price:
+                price_rule = alt.Chart(
+                    pd.DataFrame([{"price": last_price}])
+                ).mark_rule(
+                    color="#fbbf24", strokeWidth=2, strokeDash=[4, 4]
+                ).encode(x="price:Q")
+                layers.append(price_rule)
+
+            if layers:
+                chart = alt.layer(*layers).resolve_scale(
+                    y="shared"
+                ).properties(
+                    height=350,
+                    title="买卖盘深度图",
+                ).interactive()
+
+                st.altair_chart(chart, use_container_width=True)
+        else:
+            st.info("暂无挂单数据，下单后将在此显示市场深度。")
+
+        # ---- 买卖五档 ----
+        st.subheader("📊 买卖盘口")
+        book_col1, book_col2 = st.columns(2)
+
+        with book_col1:
+            st.markdown("**🟢 买盘 (Bid)**")
+            if bid_depth:
+                bid_display = []
+                for i, b in enumerate(bid_depth[:10], 1):
+                    bid_display.append({
+                        "档位": f"买{i}",
+                        "价格": f"¥{b['price']:.2f}",
+                        "数量": b["qty"],
+                        "累积": b["cumQty"],
+                    })
+                st.dataframe(
+                    pd.DataFrame(bid_display),
+                    use_container_width=True,
+                    hide_index=True,
+                )
+            else:
+                st.caption("无买盘")
+
+        with book_col2:
+            st.markdown("**🔴 卖盘 (Ask)**")
+            if ask_depth:
+                ask_display = []
+                for i, a in enumerate(ask_depth[:10], 1):
+                    ask_display.append({
+                        "档位": f"卖{i}",
+                        "价格": f"¥{a['price']:.2f}",
+                        "数量": a["qty"],
+                        "累积": a["cumQty"],
+                    })
+                st.dataframe(
+                    pd.DataFrame(ask_display),
+                    use_container_width=True,
+                    hide_index=True,
+                )
+            else:
+                st.caption("无卖盘")
+
+        # ---- 成交记录 ----
+        st.markdown("---")
+        st.subheader("💹 最近成交")
+
+        if trades:
+            # 成交价格走势
+            if len(trades) >= 2:
+                price_df = pd.DataFrame(trades)
+                price_df["序号"] = range(1, len(price_df) + 1)
+
+                import altair as alt
+
+                price_chart = alt.Chart(price_df).mark_line(
+                    point=True, color="#6366f1"
+                ).encode(
+                    x=alt.X("序号:Q", title="成交序号"),
+                    y=alt.Y("execPrice:Q", title="成交价 (¥)",
+                            scale=alt.Scale(zero=False)),
+                    tooltip=[
+                        alt.Tooltip("execId:N", title="成交编号"),
+                        alt.Tooltip("side:N", title="方向"),
+                        alt.Tooltip("execQty:Q", title="数量"),
+                        alt.Tooltip("execPrice:Q", title="价格", format=".2f"),
+                    ],
+                ).properties(
+                    height=250, title="成交价格走势"
+                ).interactive()
+
+                st.altair_chart(price_chart, use_container_width=True)
+
+            # 成交明细表
+            trade_display = []
+            for t in reversed(trades):  # 最新在前
+                trade_display.append({
+                    "成交编号": t["execId"],
+                    "订单号": t["clOrderId"],
+                    "证券": t["securityId"],
+                    "方向": "🟢买" if t["side"] == "B" else "🔴卖",
+                    "成交量": t["execQty"],
+                    "成交价": f"¥{t['execPrice']:.2f}",
+                    "股东号": t["shareholderId"],
+                })
+            st.dataframe(
+                pd.DataFrame(trade_display),
+                use_container_width=True,
+                hide_index=True,
+            )
         else:
             st.info("暂无成交记录")
-
-    if st.button("🔄 刷新"):
-        st.rerun()
 
 
 # ======================== 页面：手动下单 ========================

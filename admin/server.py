@@ -332,6 +332,83 @@ async def get_order_detail(cl_order_id: str):
     return tracker.to_dict()
 
 
+@app.get("/api/market", summary="市场行情数据")
+async def get_market(security_id: Optional[str] = None):
+    """
+    返回市场深度（买卖盘口）和最近成交记录。
+    用于前端绘制 Steam 风格的市场深度曲线图。
+    """
+    from collections import defaultdict
+
+    # 1. 从活跃订单中构建买卖深度
+    bid_levels: dict[float, int] = defaultdict(int)  # price -> total qty
+    ask_levels: dict[float, int] = defaultdict(int)
+
+    for tracker in state.orders.values():
+        # 只统计还在挂单中的订单（已确认或部分成交）
+        if tracker.status not in ("已确认", "部分成交", "已提交"):
+            continue
+        if security_id and tracker.security_id != security_id:
+            continue
+        remain = tracker.qty - tracker.filled_qty
+        if remain <= 0:
+            continue
+        if tracker.side == "B":
+            bid_levels[tracker.price] += remain
+        else:
+            ask_levels[tracker.price] += remain
+
+    # 2. 买盘：按价格降序 → 累积量（从最高价向低价累积）
+    bid_prices = sorted(bid_levels.keys(), reverse=True)
+    bid_depth = []
+    cum = 0
+    for p in bid_prices:
+        cum += bid_levels[p]
+        bid_depth.append({"price": p, "qty": bid_levels[p], "cumQty": cum})
+
+    # 3. 卖盘：按价格升序 → 累积量（从最低价向高价累积）
+    ask_prices = sorted(ask_levels.keys())
+    ask_depth = []
+    cum = 0
+    for p in ask_prices:
+        cum += ask_levels[p]
+        ask_depth.append({"price": p, "qty": ask_levels[p], "cumQty": cum})
+
+    # 4. 最近成交记录
+    trades = []
+    for r in state.responses:
+        if "execId" not in r:
+            continue
+        if security_id and r.get("securityId") != security_id:
+            continue
+        trades.append({
+            "execId": r["execId"],
+            "clOrderId": r.get("clOrderId", ""),
+            "securityId": r.get("securityId", ""),
+            "market": r.get("market", ""),
+            "side": r.get("side", ""),
+            "execQty": r.get("execQty", 0),
+            "execPrice": r.get("execPrice", 0.0),
+            "shareholderId": r.get("shareholderId", ""),
+        })
+
+    # 5. 最新成交价
+    last_price = trades[-1]["execPrice"] if trades else None
+
+    # 6. 可交易证券列表（去重）
+    securities = list(set(
+        t.security_id for t in state.orders.values()
+    ))
+
+    return {
+        "bidDepth": bid_depth,
+        "askDepth": ask_depth,
+        "trades": trades,
+        "lastPrice": last_price,
+        "securities": sorted(securities),
+    }
+
+
 @app.get("/api/status", summary="系统状态")
 async def get_status():
     """获取系统连接状态和基本统计"""
