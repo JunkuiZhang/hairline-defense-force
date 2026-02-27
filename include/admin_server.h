@@ -1,7 +1,6 @@
 #pragma once
 
 /**
- * @file admin_server.h
  * @brief 管理界面 TCP 服务端
  *
  * 提供 TCP 接口供 Python 管理界面连接，支持：
@@ -10,8 +9,6 @@
  * - 广播回报 → 推送给所有已连接的管理客户端
  *
  * 协议：JSON Lines（每条消息一个 JSON 对象 + '\n'）
- *
- * TODO: 由组员实现具体逻辑
  */
 
 #include <atomic>
@@ -86,13 +83,11 @@ class AdminServer {
 
     /**
      * @brief 接受连接的主循环
-     * TODO: 实现 accept loop
      */
     void acceptLoop();
 
     /**
      * @brief 处理单个客户端连接
-     * TODO: 读取 JSON Lines，根据 type 字段分发
      */
     void handleClient(int clientFd);
 
