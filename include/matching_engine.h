@@ -73,6 +73,15 @@ class MatchingEngine {
      */
     bool hasOrder(const std::string &clOrderId) const;
 
+    /**
+     * @brief 获取订单簿快照，返回买卖盘口的价格档位信息。
+     *
+     * 买盘按价格降序、卖盘按价格升序，每档含价格、总量和累积量。
+     *
+     * @return nlohmann::json 包含 bids 和 asks 数组的 JSON 对象。
+     */
+    nlohmann::json getSnapshot() const;
+
   private:
     /**
      * @brief 订单簿中的订单条目，记录订单信息及已成交累计量。

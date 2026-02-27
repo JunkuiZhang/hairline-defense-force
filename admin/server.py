@@ -350,45 +350,56 @@ async def get_order_detail(cl_order_id: str):
 async def get_market(security_id: Optional[str] = None):
     """
     返回市场深度（买卖盘口）和最近成交记录。
-    用于前端绘制 Steam 风格的市场深度曲线图。
+    优先从 C++ MatchingEngine 获取真实订单簿快照，
+    若 C++ 不可用则从 Python 端订单跟踪状态推算。
     """
-    from collections import defaultdict
-
-    # 1. 从活跃订单中构建买卖深度
-    bid_levels: dict[float, int] = defaultdict(int)  # price -> total qty
-    ask_levels: dict[float, int] = defaultdict(int)
-
-    for tracker in state.orders.values():
-        # 只统计还在挂单中的订单（已确认或部分成交）
-        if tracker.status not in ("已确认", "部分成交", "已提交"):
-            continue
-        if security_id and tracker.security_id != security_id:
-            continue
-        remain = tracker.qty - tracker.filled_qty
-        if remain <= 0:
-            continue
-        if tracker.side == "B":
-            bid_levels[tracker.price] += remain
-        else:
-            ask_levels[tracker.price] += remain
-
-    # 2. 买盘：按价格降序 → 累积量（从最高价向低价累积）
-    bid_prices = sorted(bid_levels.keys(), reverse=True)
     bid_depth = []
-    cum = 0
-    for p in bid_prices:
-        cum += bid_levels[p]
-        bid_depth.append({"price": p, "qty": bid_levels[p], "cumQty": cum})
-
-    # 3. 卖盘：按价格升序 → 累积量（从最低价向高价累积）
-    ask_prices = sorted(ask_levels.keys())
     ask_depth = []
-    cum = 0
-    for p in ask_prices:
-        cum += ask_levels[p]
-        ask_depth.append({"price": p, "qty": ask_levels[p], "cumQty": cum})
 
-    # 4. 最近成交记录
+    # 尝试从 C++ 获取真实订单簿快照
+    if state.bridge.is_connected:
+        try:
+            snapshot = await state.bridge.query_orderbook()
+            if snapshot:
+                # 使用交易所的订单簿（交易所是真实的撮合引擎）
+                exchange_book = snapshot.get("gateway", {})
+                bid_depth = exchange_book.get("bids", [])
+                ask_depth = exchange_book.get("asks", [])
+        except Exception as e:
+            logger.warning(f"Failed to query C++ orderbook: {e}")
+
+    # 回退：从 Python 端订单跟踪状态推算
+    if not bid_depth and not ask_depth:
+        from collections import defaultdict
+        bid_levels: dict[float, int] = defaultdict(int)
+        ask_levels: dict[float, int] = defaultdict(int)
+
+        for tracker in state.orders.values():
+            if tracker.status not in ("已确认", "部分成交", "已提交"):
+                continue
+            if security_id and tracker.security_id != security_id:
+                continue
+            remain = tracker.qty - tracker.filled_qty
+            if remain <= 0:
+                continue
+            if tracker.side == "B":
+                bid_levels[tracker.price] += remain
+            else:
+                ask_levels[tracker.price] += remain
+
+        bid_prices = sorted(bid_levels.keys(), reverse=True)
+        cum = 0
+        for p in bid_prices:
+            cum += bid_levels[p]
+            bid_depth.append({"price": p, "qty": bid_levels[p], "cumQty": cum})
+
+        ask_prices = sorted(ask_levels.keys())
+        cum = 0
+        for p in ask_prices:
+            cum += ask_levels[p]
+            ask_depth.append({"price": p, "qty": ask_levels[p], "cumQty": cum})
+
+    # 成交记录（始终从回报历史构建）
     trades = []
     for r in state.responses:
         if "execId" not in r:
@@ -406,10 +417,8 @@ async def get_market(security_id: Optional[str] = None):
             "shareholderId": r.get("shareholderId", ""),
         })
 
-    # 5. 最新成交价
     last_price = trades[-1]["execPrice"] if trades else None
 
-    # 6. 可交易证券列表（去重）
     securities = list(set(
         t.security_id for t in state.orders.values()
     ))

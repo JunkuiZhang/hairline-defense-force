@@ -35,6 +35,9 @@ class TcpBridge:
         # 回调：收到 C++ 回报时调用
         self.on_response: Optional[Callable[[dict], None]] = None
 
+        # 查询请求的待处理 Future：收到 snapshot 回复时完成
+        self._pending_queries: dict[str, asyncio.Future] = {}
+
     async def connect(self):
         """建立 TCP 连接并启动接收循环"""
         logger.info(f"Connecting to C++ AdminServer at {self.host}:{self.port}")
@@ -108,15 +111,33 @@ class TcpBridge:
         }
         await self._send(msg)
 
-    async def query_orderbook(self):
-        """请求订单簿快照"""
+    async def query_orderbook(self) -> dict:
+        """请求订单簿快照，等待 C++ 端返回结果"""
+        loop = asyncio.get_event_loop()
+        future = loop.create_future()
+        self._pending_queries["orderbook"] = future
         msg = {"type": "query", "queryType": "orderbook"}
         await self._send(msg)
+        try:
+            return await asyncio.wait_for(future, timeout=3.0)
+        except asyncio.TimeoutError:
+            self._pending_queries.pop("orderbook", None)
+            logger.warning("Orderbook query timed out")
+            return {}
 
-    async def query_stats(self):
-        """请求统计信息"""
+    async def query_stats(self) -> dict:
+        """请求统计信息，等待 C++ 端返回结果"""
+        loop = asyncio.get_event_loop()
+        future = loop.create_future()
+        self._pending_queries["stats"] = future
         msg = {"type": "query", "queryType": "stats"}
         await self._send(msg)
+        try:
+            return await asyncio.wait_for(future, timeout=3.0)
+        except asyncio.TimeoutError:
+            self._pending_queries.pop("stats", None)
+            logger.warning("Stats query timed out")
+            return {}
 
     async def _send(self, msg: dict):
         """发送 JSON Lines 消息"""
@@ -138,7 +159,13 @@ class TcpBridge:
                 try:
                     msg = json.loads(line.decode("utf-8").strip())
                     logger.debug(f"Received: {msg.get('type', '?')}")
-                    if self.on_response:
+                    # 查询回复：解析 pending query
+                    query_type = msg.get("queryType")
+                    if query_type and query_type in self._pending_queries:
+                        future = self._pending_queries.pop(query_type)
+                        if not future.done():
+                            future.set_result(msg)
+                    elif self.on_response:
                         self.on_response(msg)
                 except json.JSONDecodeError as e:
                     logger.error(f"Invalid JSON from server: {e}")

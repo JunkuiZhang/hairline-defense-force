@@ -458,4 +458,8 @@ void TradeSystem::sendConfirmAndExecReports(
     }
 }
 
+nlohmann::json TradeSystem::queryOrderbook() const {
+    return matchingEngine_.getSnapshot();
+}
+
 } // namespace hdf

@@ -121,16 +121,29 @@ int main(int argc, char *argv[]) {
             }
         });
 
-    adminServer.setOnQuery([](const std::string &queryType) -> nlohmann::json {
-        // TODO: 接入 MatchingEngine 的订单簿快照接口
+    adminServer.setOnQuery([&gateway, &exchange, &tradeMutex](
+                               const std::string &queryType) -> nlohmann::json {
+        std::lock_guard<std::mutex> lock(tradeMutex);
         nlohmann::json result;
         result["queryType"] = queryType;
         if (queryType == "orderbook") {
-            result["bids"] = nlohmann::json::array();
-            result["asks"] = nlohmann::json::array();
-            result["message"] = "Orderbook snapshot not yet implemented";
+            // 返回 gateway（前置）内部订单簿快照
+            result["gateway"] = gateway.queryOrderbook();
+            // 返回 exchange（交易所）订单簿快照
+            result["exchange"] = exchange.queryOrderbook();
         } else if (queryType == "stats") {
-            result["message"] = "Stats query not yet implemented";
+            auto gwBook = gateway.queryOrderbook();
+            auto exBook = exchange.queryOrderbook();
+            result["gateway"] = {
+                {"totalOrders", gwBook["totalOrders"]},
+                {"bidLevels", gwBook["bids"].size()},
+                {"askLevels", gwBook["asks"].size()},
+            };
+            result["exchange"] = {
+                {"totalOrders", exBook["totalOrders"]},
+                {"bidLevels", exBook["bids"].size()},
+                {"askLevels", exBook["asks"].size()},
+            };
         } else {
             result["message"] = "Unknown query type: " + queryType;
         }

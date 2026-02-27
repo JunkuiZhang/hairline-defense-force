@@ -50,6 +50,11 @@ class TradeSystem {
      */
     void handleResponse(const nlohmann::json &input);
 
+    /**
+     * @brief 获取内部订单簿快照，返回买卖盘口价格档位。
+     */
+    nlohmann::json queryOrderbook() const;
+
   private:
     RiskController riskController_;
     MatchingEngine matchingEngine_;
