@@ -1,9 +1,18 @@
 /**
  * @file admin_main.cpp
- * @brief 管理界面入口程序
+ * @brief 管理界面入口程序 — 交易所前置模式
  *
- * 启动 TradeSystem（纯撮合模式）+ AdminServer（TCP 9900），
- * 等待 Python 管理界面连接后通过 JSON Lines 协议交互。
+ * 架构：
+ *   Admin UI (Python) → AdminServer (TCP) → gateway (前置系统) → exchange
+ * (纯撮合，模拟交易所) ↓ 回报 AdminServer.broadcast → Python
+ *
+ * 数据流：
+ *   1. Python 发送订单/撤单 → AdminServer 收到 →
+ * gateway.handleOrder/handleCancel
+ *   2. gateway 内部撮合 + 风控 → sendToExchange_ →
+ * exchange.handleOrder/handleCancel
+ *   3. exchange 撮合 → sendToClient_ → gateway.handleResponse
+ *   4. gateway 处理回报 → sendToClient_ → AdminServer.broadcast → Python
  *
  * 用法：
  *   ./bin/admin_main              # 默认端口 9900
@@ -31,37 +40,54 @@ int main(int argc, char *argv[]) {
     }
 
     // ---- 构建核心组件 ----
-    hdf::TradeSystem tradeSystem;
+    hdf::TradeSystem gateway;  // 交易所前置系统
+    hdf::TradeSystem exchange; // 纯撮合系统（模拟交易所）
     hdf::AdminServer adminServer(port);
 
     // 互斥锁：TradeSystem 非线程安全，所有操作需串行化
     std::mutex tradeMutex;
 
-    // ---- 连接 TradeSystem → AdminServer（回报广播） ----
-    tradeSystem.setSendToClient([&adminServer](const nlohmann::json &output) {
-        std::cout << "[Client] " << output.dump() << std::endl;
+    // ---- 连接 gateway → Admin UI（回报广播） ----
+    gateway.setSendToClient([&adminServer](const nlohmann::json &output) {
+        std::cout << "[→Client] " << output.dump() << std::endl;
         adminServer.broadcast(output);
     });
 
-    // 纯撮合模式：不设置 sendToExchange_
-    // 如果需要前置模式，可打开以下注释：
-    // tradeSystem.setSendToExchange([](const nlohmann::json &output) {
-    //     std::cout << "[Exchange] " << output.dump() << std::endl;
-    // });
+    // ---- 连接 gateway → exchange（前置转发给交易所） ----
+    // 根据是否含 origClOrderId 区分订单和撤单
+    gateway.setSendToExchange(
+        [&exchange, &tradeMutex](const nlohmann::json &req) {
+            // 注意：此回调已在 tradeMutex 保护下被调用（从
+            // handleOrder/handleCancel 内部触发） 但 exchange
+            // 是独立实例，直接调用即可（同一线程，无需再加锁）
+            std::cout << "[→Exchange] " << req.dump() << std::endl;
+            if (req.contains("origClOrderId")) {
+                exchange.handleCancel(req);
+            } else {
+                exchange.handleOrder(req);
+            }
+        });
 
-    // ---- 连接 AdminServer → TradeSystem（指令转发） ----
+    // ---- 连接 exchange → gateway（交易所回报返回前置） ----
+    exchange.setSendToClient([&gateway](const nlohmann::json &resp) {
+        std::cout << "[←Exchange] " << resp.dump() << std::endl;
+        gateway.handleResponse(resp);
+    });
+    // exchange 不设置 sendToExchange_ → 纯撮合模式
+
+    // ---- 连接 AdminServer → gateway（管理界面指令转发） ----
     adminServer.setOnOrder(
-        [&tradeSystem, &tradeMutex](const nlohmann::json &orderJson) {
+        [&gateway, &tradeMutex](const nlohmann::json &orderJson) {
             std::lock_guard<std::mutex> lock(tradeMutex);
-            std::cout << "[Admin] Order: " << orderJson.dump() << std::endl;
-            tradeSystem.handleOrder(orderJson);
+            std::cout << "[Admin←] Order: " << orderJson.dump() << std::endl;
+            gateway.handleOrder(orderJson);
         });
 
     adminServer.setOnCancel(
-        [&tradeSystem, &tradeMutex](const nlohmann::json &cancelJson) {
+        [&gateway, &tradeMutex](const nlohmann::json &cancelJson) {
             std::lock_guard<std::mutex> lock(tradeMutex);
-            std::cout << "[Admin] Cancel: " << cancelJson.dump() << std::endl;
-            tradeSystem.handleCancel(cancelJson);
+            std::cout << "[Admin←] Cancel: " << cancelJson.dump() << std::endl;
+            gateway.handleCancel(cancelJson);
         });
 
     adminServer.setOnQuery([](const std::string &queryType) -> nlohmann::json {
@@ -85,8 +111,10 @@ int main(int argc, char *argv[]) {
     std::signal(SIGTERM, signalHandler);
 
     adminServer.start();
-    std::cout << "=== Admin Server started on port " << port
-              << " ===" << std::endl;
+    std::cout << "=== 交易所前置系统 Admin Server ===" << std::endl;
+    std::cout << "=== Listening on port " << port << " ===" << std::endl;
+    std::cout << "架构: Admin UI → gateway(前置) → exchange(模拟交易所)"
+              << std::endl;
     std::cout << "Press Ctrl+C to stop." << std::endl;
 
     // 主线程阻塞等待退出信号
