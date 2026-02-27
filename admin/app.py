@@ -391,7 +391,7 @@ elif page == "手动下单":
 
             with st.container():
                 # 标题行
-                header_col1, header_col2, header_col3 = st.columns([3, 1, 1])
+                header_col1, header_col2, header_col3, header_col4 = st.columns([3, 1, 1, 0.5])
                 with header_col1:
                     st.markdown(
                         f"**{side_emoji} {side_text} {order['securityId']}** "
@@ -401,6 +401,30 @@ elif page == "手动下单":
                     st.markdown(f":{color}[**{icon} {status}**]")
                 with header_col3:
                     st.markdown(f"**{progress}%** 成交")
+                with header_col4:
+                    # 可撤单状态：已提交/已确认/部分成交
+                    if status in ("已提交", "已确认", "部分成交"):
+                        popover = st.popover("⋯")
+                        with popover:
+                            st.caption(f"订单 {order['clOrderId']}")
+                            if st.button("🚫 撤单", key=f"cancel_{order['clOrderId']}",
+                                         type="primary", use_container_width=True):
+                                cancel_result = api_post(
+                                    "/api/cancel",
+                                    {
+                                        "origClOrderId": order["clOrderId"],
+                                        "market": order["market"],
+                                        "securityId": order["securityId"],
+                                        "shareholderId": order["shareholderId"],
+                                        "side": order["side"],
+                                    },
+                                )
+                                if cancel_result and cancel_result.get("status") == "submitted":
+                                    st.success("撤单已提交")
+                                    time.sleep(0.5)
+                                    st.rerun()
+                                else:
+                                    st.error("撤单失败")
 
                 # 进度条
                 st.progress(min(progress / 100.0, 1.0))
