@@ -361,7 +361,7 @@ async def get_market(security_id: Optional[str] = None):
         try:
             snapshot = await state.bridge.query_orderbook()
             if snapshot:
-                # 使用交易所的订单簿（交易所是真实的撮合引擎）
+                # 使用交易所前置系统的订单簿
                 exchange_book = snapshot.get("gateway", {})
                 bid_depth = exchange_book.get("bids", [])
                 ask_depth = exchange_book.get("asks", [])
