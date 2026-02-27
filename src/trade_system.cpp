@@ -379,6 +379,13 @@ void TradeSystem::resolvePendingMatch(const std::string &activeOrderId) {
         // 入内部簿，供后续内部撮合
         matchingEngine_.addOrder(remainingOrder);
 
+        // 检查被部分成交的对手方订单是否仍有剩余在内部簿
+        for (const auto &exec : confirmedExecutions) {
+            if (matchingEngine_.hasOrder(exec.clOrderId)) {
+                localOnlyOrders_.insert(exec.clOrderId);
+            }
+        }
+
         // 等待交易所确认后再向客户端发送确认回报和成交回报
         PendingConfirm pc;
         pc.activeOrder = pending.activeOrder;
@@ -394,13 +401,12 @@ void TradeSystem::resolvePendingMatch(const std::string &activeOrderId) {
     } else {
         // 全部内部成交，无需等待交易所确认，直接发送确认和成交回报
         sendConfirmAndExecReports(pending.activeOrder, confirmedExecutions);
-    }
 
-    // 检查被部分成交的对手方订单是否仍有剩余在内部簿
-    // 如果有，说明该订单已被交易所全量撤单，仅存在于内部簿
-    for (const auto &exec : confirmedExecutions) {
-        if (matchingEngine_.hasOrder(exec.clOrderId)) {
-            localOnlyOrders_.insert(exec.clOrderId);
+        // 检查被部分成交的对手方订单是否仍有剩余在内部簿
+        for (const auto &exec : confirmedExecutions) {
+            if (matchingEngine_.hasOrder(exec.clOrderId)) {
+                localOnlyOrders_.insert(exec.clOrderId);
+            }
         }
     }
 
