@@ -59,10 +59,12 @@ AdminServer 透传消息中的 `target` 字段（默认 `"gateway"`），`admin_
 
 ### 依赖
 
+python版本要求为：`Python 3.13.12`
+
 ```
-fastapi==0.133.1
+fastapi
 uvicorn
-streamlit==1.54.0
+streamlit
 requests
 pandas
 altair
