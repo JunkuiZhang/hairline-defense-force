@@ -103,7 +103,8 @@ void AdminServer::acceptLoop() {
     // 3. bind
     sockaddr_in addr{};
     addr.sin_family = AF_INET;
-    addr.sin_addr.s_addr = INADDR_ANY;
+    // 管理端口默认仅监听本机回环地址 127.0.0.1
+    addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
     addr.sin_port = htons(port_);
 
     if (::bind(serverFd_, reinterpret_cast<sockaddr *>(&addr), sizeof(addr)) <
