@@ -830,8 +830,8 @@ TEST_F(MatchingEngineTest, OddLotSellTakerAgainstBuyOrder) {
         totalExecQty += exec.execQty;
     }
 
-    // 卖出150股，仅成交100股（防止买方被留下50股零股）
-    EXPECT_EQ(totalExecQty, 100u);
+    // 卖出150股，全部成交（成交后买方残留50股零股是正常市场行为）
+    EXPECT_EQ(totalExecQty, 150u);
 }
 
 // ============================================================

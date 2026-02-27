@@ -443,6 +443,22 @@ TEST_F(ExchangeTest, OddLot_SellCanBeOddLot) {
     EXPECT_EQ(clientResponses[1]["execQty"], 50);
 }
 
+TEST_F(ExchangeTest, OddLot_SellCanBeOddLot_2) {
+    // 买方200股挂簿，卖方150股来 → 应能成交（卖方可零股）
+    system.handleOrder(
+        makeOrder("B1", "XSHG", "600030", "B", 10.0, 200, "SH001"));
+    ASSERT_EQ(clientResponses.size(), 1); // 买单确认回报
+    clientResponses.clear();
+
+    system.handleOrder(
+        makeOrder("S1", "XSHG", "600030", "S", 10.0, 150, "SH002"));
+
+    // 1个确认回报 + 2个成交回报 = 3
+    ASSERT_GE(clientResponses.size(), 3);
+    // 应成交50股
+    EXPECT_EQ(clientResponses[1]["execQty"], 150);
+}
+
 // ==================== 连续交易 ====================
 
 TEST_F(ExchangeTest, SequentialTrades) {
