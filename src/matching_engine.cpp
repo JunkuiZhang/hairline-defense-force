@@ -1,8 +1,7 @@
 #include "matching_engine.h"
 #include "types.h"
-#include <iomanip>
+#include <format>
 #include <iostream>
-#include <sstream>
 
 namespace hdf {
 
@@ -15,12 +14,8 @@ MatchingEngine::~MatchingEngine() {}
 // 格式: "EXEC" + 16位数字（左补零），如 "EXEC0000000000000001"
 // ============================================================
 std::string MatchingEngine::generateExecId() {
-    std::ostringstream oss;
-    // 对 10^16 取模以保证始终为 16 位十进制数
-    const uint64_t currentId = nextExecId_ % 10000000000000000ULL;
-    ++nextExecId_;
-    oss << "EXEC" << std::setw(16) << std::setfill('0') << currentId;
-    return oss.str();
+    const uint64_t currentId = nextExecId_++ % 10000000000000000ULL;
+    return std::format("EXEC{:016}", currentId);
 }
 
 // ============================================================
@@ -144,7 +139,7 @@ MatchingEngine::match(const Order &order,
                 exec.execPrice = execPrice;     // 成交价格
                 exec.type = OrderResponse::Type::EXECUTION;
 
-                result.executions.push_back(exec);
+                result.executions.emplace_back(std::move(exec));
 
                 // 更新对手方订单的剩余量和累计成交量
                 entryIt->remainingQty -= matchQty;
@@ -229,7 +224,7 @@ MatchingEngine::match(const Order &order,
                 exec.execPrice = execPrice;
                 exec.type = OrderResponse::Type::EXECUTION;
 
-                result.executions.push_back(exec);
+                result.executions.emplace_back(std::move(exec));
 
                 // 更新对手方订单的剩余量和累计成交量
                 entryIt->remainingQty -= matchQty;
