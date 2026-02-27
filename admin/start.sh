@@ -19,7 +19,7 @@ echo "=========================================="
 
 echo "[1/2] 启动 FastAPI 后端 (port 8000)..."
 cd "$SCRIPT_DIR"
-uvicorn server:app --host 0.0.0.0 --port 8000 &
+uvicorn server:app --host 127.0.0.1 --port 8000 &
 FASTAPI_PID=$!
 echo "      PID: $FASTAPI_PID"
 
