@@ -41,6 +41,9 @@ target_link_libraries(exchange trade_engine)
 # pre-exchange.cpp演示了一个预交易系统的实现，用户端发送订单指令，系统进行风险控制和撮合处理后，再将结果发送到交易所。
 add_executable(pre_exchange examples/pre_exchange.cpp)
 target_link_libraries(pre_exchange trade_engine)
+# admin_main.cpp 启动管理界面 TCP 服务端，供 Python 管理 UI 连接
+add_executable(admin_main examples/admin_main.cpp)
+target_link_libraries(admin_main trade_engine)
 
 # Tests
 enable_testing()
