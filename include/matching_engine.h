@@ -65,6 +65,23 @@ class MatchingEngine {
      */
     void reduceOrderQty(const std::string &clOrderId, uint32_t qty);
 
+    /**
+     * @brief 查询指定订单是否仍在订单簿中。
+     *
+     * @param clOrderId 订单的唯一编号。
+     * @return true 如果订单仍在订单簿中。
+     */
+    bool hasOrder(const std::string &clOrderId) const;
+
+    /**
+     * @brief 获取订单簿快照，返回买卖盘口的价格档位信息。
+     *
+     * 买盘按价格降序、卖盘按价格升序，每档含价格、总量和累积量。
+     *
+     * @return nlohmann::json 包含 bids 和 asks 数组的 JSON 对象。
+     */
+    nlohmann::json getSnapshot() const;
+
   private:
     /**
      * @brief 订单簿中的订单条目，记录订单信息及已成交累计量。

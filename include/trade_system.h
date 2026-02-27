@@ -50,6 +50,11 @@ class TradeSystem {
      */
     void handleResponse(const nlohmann::json &input);
 
+    /**
+     * @brief 获取内部订单簿快照，返回买卖盘口价格档位。
+     */
+    nlohmann::json queryOrderbook() const;
+
   private:
     RiskController riskController_;
     MatchingEngine matchingEngine_;
@@ -96,6 +101,13 @@ class TradeSystem {
 
     // key: 主动方订单的 clOrderId
     std::unordered_map<std::string, PendingConfirm> pendingConfirms_;
+
+    /**
+     * 记录仅存在于内部订单簿而不在交易所的订单ID。
+     * 场景：内部撮合部分成交对手方后，交易所已全量撤单，
+     * 但对手方仍有剩余在内部簿。此时用户撤单应走本地路径。
+     */
+    std::unordered_set<std::string> localOnlyOrders_;
 
     /**
      * @brief 所有撤单回报都回来后，处理最终结果

@@ -240,6 +240,67 @@ TEST_F(GatewayTest, PartialMatch_RemainingForwardedToExchange) {
     EXPECT_EQ(execReportCount, 2); // 被动方 + 主动方
 }
 
+// ==================== 零股 ====================
+
+TEST_F(GatewayTest, OddLot_SellCanBeOddLot) {
+    // 买方100股挂簿，卖方50股来 → 应能成交（卖方可零股）
+    gateway.handleOrder(
+        makeOrder("B1", "XSHG", "600030", "B", 10.0, 100, "SH001"));
+    ASSERT_EQ(clientResponses.size(), 1); // 买单确认回报
+    clientResponses.clear();
+
+    gateway.handleOrder(
+        makeOrder("S1", "XSHG", "600030", "S", 10.0, 50, "SH002"));
+
+    // 1个确认回报 + 2个成交回报 = 3
+    ASSERT_GE(clientResponses.size(), 3);
+    // 应成交50股
+    EXPECT_EQ(clientResponses[1]["execQty"], 50);
+}
+
+TEST_F(GatewayTest, OddLot_SellCanBeOddLot_2) {
+    // 买方200股挂簿，卖方150股来 → 应能成交（卖方可零股）
+    gateway.handleOrder(
+        makeOrder("B1", "XSHG", "600030", "B", 10.0, 200, "SH001"));
+    ASSERT_EQ(clientResponses.size(), 1); // 买单确认回报
+    clientResponses.clear();
+
+    gateway.handleOrder(
+        makeOrder("S1", "XSHG", "600030", "S", 10.0, 150, "SH002"));
+
+    // 1个确认回报 + 2个成交回报 = 3
+    ASSERT_GE(clientResponses.size(), 3);
+    // 应成交150股
+    EXPECT_EQ(clientResponses[1]["execQty"], 150);
+}
+
+TEST_F(GatewayTest, OddLot_SellCanBeOddLot_with_Cancel) {
+    // 买方200股挂簿，卖方150股来 → 应能成交（卖方可零股）
+    gateway.handleOrder(
+        makeOrder("B1", "XSHG", "600030", "B", 10.0, 200, "SH001"));
+    ASSERT_EQ(clientResponses.size(), 1); // 买单确认回报
+    clientResponses.clear();
+
+    gateway.handleOrder(
+        makeOrder("S1", "XSHG", "600030", "S", 10.0, 150, "SH002"));
+
+    // 1个确认回报 + 2个成交回报 = 3
+    ASSERT_GE(clientResponses.size(), 3);
+    // 应成交150股
+    EXPECT_EQ(clientResponses[1]["execQty"], 150);
+    clientResponses.clear();
+
+    // 买方剩余50股，然后买方撤单
+    gateway.handleCancel(
+        makeCancel("C1", "B1", "XSHG", "600030", "SH001", "B"));
+    ASSERT_EQ(clientResponses.size(), 1); // 撤单确认回报
+    auto &resp = clientResponses[0];
+    EXPECT_EQ(resp["origClOrderId"], "B1");
+    EXPECT_EQ(resp["canceledQty"], 50);
+    EXPECT_EQ(resp["cumQty"], 150);
+    EXPECT_EQ(resp["qty"], 200);
+}
+
 // ==================== 对敲检测（前置模式同样生效） ====================
 
 TEST_F(GatewayTest, CrossTrade_Rejected) {

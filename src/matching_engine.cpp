@@ -204,22 +204,8 @@ MatchingEngine::match(const Order &order,
                     std::min(remainingQty, entryIt->remainingQty);
 
                 // B6: 零股处理（卖出主动方 vs 买入被动方）
-                // 卖出单本身可以为零股；但买方（被动方）应尽量保持
-                // 100 股的整数倍数量，防止买单被留下零股余量。
-                // 当被动方（买单）剩余数量 >= 100 时，若此次成交会在
-                // 其订单上留下 [1, 99] 股的零股，则向下调整 matchQty。
-                if (entryIt->remainingQty >= 100 && matchQty > 0) {
-                    uint32_t tentativeMakerRemaining =
-                        entryIt->remainingQty - matchQty;
-                    // 仅在会留下 1~99 股的零股时进行调整
-                    if (tentativeMakerRemaining > 0 &&
-                        tentativeMakerRemaining < 100) {
-                        uint32_t reduceBy = 100 - tentativeMakerRemaining;
-                        if (matchQty > reduceBy) {
-                            matchQty -= reduceBy;
-                        }
-                    }
-                }
+                // 卖出单本身可以为零股；成交后买方被动方可能残留零股，
+                // 这是正常市场行为（零股限制仅在委托时校验），无需调整。
 
                 if (matchQty == 0) {
                     ++entryIt;
@@ -428,6 +414,57 @@ void MatchingEngine::reduceOrderQty(const std::string &clOrderId,
     } else {
         reduceInBook(askBook_);
     }
+}
+
+bool MatchingEngine::hasOrder(const std::string &clOrderId) const {
+    return orderIndex_.count(clOrderId) > 0;
+}
+
+nlohmann::json MatchingEngine::getSnapshot() const {
+    nlohmann::json result;
+
+    // 买盘：bidBook_ 已按价格降序排列（std::greater）
+    nlohmann::json bids = nlohmann::json::array();
+    int cumQty = 0;
+    for (const auto &[price, level] : bidBook_) {
+        int totalQty = 0;
+        int orderCount = 0;
+        for (const auto &entry : level) {
+            totalQty += static_cast<int>(entry.remainingQty);
+            ++orderCount;
+        }
+        cumQty += totalQty;
+        bids.push_back({
+            {"price", price},
+            {"qty", totalQty},
+            {"cumQty", cumQty},
+            {"orderCount", orderCount},
+        });
+    }
+
+    // 卖盘：askBook_ 已按价格升序排列（std::less）
+    nlohmann::json asks = nlohmann::json::array();
+    cumQty = 0;
+    for (const auto &[price, level] : askBook_) {
+        int totalQty = 0;
+        int orderCount = 0;
+        for (const auto &entry : level) {
+            totalQty += static_cast<int>(entry.remainingQty);
+            ++orderCount;
+        }
+        cumQty += totalQty;
+        asks.push_back({
+            {"price", price},
+            {"qty", totalQty},
+            {"cumQty", cumQty},
+            {"orderCount", orderCount},
+        });
+    }
+
+    result["bids"] = bids;
+    result["asks"] = asks;
+    result["totalOrders"] = static_cast<int>(orderIndex_.size());
+    return result;
 }
 
 } // namespace hdf

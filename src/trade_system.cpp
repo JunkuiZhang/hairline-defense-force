@@ -183,8 +183,47 @@ void TradeSystem::handleCancel(const nlohmann::json &input) {
     }
 
     if (sendToExchange_) {
-        // 系统是交易所前置：转发交易所，等撤单确认后再从内部簿移除
-        sendToExchange_(input);
+        // 系统是交易所前置
+        if (localOnlyOrders_.count(order.origClOrderId)) {
+            // 订单仅存在于内部簿（内部撮合后交易所已撤单）
+            // 直接在本地处理撤单，不转发交易所
+            localOnlyOrders_.erase(order.origClOrderId);
+            CancelResponse result =
+                matchingEngine_.cancelOrder(order.origClOrderId);
+            if (result.type == CancelResponse::Type::REJECT) {
+                if (sendToClient_) {
+                    nlohmann::json response;
+                    response["clOrderId"] = order.clOrderId;
+                    response["origClOrderId"] = order.origClOrderId;
+                    response["market"] = to_string(order.market);
+                    response["securityId"] = order.securityId;
+                    response["shareholderId"] = order.shareholderId;
+                    response["side"] = to_string(order.side);
+                    response["rejectCode"] = result.rejectCode;
+                    response["rejectText"] = result.rejectText;
+                    sendToClient_(response);
+                }
+            } else {
+                riskController_.onOrderCanceled(order.origClOrderId);
+                if (sendToClient_) {
+                    nlohmann::json response;
+                    response["clOrderId"] = result.clOrderId;
+                    response["origClOrderId"] = result.origClOrderId;
+                    response["market"] = to_string(result.market);
+                    response["securityId"] = result.securityId;
+                    response["shareholderId"] = result.shareholderId;
+                    response["side"] = to_string(result.side);
+                    response["qty"] = result.qty;
+                    response["price"] = result.price;
+                    response["cumQty"] = result.cumQty;
+                    response["canceledQty"] = result.canceledQty;
+                    sendToClient_(response);
+                }
+            }
+        } else {
+            // 订单在交易所上：转发交易所，等撤单确认后再从内部簿移除
+            sendToExchange_(input);
+        }
     } else {
         // 纯撮合系统：从订单簿中移除
         CancelResponse result =
@@ -340,6 +379,13 @@ void TradeSystem::resolvePendingMatch(const std::string &activeOrderId) {
         // 入内部簿，供后续内部撮合
         matchingEngine_.addOrder(remainingOrder);
 
+        // 检查被部分成交的对手方订单是否仍有剩余在内部簿
+        for (const auto &exec : confirmedExecutions) {
+            if (matchingEngine_.hasOrder(exec.clOrderId)) {
+                localOnlyOrders_.insert(exec.clOrderId);
+            }
+        }
+
         // 等待交易所确认后再向客户端发送确认回报和成交回报
         PendingConfirm pc;
         pc.activeOrder = pending.activeOrder;
@@ -355,6 +401,13 @@ void TradeSystem::resolvePendingMatch(const std::string &activeOrderId) {
     } else {
         // 全部内部成交，无需等待交易所确认，直接发送确认和成交回报
         sendConfirmAndExecReports(pending.activeOrder, confirmedExecutions);
+
+        // 检查被部分成交的对手方订单是否仍有剩余在内部簿
+        for (const auto &exec : confirmedExecutions) {
+            if (matchingEngine_.hasOrder(exec.clOrderId)) {
+                localOnlyOrders_.insert(exec.clOrderId);
+            }
+        }
     }
 
     // 主动方订单的风控状态更新
@@ -409,6 +462,10 @@ void TradeSystem::sendConfirmAndExecReports(
         activeResponse["execPrice"] = exec.execPrice;
         sendToClient_(activeResponse);
     }
+}
+
+nlohmann::json TradeSystem::queryOrderbook() const {
+    return matchingEngine_.getSnapshot();
 }
 
 } // namespace hdf
