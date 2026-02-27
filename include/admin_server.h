@@ -14,8 +14,6 @@
  * TODO: 由组员实现具体逻辑
  */
 
-#include "matching_engine.h"
-#include "trade_system.h"
 #include <atomic>
 #include <functional>
 #include <mutex>

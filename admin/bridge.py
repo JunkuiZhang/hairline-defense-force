@@ -69,6 +69,7 @@ class TcpBridge:
         price: float,
         qty: int,
         shareholder_id: str,
+        target: str = "gateway",
     ):
         """发送订单到 C++ TradeSystem"""
         msg = {
@@ -80,6 +81,7 @@ class TcpBridge:
             "price": price,
             "qty": qty,
             "shareholderId": shareholder_id,
+            "target": target,
         }
         await self._send(msg)
 
@@ -91,6 +93,7 @@ class TcpBridge:
         security_id: str,
         shareholder_id: str,
         side: str,
+        target: str = "gateway",
     ):
         """发送撤单到 C++ TradeSystem"""
         msg = {
@@ -101,6 +104,7 @@ class TcpBridge:
             "securityId": security_id,
             "shareholderId": shareholder_id,
             "side": side,
+            "target": target,
         }
         await self._send(msg)
 

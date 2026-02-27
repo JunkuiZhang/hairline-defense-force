@@ -23,7 +23,6 @@
 
 #include <algorithm>
 #include <iostream>
-#include <sstream>
 #include <string>
 
 namespace hdf {
@@ -201,6 +200,10 @@ void AdminServer::handleClient(int clientFd) {
                     orderJson["price"] = msg.value("price", 0.0);
                     orderJson["qty"] = msg.value("qty", 0);
                     orderJson["shareholderId"] = msg.value("shareholderId", "");
+                    // 透传 target 字段（gateway / exchange）
+                    if (msg.contains("target")) {
+                        orderJson["target"] = msg["target"];
+                    }
 
                     if (onOrder_) {
                         onOrder_(orderJson);
@@ -216,6 +219,10 @@ void AdminServer::handleClient(int clientFd) {
                     cancelJson["shareholderId"] =
                         msg.value("shareholderId", "");
                     cancelJson["side"] = msg.value("side", "");
+                    // 透传 target 字段
+                    if (msg.contains("target")) {
+                        cancelJson["target"] = msg["target"];
+                    }
 
                     if (onCancel_) {
                         onCancel_(cancelJson);

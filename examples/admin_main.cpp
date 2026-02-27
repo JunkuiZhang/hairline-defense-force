@@ -50,7 +50,9 @@ int main(int argc, char *argv[]) {
     // ---- 连接 gateway → Admin UI（回报广播） ----
     gateway.setSendToClient([&adminServer](const nlohmann::json &output) {
         std::cout << "[→Client] " << output.dump() << std::endl;
-        adminServer.broadcast(output);
+        nlohmann::json gatewayResp = output;
+        gatewayResp["source"] = "gateway";
+        adminServer.broadcast(gatewayResp);
     });
 
     // ---- 连接 gateway → exchange（前置转发给交易所） ----
@@ -69,25 +71,54 @@ int main(int argc, char *argv[]) {
         });
 
     // ---- 连接 exchange → gateway（交易所回报返回前置） ----
-    exchange.setSendToClient([&gateway](const nlohmann::json &resp) {
-        std::cout << "[←Exchange] " << resp.dump() << std::endl;
-        gateway.handleResponse(resp);
-    });
+    // 同时广播交易所回报供监控（加 source 标记区分来源）
+    exchange.setSendToClient(
+        [&gateway, &adminServer](const nlohmann::json &resp) {
+            std::cout << "[←Exchange] " << resp.dump() << std::endl;
+            // 广播交易所回报（加 source 标记供前端区分）
+            nlohmann::json exchangeResp = resp;
+            exchangeResp["source"] = "exchange";
+            adminServer.broadcast(exchangeResp);
+            // 回报也需要流入 gateway 处理
+            gateway.handleResponse(resp);
+        });
     // exchange 不设置 sendToExchange_ → 纯撮合模式
 
-    // ---- 连接 AdminServer → gateway（管理界面指令转发） ----
+    // ---- 连接 AdminServer → gateway/exchange（管理界面指令转发） ----
+    // 根据 target 字段路由到 gateway（默认）或 exchange
     adminServer.setOnOrder(
-        [&gateway, &tradeMutex](const nlohmann::json &orderJson) {
+        [&gateway, &exchange, &tradeMutex](const nlohmann::json &orderJson) {
             std::lock_guard<std::mutex> lock(tradeMutex);
-            std::cout << "[Admin←] Order: " << orderJson.dump() << std::endl;
-            gateway.handleOrder(orderJson);
+            std::string target = orderJson.value("target", "gateway");
+            // 移除 target 字段，避免传入 TradeSystem
+            nlohmann::json cleaned = orderJson;
+            cleaned.erase("target");
+            if (target == "exchange") {
+                std::cout << "[Admin←] Order(→Exchange): " << cleaned.dump()
+                          << std::endl;
+                exchange.handleOrder(cleaned);
+            } else {
+                std::cout << "[Admin←] Order(→Gateway): " << cleaned.dump()
+                          << std::endl;
+                gateway.handleOrder(cleaned);
+            }
         });
 
     adminServer.setOnCancel(
-        [&gateway, &tradeMutex](const nlohmann::json &cancelJson) {
+        [&gateway, &exchange, &tradeMutex](const nlohmann::json &cancelJson) {
             std::lock_guard<std::mutex> lock(tradeMutex);
-            std::cout << "[Admin←] Cancel: " << cancelJson.dump() << std::endl;
-            gateway.handleCancel(cancelJson);
+            std::string target = cancelJson.value("target", "gateway");
+            nlohmann::json cleaned = cancelJson;
+            cleaned.erase("target");
+            if (target == "exchange") {
+                std::cout << "[Admin←] Cancel(→Exchange): " << cleaned.dump()
+                          << std::endl;
+                exchange.handleCancel(cleaned);
+            } else {
+                std::cout << "[Admin←] Cancel(→Gateway): " << cleaned.dump()
+                          << std::endl;
+                gateway.handleCancel(cleaned);
+            }
         });
 
     adminServer.setOnQuery([](const std::string &queryType) -> nlohmann::json {

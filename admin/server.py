@@ -43,6 +43,7 @@ class OrderRequest(BaseModel):
     price: float = Field(..., gt=0, description="价格")
     qty: int = Field(..., gt=0, description="数量")
     shareholderId: str = Field(..., min_length=1, description="股东号")
+    target: str = Field("gateway", pattern="^(gateway|exchange)$", description="目标系统")
 
 
 class CancelRequest(BaseModel):
@@ -53,6 +54,7 @@ class CancelRequest(BaseModel):
     securityId: str = Field(..., min_length=1)
     shareholderId: str = Field(..., min_length=1)
     side: str = Field(..., pattern="^(B|S)$")
+    target: str = Field("gateway", pattern="^(gateway|exchange)$", description="目标系统")
 
 
 # ======================== 全局状态 ========================
@@ -145,7 +147,8 @@ class AppState:
         self.order_counter = 0
 
         # 回报历史（内存存储，供前端查询）
-        self.responses: list[dict] = []
+        self.responses: list[dict] = []       # gateway 回报
+        self.exchange_responses: list[dict] = []  # exchange 回报
         self.max_history = 1000
 
         # 订单跟踪：clOrderId -> OrderTracker
@@ -165,9 +168,16 @@ class AppState:
 
     def add_response(self, msg: dict):
         """记录回报并更新订单跟踪状态"""
-        self.responses.append(msg)
-        if len(self.responses) > self.max_history:
-            self.responses = self.responses[-self.max_history :]
+        source = msg.get("source", "gateway")
+
+        if source == "exchange":
+            self.exchange_responses.append(msg)
+            if len(self.exchange_responses) > self.max_history:
+                self.exchange_responses = self.exchange_responses[-self.max_history:]
+        else:
+            self.responses.append(msg)
+            if len(self.responses) > self.max_history:
+                self.responses = self.responses[-self.max_history:]
 
         # 更新对应订单的跟踪状态
         cl_order_id = msg.get("clOrderId", "")
@@ -259,7 +269,7 @@ async def broadcast_to_websockets(msg: dict):
 async def submit_order(req: OrderRequest):
     """
     提交一笔新订单到撮合系统。
-    自动生成 clOrderId。
+    自动生成 clOrderId。target 可选 gateway/exchange。
     """
     cl_order_id = state.generate_order_id()
     try:
@@ -271,13 +281,14 @@ async def submit_order(req: OrderRequest):
             price=req.price,
             qty=req.qty,
             shareholder_id=req.shareholderId,
+            target=req.target,
         )
         # 开始跟踪此订单
         state.track_order(
             cl_order_id, req.market, req.securityId,
             req.side, req.price, req.qty, req.shareholderId,
         )
-        return {"status": "submitted", "clOrderId": cl_order_id}
+        return {"status": "submitted", "clOrderId": cl_order_id, "target": req.target}
     except ConnectionError:
         return {"status": "error", "message": "未连接到撮合系统"}
 
@@ -286,7 +297,7 @@ async def submit_order(req: OrderRequest):
 async def submit_cancel(req: CancelRequest):
     """
     提交一笔撤单请求。
-    自动生成撤单的 clOrderId。
+    自动生成撤单的 clOrderId。target 可选 gateway/exchange。
     """
     cl_order_id = state.generate_order_id()
     try:
@@ -297,8 +308,9 @@ async def submit_cancel(req: CancelRequest):
             security_id=req.securityId,
             shareholder_id=req.shareholderId,
             side=req.side,
+            target=req.target,
         )
-        return {"status": "submitted", "clOrderId": cl_order_id}
+        return {"status": "submitted", "clOrderId": cl_order_id, "target": req.target}
     except ConnectionError:
         return {"status": "error", "message": "未连接到撮合系统"}
 
@@ -424,6 +436,33 @@ async def get_status():
     return {
         "connected": state.bridge.is_connected,
         "totalResponses": len(state.responses),
+        "executions": exec_count,
+        "rejects": reject_count,
+        "cancels": cancel_count,
+        "confirms": confirm_count,
+    }
+
+
+@app.get("/api/exchange/responses", summary="交易所回报历史")
+async def get_exchange_responses(limit: int = 50):
+    """获取交易所侧的回报记录"""
+    return {"responses": state.exchange_responses[-limit:]}
+
+
+@app.get("/api/exchange/status", summary="交易所状态")
+async def get_exchange_status():
+    """获取交易所侧的统计信息"""
+    resps = state.exchange_responses
+    exec_count = sum(1 for r in resps if "execId" in r)
+    reject_count = sum(1 for r in resps if "rejectCode" in r)
+    cancel_count = sum(
+        1 for r in resps
+        if "origClOrderId" in r and "rejectCode" not in r
+    )
+    confirm_count = len(resps) - exec_count - reject_count - cancel_count
+
+    return {
+        "totalResponses": len(resps),
         "executions": exec_count,
         "rejects": reject_count,
         "cancels": cancel_count,

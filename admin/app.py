@@ -62,7 +62,7 @@ def api_post(path: str, data: dict):
 st.sidebar.title("📊 HDF 管理界面")
 page = st.sidebar.radio(
     "导航",
-    ["仪表盘", "市场行情", "手动下单", "手动撤单", "风控日志"],
+    ["仪表盘", "市场行情", "手动下单", "手动撤单", "交易所监控", "风控日志"],
     index=0,
 )
 
@@ -494,6 +494,138 @@ elif page == "手动撤单":
                         st.success(f"✅ 撤单已提交，编号: {result['clOrderId']}")
                     else:
                         st.error(f"❌ 撤单失败: {result.get('message', '未知错误')}")
+
+
+# ======================== 页面：交易所监控 ========================
+
+elif page == "交易所监控":
+    st.title("🏛️ 交易所监控")
+    st.caption("实时监控模拟交易所（纯撮合系统）的状态和回报")
+
+    # 刷新按钮
+    if st.button("🔄 刷新"):
+        st.rerun()
+
+    # ---- 交易所统计概览 ----
+    ex_status = api_get("/api/exchange/status")
+    if ex_status:
+        st.subheader("📊 交易所统计")
+        col1, col2, col3, col4 = st.columns(4)
+        col1.metric("总回报数", ex_status.get("totalResponses", 0))
+        col2.metric("成交笔数", ex_status.get("executions", 0))
+        col3.metric("确认回报", ex_status.get("confirms", 0))
+        col4.metric("撤单确认", ex_status.get("cancels", 0))
+    else:
+        st.warning("无法获取交易所状态")
+
+    st.markdown("---")
+
+    # ---- 直接注入交易所订单 ----
+    st.subheader("💉 注入交易所订单")
+    st.caption("直接向交易所提交订单，模拟外部市场参与者（不经过前置风控）")
+
+    with st.form("exchange_order_form"):
+        ex_col1, ex_col2 = st.columns(2)
+        with ex_col1:
+            ex_market = st.selectbox("市场", ["XSHG", "XSHE", "BJSE"], key="ex_market")
+            ex_security_id = st.text_input("证券代码", value="600030", key="ex_sec")
+            ex_side = st.selectbox(
+                "方向", ["B", "S"],
+                format_func=lambda x: "买入" if x == "B" else "卖出",
+                key="ex_side",
+            )
+        with ex_col2:
+            ex_price = st.number_input("价格", min_value=0.01, value=10.0, step=0.01, key="ex_price")
+            ex_qty = st.number_input("数量", min_value=1, value=100, step=100, key="ex_qty")
+            ex_shareholder = st.text_input("股东号", value="EXT001", key="ex_sh")
+
+        ex_submitted = st.form_submit_button("📤 注入交易所", type="primary")
+        if ex_submitted:
+            result = api_post(
+                "/api/order",
+                {
+                    "market": ex_market,
+                    "securityId": ex_security_id,
+                    "side": ex_side,
+                    "price": ex_price,
+                    "qty": int(ex_qty),
+                    "shareholderId": ex_shareholder,
+                    "target": "exchange",
+                },
+            )
+            if result and result.get("status") == "submitted":
+                st.success(f"✅ 订单已直接注入交易所，编号: {result['clOrderId']}")
+            else:
+                st.error(f"❌ 注入失败: {result.get('message', '未知错误') if result else '连接失败'}")
+
+    st.markdown("---")
+
+    # ---- 交易所回报流水 ----
+    st.subheader("📜 交易所回报流水")
+
+    ex_responses = api_get("/api/exchange/responses", limit=100)
+    if ex_responses and ex_responses.get("responses"):
+        resps = ex_responses["responses"]
+
+        # 分类展示
+        exec_resps = [r for r in resps if "execId" in r]
+        confirm_resps = [r for r in resps if "execId" not in r and "rejectCode" not in r and "origClOrderId" not in r]
+        cancel_resps = [r for r in resps if "origClOrderId" in r and "rejectCode" not in r]
+        reject_resps = [r for r in resps if "rejectCode" in r]
+
+        tab1, tab2, tab3, tab4 = st.tabs([
+            f"成交 ({len(exec_resps)})",
+            f"确认 ({len(confirm_resps)})",
+            f"撤单 ({len(cancel_resps)})",
+            f"拒绝 ({len(reject_resps)})",
+        ])
+
+        with tab1:
+            if exec_resps:
+                exec_display = []
+                for r in reversed(exec_resps):
+                    exec_display.append({
+                        "成交编号": r.get("execId", ""),
+                        "订单号": r.get("clOrderId", ""),
+                        "证券": r.get("securityId", ""),
+                        "方向": "🟢买" if r.get("side") == "B" else "🔴卖",
+                        "成交量": r.get("execQty", 0),
+                        "成交价": f"¥{r.get('execPrice', 0):.2f}",
+                        "股东号": r.get("shareholderId", ""),
+                    })
+                st.dataframe(pd.DataFrame(exec_display), use_container_width=True, hide_index=True)
+            else:
+                st.info("暂无成交记录")
+
+        with tab2:
+            if confirm_resps:
+                confirm_display = []
+                for r in reversed(confirm_resps):
+                    confirm_display.append({
+                        "订单号": r.get("clOrderId", ""),
+                        "证券": r.get("securityId", ""),
+                        "方向": "🟢买" if r.get("side") == "B" else "🔴卖",
+                        "价格": f"¥{r.get('price', 0):.2f}" if r.get("price") else "—",
+                        "数量": r.get("qty", 0),
+                        "股东号": r.get("shareholderId", ""),
+                    })
+                st.dataframe(pd.DataFrame(confirm_display), use_container_width=True, hide_index=True)
+            else:
+                st.info("暂无确认回报")
+
+        with tab3:
+            if cancel_resps:
+                st.json(cancel_resps)
+            else:
+                st.info("暂无撤单回报")
+
+        with tab4:
+            if reject_resps:
+                st.json(reject_resps)
+            else:
+                st.info("暂无拒绝回报")
+    else:
+        st.info("暂无交易所回报，注入订单后将在此显示。")
 
 
 # ======================== 页面：风控日志 ========================
