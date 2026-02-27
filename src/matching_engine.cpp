@@ -416,4 +416,8 @@ void MatchingEngine::reduceOrderQty(const std::string &clOrderId,
     }
 }
 
+bool MatchingEngine::hasOrder(const std::string &clOrderId) const {
+    return orderIndex_.count(clOrderId) > 0;
+}
+
 } // namespace hdf

@@ -65,6 +65,14 @@ class MatchingEngine {
      */
     void reduceOrderQty(const std::string &clOrderId, uint32_t qty);
 
+    /**
+     * @brief 查询指定订单是否仍在订单簿中。
+     *
+     * @param clOrderId 订单的唯一编号。
+     * @return true 如果订单仍在订单簿中。
+     */
+    bool hasOrder(const std::string &clOrderId) const;
+
   private:
     /**
      * @brief 订单簿中的订单条目，记录订单信息及已成交累计量。
