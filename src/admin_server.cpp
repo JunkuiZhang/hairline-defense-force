@@ -200,8 +200,7 @@ void AdminServer::handleClient(int clientFd) {
                     orderJson["side"] = msg.value("side", "");
                     orderJson["price"] = msg.value("price", 0.0);
                     orderJson["qty"] = msg.value("qty", 0);
-                    orderJson["shareholderId"] =
-                        msg.value("shareholderId", "");
+                    orderJson["shareholderId"] = msg.value("shareholderId", "");
 
                     if (onOrder_) {
                         onOrder_(orderJson);
@@ -243,8 +242,7 @@ void AdminServer::handleClient(int clientFd) {
             } catch (const std::exception &e) {
                 nlohmann::json err;
                 err["type"] = "error";
-                err["message"] =
-                    std::string("Internal error: ") + e.what();
+                err["message"] = std::string("Internal error: ") + e.what();
                 sendToFd(clientFd, err);
             }
         }
