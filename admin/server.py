@@ -76,6 +76,7 @@ class OrderTracker:
         self.avg_price = 0.0  # 成交均价
         self.status = "已提交"  # 已提交 / 已确认 / 部分成交 / 完全成交 / 已拒绝 / 已撤单
         self.fills: list[dict] = []  # 成交明细 [{execId, execQty, execPrice}]
+        self.reject_reason = ""  # 拒绝原因
         self.created_at = time.time()
         self.updated_at = time.time()
 
@@ -133,6 +134,7 @@ class OrderTracker:
             "fills": self.fills,
             "progress": round(self.filled_qty / self.qty * 100, 1) if self.qty > 0 else 0,
             "shareholderId": self.shareholder_id,
+            "rejectReason": self.reject_reason,
             "createdAt": self.created_at,
             "updatedAt": self.updated_at,
         }

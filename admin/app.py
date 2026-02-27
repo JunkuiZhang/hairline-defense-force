@@ -398,7 +398,14 @@ elif page == "手动下单":
                         f"({order['market']}) — `{order['clOrderId']}`"
                     )
                 with header_col2:
-                    st.markdown(f":{color}[**{icon} {status}**]")
+                    if status == "已拒绝" and order.get("rejectReason"):
+                        st.markdown(
+                            f'<span title="{order["rejectReason"]}" style="cursor:help">'
+                            f'<b>❌ 已拒绝</b></span>',
+                            unsafe_allow_html=True,
+                        )
+                    else:
+                        st.markdown(f":{color}[**{icon} {status}**]")
                 with header_col3:
                     st.markdown(f"**{progress}%** 成交")
                 with header_col4:
