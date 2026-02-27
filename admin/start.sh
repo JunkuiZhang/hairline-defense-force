@@ -14,12 +14,8 @@ set -e
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
 echo "=========================================="
-echo "  HDF 撮合系统管理界面"
+echo "        发际线保卫队 撮合系统管理界面"
 echo "=========================================="
-
-# 激活 conda 环境
-eval "$($HOME/miniconda3/bin/conda shell.bash hook)"
-conda activate hdf
 
 echo "[1/2] 启动 FastAPI 后端 (port 8000)..."
 cd "$SCRIPT_DIR"
