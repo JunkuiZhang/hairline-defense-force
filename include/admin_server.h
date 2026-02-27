@@ -100,8 +100,9 @@ class AdminServer {
 
     /**
      * @brief 向指定 fd 发送 JSON 消息（自动追加 '\n'）
+     * @return true 发送成功，false 连接已断开
      */
-    void sendToFd(int fd, const nlohmann::json &message);
+    bool sendToFd(int fd, const nlohmann::json &message);
 };
 
 } // namespace hdf
