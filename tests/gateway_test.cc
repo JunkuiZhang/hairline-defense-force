@@ -299,7 +299,6 @@ TEST_F(GatewayTest, OddLot_SellCanBeOddLot_with_Cancel) {
     EXPECT_EQ(resp["canceledQty"], 50);
     EXPECT_EQ(resp["cumQty"], 150);
     EXPECT_EQ(resp["qty"], 200);
-    std::cout << "撤单确认回报: " << resp.dump() << std::endl;
 }
 
 // ==================== 对敲检测（前置模式同样生效） ====================
