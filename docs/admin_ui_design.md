@@ -1,135 +1,338 @@
-# 2.2.4 管理界面 — 技术选型与设计大纲
+# 管理界面设计文档
 
-## 一、目标
+> 模拟股票交易对敲撮合系统 — 管理界面子系统
 
-| 编号 | 功能 | 说明 |
-|------|------|------|
-| 1 | 可视化前端展示界面框架 | 提供 Web 页面，实时展示系统运行状态 |
-| 2 | 可视化展示当前订单状态 | 订单簿、成交记录、风控拦截记录等的实时展示 |
-| 3 | 手动输入交易订单入口 | 支持在界面上手动提交订单/撤单指令 |
+---
 
-## 二、整体架构
+## 一、概述
+
+管理界面为撮合系统提供可视化的 Web 管理入口，支持实时监控系统状态、手动提交订单/撤单、查看市场行情和风控日志，以及独立监控模拟交易所。
+
+---
+
+## 二、系统架构
 
 ```
-┌─────────────────────┐
-│   Python Web 前端    │  ← 浏览器访问
-│  (Streamlit / Dash)  │
-└─────────┬───────────┘
-          │ WebSocket / REST
-┌─────────▼───────────┐
-│   Python 后端服务     │  ← 桥接层
-│  (FastAPI / Flask)   │
-└─────────┬───────────┘
-          │ TCP / Unix Socket / stdin-stdout
-┌─────────▼───────────┐
-│   C++ TradeSystem    │  ← 现有撮合引擎
-└─────────────────────┘
+┌───────────────────────────────┐
+│      Streamlit 前端 (app.py)   │  ← 浏览器 :8501
+│   仪表盘 │ 市场行情 │ 手动下单    │
+│  手动撤单 │ 交易所监控 │ 风控日志 │
+└──────────────┬────────────────┘
+               │ REST API (HTTP :8000)
+┌──────────────▼────────────────┐
+│    FastAPI 后端 (server.py)    │
+│   订单跟踪  │  回报分类存储      │
+│  WebSocket 广播 │ 市场深度计算  │
+└──────────────┬────────────────┘
+               │ TCP Socket :9900 (JSON Lines)
+┌──────────────▼────────────────┐
+│  C++ AdminServer (TCP 9900)   │
+│  ┌──────────┐  ┌────────────┐ │
+│  │ gateway  │→ │  exchange  │ │
+│  │ (前置系统) │←│ (模拟交易所) │ │
+│  └──────────┘  └────────────┘ │
+└───────────────────────────────┘
 ```
 
-## 三、技术选型对比
+### 数据流
 
-### 3.1 前端框架
+1. **用户下单**: Streamlit → `POST /api/order` → FastAPI → TCP bridge → C++ AdminServer → `gateway.handleOrder()`
+2. **前置转发交易所**: gateway 内部撮合 + 风控 → `sendToExchange_` → `exchange.handleOrder()`
+3. **交易所回报**: exchange 撮合 → `sendToClient_` → gateway.handleResponse → 广播(source=gateway)
+4. **交易所监控回报**: exchange 回报同时以 `source="exchange"` 广播给 Python 端
+5. **直接注入交易所**: Streamlit → `POST /api/order` (target=exchange) → AdminServer → `exchange.handleOrder()`
 
-| 方案 | 优点 | 缺点 | 适合场景 |
-|------|------|------|----------|
-| **Streamlit** | 零前端代码，纯 Python；自带实时刷新；表格/图表开箱即用 | 布局灵活性低；自定义交互有限 | 快速原型、演示展示 |
-| **Dash (Plotly)** | 组件丰富，图表专业；回调机制清晰；支持复杂布局 | 学习曲线稍高；回调调试不直观 | 数据密集型仪表盘 |
-| **NiceGUI** | 现代 UI 组件；支持双向绑定；Tailwind CSS 集成 | 社区较小；文档不够完善 | 中等复杂度管理后台 |
-| **Gradio** | 极简 API；适合输入/输出交互 | 不适合复杂仪表盘 | 简单表单提交 |
+### 路由机制
 
-**建议**：**Streamlit**（如目标是快速演示）或 **Dash**（如需要专业仪表盘）。
+AdminServer 透传消息中的 `target` 字段（默认 `"gateway"`），`admin_main.cpp` 中的回调根据 `target` 值将指令路由到 `gateway` 或 `exchange`。
 
-### 3.2 后端服务
+---
 
-| 方案 | 说明 |
+## 三、技术选型
+
+| 层次 | 技术 | 选型理由 |
+|------|------|----------|
+| 前端 | **Streamlit** | 零前端代码、纯 Python、自带表格/图表/表单组件、实时刷新 |
+| 后端 | **FastAPI** | 原生异步、自带 WebSocket、Pydantic 校验、自动 API 文档 |
+| 图表 | **Altair** | 声明式语法、与 Streamlit 深度集成、支持交互式图表 |
+| C++↔Python | **TCP + JSON Lines** | 语言无关、调试方便 |
+
+### 依赖
+
+```
+fastapi==0.133.1
+uvicorn
+streamlit==1.54.0
+requests
+pandas
+altair
+websockets
+```
+
+---
+
+## 四、通信协议
+
+### 4.1 TCP 协议（C++ ↔ Python）
+
+- **传输层**: TCP Socket
+- **消息格式**: JSON Lines（每条 JSON 对象以 `\n` 分隔）
+- **编码**: UTF-8
+
+### 4.2 消息类型
+
+**Python → C++**:
+
+| type | 说明 | 关键字段 |
+|------|------|----------|
+| `order` | 提交订单 | clOrderId, market, securityId, side, price, qty, shareholderId, target? |
+| `cancel` | 提交撤单 | clOrderId, origClOrderId, market, securityId, shareholderId, side, target? |
+| `query` | 查询请求 | queryType ("orderbook" / "stats") |
+
+**C++ → Python**:
+
+| type | 说明 | 关键字段 |
+|------|------|----------|
+| `response` | 回报广播 | source ("gateway" / "exchange"), 以及原始回报字段 |
+| `snapshot` | 查询结果 | queryType + 查询数据 |
+| `error` | 错误信息 | message |
+
+### 4.3 回报分类规则
+
+回报 JSON 根据字段存在性区分类型：
+
+| 条件 | 类型 |
 |------|------|
-| **FastAPI** | 异步支持好，自带 WebSocket，自动生成 API 文档，性能优 |
-| **Flask** | 简单轻量，生态成熟，适合同步场景 |
+| 含 `execId` | 成交回报 |
+| 含 `rejectCode` | 拒绝回报 |
+| 含 `origClOrderId` 且无 `rejectCode` | 撤单确认 |
+| 以上均无 | 确认回报 |
 
-**建议**：**FastAPI**，原因是需要 WebSocket 推送实时订单状态。
+---
 
-### 3.3 C++ ↔ Python 通信
+## 五、C++ 端实现
 
-| 方案 | 优点 | 缺点 |
+### 5.1 AdminServer (`include/admin_server.h` + `src/admin_server.cpp`)
+
+TCP 服务端，负责接受 Python 后端连接、分发指令、广播回报。
+
+| 方法 | 说明 |
+|------|------|
+| `start()` / `stop()` | 启动/停止服务 |
+| `setOnOrder(cb)` | 设置收到订单时的回调 |
+| `setOnCancel(cb)` | 设置收到撤单时的回调 |
+| `setOnQuery(cb)` | 设置收到查询时的回调 |
+| `broadcast(json)` | 向所有已连接客户端广播回报 |
+
+实现要点：
+- `acceptLoop()`: socket/bind/listen/accept，每个客户端一个 detached 线程
+- `handleClient(fd)`: 按 `\n` 分割读取 JSON Lines，根据 `type` 分发到回调；透传 `target` 字段
+- `sendToFd(fd, json)`: 完整发送，处理 EINTR，有返回值标记连接断开
+- `broadcast()`: 遍历客户端 fd 列表发送，自动清理断开的连接
+- TCP_NODELAY + SO_REUSEADDR
+
+### 5.2 admin_main.cpp (`examples/admin_main.cpp`)
+
+入口程序，组装双 TradeSystem 架构 + AdminServer。
+
+```
+gateway (前置系统)
+  ├── sendToClient_   → 加 source="gateway"，broadcast 给 Python
+  └── sendToExchange_ → 根据 origClOrderId 区分订单/撤单，转发 exchange
+
+exchange (模拟交易所，纯撮合模式)
+  └── sendToClient_   → 加 source="exchange"，broadcast 给 Python
+                       → 同时调用 gateway.handleResponse()
+
+AdminServer
+  ├── onOrder  → 根据 target 路由到 gateway 或 exchange
+  ├── onCancel → 根据 target 路由到 gateway 或 exchange
+  └── onQuery  → 返回订单簿快照
+```
+
+线程安全：所有对 gateway/exchange 的操作在 `std::mutex` 保护下执行。
+
+---
+
+## 六、Python 后端实现
+
+### 6.1 TcpBridge (`admin/bridge.py`)
+
+异步 TCP 客户端，连接 C++ AdminServer。
+
+| 方法 | 说明 |
+|------|------|
+| `connect()` / `disconnect()` | 建立/断开 TCP 连接 |
+| `send_order(...)` | 发送订单（含 `target` 参数，默认 `"gateway"`） |
+| `send_cancel(...)` | 发送撤单（含 `target` 参数） |
+| `query_orderbook()` | 请求订单簿快照 |
+| `on_response` | 收到 C++ 回报时的回调 |
+
+内部实现异步接收循环（`_receive_loop`），持续解析 JSON Lines。
+
+### 6.2 FastAPI 服务 (`admin/server.py`)
+
+#### 数据模型
+
+- `OrderRequest`: 含 `target` 字段（`"gateway"` / `"exchange"`），默认 `"gateway"`
+- `CancelRequest`: 含 `target` 字段
+- `OrderTracker`: 订单生命周期跟踪器，状态机：
+
+```
+已提交 → 已确认 → 部分成交 → 完全成交
+                           ↘ 已撤单
+      ↘ 已拒绝
+```
+
+#### REST API
+
+| 方法 | 路径 | 说明 |
 |------|------|------|
-| **TCP Socket + JSON** | 语言无关；调试方便；C++ 端改动小 | 需要定义简单协议 |
-| **子进程 stdin/stdout** | 最简单；无需网络 | 不适合双向实时推送 |
-| **共享内存 / mmap** | 极低延迟 | 实现复杂，演示项目不需要 |
-| **pybind11** | 直接调用 C++ | 编译依赖重，耦合紧 |
+| POST | `/api/order` | 提交订单（自动生成 clOrderId，支持 target 路由） |
+| POST | `/api/cancel` | 提交撤单（支持 target 路由） |
+| GET | `/api/responses` | 获取 gateway 回报历史 |
+| GET | `/api/orders` | 订单跟踪列表（可按状态过滤） |
+| GET | `/api/orders/{id}` | 单个订单详情（含成交明细） |
+| GET | `/api/market` | 市场行情（深度 + 成交记录，可按证券过滤） |
+| GET | `/api/status` | gateway 系统连接状态与统计 |
+| GET | `/api/exchange/responses` | 交易所侧回报历史 |
+| GET | `/api/exchange/status` | 交易所侧统计信息 |
+| WS | `/ws` | 实时回报推送 |
 
-**建议**：**TCP Socket + JSON**，与现有 `sendToClient_` / `sendToExchange_` 回调架构天然契合。
+#### 回报存储
 
-## 四、功能模块设计
+回报根据 `source` 字段分类存储：
+- `source="gateway"` → `state.responses`（gateway 回报 + 订单跟踪更新）
+- `source="exchange"` → `state.exchange_responses`（交易所独立回报）
 
-### 4.1 可视化展示界面框架
+#### 市场深度计算
 
-- 页面布局：侧边栏导航 + 主内容区
-- 页面列表：
-  - **仪表盘**：系统概览（订单总数、成交总数、拒绝总数）
-  - **订单簿**：买卖盘口实时展示
-  - **成交记录**：成交流水表
-  - **风控日志**：对敲拦截记录
-  - **手动下单**：订单/撤单输入表单
+`/api/market` 端点从活跃订单（已确认/部分成交/已提交）中实时构建买卖深度：
+- 买盘：按价格降序累积
+- 卖盘：按价格升序累积
+- 返回最近成交记录和最新成交价
 
-### 4.2 可视化展示当前订单状态
+---
 
-- **订单簿视图**：按价格聚合的买卖盘口（类似 Level 2 行情）
-  - 买盘：价格降序，每档显示价格 + 总量
-  - 卖盘：价格升序，每档显示价格 + 总量
-- **活跃订单表**：所有未成交/部分成交订单列表
-  - 字段：clOrderId、方向、价格、原始数量、剩余数量、状态、时间
-- **成交流水**：最近 N 笔成交
-  - 字段：execId、买方ID、卖方ID、价格、数量、时间
-- **实时更新**：WebSocket 推送，前端自动刷新（或 Streamlit 定时轮询）
+## 七、前端页面设计
 
-### 4.3 手动输入交易订单入口
+### 7.1 页面导航
 
-- **下单表单**：
-  - 字段：市场（XSHG/XSHE）、证券代码、买卖方向、价格、数量、股东号
-  - 提交后显示确认回报或拒绝原因
-- **撤单表单**：
-  - 字段：原始订单号（origClOrderId）、市场、证券代码、股东号、方向
-  - 提交后显示撤单确认或拒绝原因
-- **输入校验**：前端侧做基本格式校验，防止非法输入提交
-
-## 五、C++ 端改造要点
-
-现有 `TradeSystem` 的回调架构 (`sendToClient_`, `sendToExchange_`) 已经是事件驱动的，
-只需新增一个网络接口层即可，**核心撮合逻辑无需改动**。
-
-需要新增：
-1. **TCP Server**（C++ 端）：监听端口，接收 Python 后端发来的订单/撤单 JSON
-2. **事件推送**：在 `sendToClient_` 回调中，同时将回报推送给 Python 后端
-3. **查询接口**（可选）：暴露订单簿快照查询（如 `GET /orderbook`）
+侧边栏固定导航，6 个页面：
 
 ```
-// 伪代码示意
-system.setSendToClient([&](const json &resp) {
-    // 原有逻辑：发给客户端
-    sendToClient(resp);
-    // 新增：推送给管理界面
-    adminServer.broadcast(resp);
-});
+📊 HDF 管理界面
+├── 仪表盘
+├── 市场行情
+├── 手动下单
+├── 手动撤单
+├── 交易所监控
+└── 风控日志
 ```
 
-## 六、目录结构建议
+侧边栏底部显示系统连接状态（🟢已连接 / 🔴未连接）和总回报数。
+
+### 7.2 仪表盘
+
+| 区域 | 内容 |
+|------|------|
+| 顶部指标 | 成交笔数、确认回报、撤单确认、拒绝/风控（4 列 metric） |
+| 下方 | 最近 20 条回报 JSON |
+
+### 7.3 市场行情
+
+| 区域 | 内容 |
+|------|------|
+| 筛选栏 | 证券代码下拉选择 + 刷新按钮 |
+| 概览指标 | 最新成交价、买盘挂单量、卖盘挂单量、总成交笔数 |
+| 深度图 | Altair 绘制的 Steam 风格市场深度曲线（买盘绿色/卖盘红色面积图 + 平滑曲线，最新价黄色虚线） |
+| 盘口 | 左右两栏：买盘10档 / 卖盘10档（价格、数量、累积量） |
+| 成交走势 | Altair 折线图（成交价格走势） |
+| 成交明细 | 表格：成交编号、订单号、证券、方向、成交量、成交价、股东号 |
+
+### 7.4 手动下单
+
+| 区域 | 内容 |
+|------|------|
+| 下单表单 | 市场、证券代码、方向、价格、数量、股东号 → 通过前置系统下单 |
+| 订单跟踪 | 状态筛选 + 订单卡片列表 |
+
+**订单卡片**包含：
+- 标题行：方向图标 + 证券代码 + 市场 + 订单号 + 状态标签 + 成交百分比 + ⋯ 撤单按钮（popover）
+- 进度条：成交进度可视化
+- 详情指标：委托价、委托量、已成交量、成交均价
+- 可展开的成交明细列表
+
+**订单状态图标**：⏳已提交 → 📩已确认 → 🔶部分成交 → ✅完全成交 / 🚫已撤单 / ❌已拒绝
+
+### 7.5 手动撤单
+
+| 区域 | 内容 |
+|------|------|
+| 撤单表单 | 原始订单号、市场、证券代码、方向、股东号 |
+
+### 7.6 交易所监控
+
+| 区域 | 内容 |
+|------|------|
+| 统计概览 | 总回报数、成交笔数、确认回报、撤单确认（4 列 metric） |
+| 注入订单 | 表单：直接向交易所提交订单，模拟外部市场参与者（不经过前置风控） |
+| 回报流水 | 4 个 Tab 分类展示：成交、确认、撤单、拒绝 |
+
+**设计意图**：交易所注入功能与"手动下单"分离。手动下单固定走 gateway（经风控），注入交易所在此页面操作（模拟其他网关的订单直达交易所的场景）。
+
+### 7.7 风控日志
+
+| 区域 | 内容 |
+|------|------|
+| 分类 Tab | 对敲拦截（rejectCode=1）、格式错误（rejectCode=2）、其他 |
+| 数据展示 | 每个 Tab 中展示对应拒绝回报的完整 JSON |
+
+---
+
+## 八、目录结构
 
 ```
 admin/
-├── README.md
-├── requirements.txt        # Python 依赖
-├── server.py               # FastAPI 后端（WebSocket + REST）
-├── app.py                  # Streamlit / Dash 前端
-├── bridge.py               # C++ TCP 通信桥接
-└── static/                 # 静态资源（如有）
+├── start.sh          # 一键启动脚本（激活 conda env → uvicorn + streamlit）
+├── server.py         # FastAPI 后端（REST API + WebSocket + 订单跟踪 + 回报分类存储）
+├── app.py            # Streamlit 前端（6 个页面）
+├── bridge.py         # 异步 TCP 桥接（连接 C++ AdminServer）
+└── protocol.py       # 协议定义（消息类型枚举 + 数据类）
+
+examples/
+└── admin_main.cpp    # C++ 入口（双 TradeSystem + AdminServer + target 路由）
+
+include/
+└── admin_server.h    # AdminServer 头文件
+
+src/
+└── admin_server.cpp  # AdminServer TCP 服务端实现
 ```
 
-## 七、开发优先级
+---
 
-| 阶段 | 内容 | 预计工作量 |
-|------|------|-----------|
-| P0 | C++ TCP Server + JSON 协议定义 | 1-2 天 |
-| P1 | Python 后端桥接 + 手动下单 API | 1 天 |
-| P2 | 前端页面框架 + 手动下单表单 | 1 天 |
-| P3 | 订单簿 / 成交记录实时展示 | 1-2 天 |
-| P4 | 仪表盘统计 + 风控日志 | 1 天 |
+## 九、启动方式
+
+```bash
+# 1. 启动 C++ 后端
+cd build && ninja && cd ..
+./bin/admin_main              # 监听 TCP 9900
+
+# 2. 启动 Python 端
+cd admin && bash start.sh     # 自动启动 FastAPI(:8000) + Streamlit(:8501)
+
+# 3. 浏览器访问
+open http://localhost:8501
+```
+
+---
+
+## 十、未实现 / 待改进
+
+| 项目 | 说明 |
+|------|------|
+| 仪表盘自动刷新 | 当前需手动刷新，可改为 `st_autorefresh` 定时轮询或 WebSocket 推送 |
+| 交易所侧订单跟踪 | 当前仅跟踪 gateway 侧订单，交易所注入的订单未入跟踪器 |
+| 前端错误处理 | 部分 API 调用失败时的用户提示可进一步完善 |
+| 认证/授权 | 当前无权限控制，生产环境需增加 |
