@@ -210,7 +210,7 @@ elif page == "市场行情":
                     title="买卖盘深度图",
                 ).interactive()
 
-                st.altair_chart(chart, use_container_width=True)
+                st.altair_chart(chart, width="stretch")
         else:
             st.info("暂无挂单数据，下单后将在此显示市场深度。")
 
@@ -231,7 +231,7 @@ elif page == "市场行情":
                     })
                 st.dataframe(
                     pd.DataFrame(bid_display),
-                    use_container_width=True,
+                    width="stretch",
                     hide_index=True,
                 )
             else:
@@ -250,7 +250,7 @@ elif page == "市场行情":
                     })
                 st.dataframe(
                     pd.DataFrame(ask_display),
-                    use_container_width=True,
+                    width="stretch",
                     hide_index=True,
                 )
             else:
@@ -284,7 +284,7 @@ elif page == "市场行情":
                     height=250, title="成交价格走势"
                 ).interactive()
 
-                st.altair_chart(price_chart, use_container_width=True)
+                st.altair_chart(price_chart, width="stretch")
 
             # 成交明细表
             trade_display = []
@@ -300,7 +300,7 @@ elif page == "市场行情":
                 })
             st.dataframe(
                 pd.DataFrame(trade_display),
-                use_container_width=True,
+                width="stretch",
                 hide_index=True,
             )
         else:
@@ -600,7 +600,7 @@ elif page == "交易所监控":
                         "成交价": f"¥{r.get('execPrice', 0):.2f}",
                         "股东号": r.get("shareholderId", ""),
                     })
-                st.dataframe(pd.DataFrame(exec_display), use_container_width=True, hide_index=True)
+                st.dataframe(pd.DataFrame(exec_display), width="stretch", hide_index=True)
             else:
                 st.info("暂无成交记录")
 
@@ -616,7 +616,7 @@ elif page == "交易所监控":
                         "数量": r.get("qty", 0),
                         "股东号": r.get("shareholderId", ""),
                     })
-                st.dataframe(pd.DataFrame(confirm_display), use_container_width=True, hide_index=True)
+                st.dataframe(pd.DataFrame(confirm_display), width="stretch", hide_index=True)
             else:
                 st.info("暂无确认回报")
 
@@ -663,17 +663,17 @@ elif page == "风控日志":
             )
             with tab1:
                 if cross_trades:
-                    st.dataframe(cross_trades, use_container_width=True)
+                    st.dataframe(cross_trades, width="stretch")
                 else:
                     st.info("无对敲拦截记录")
             with tab2:
                 if format_errors:
-                    st.dataframe(format_errors, use_container_width=True)
+                    st.dataframe(format_errors, width="stretch")
                 else:
                     st.info("无格式错误记录")
             with tab3:
                 if others:
-                    st.dataframe(others, use_container_width=True)
+                    st.dataframe(others, width="stretch")
                 else:
                     st.info("无其他拒绝记录")
         else:
