@@ -64,7 +64,7 @@ void MatchingEngine::addOrder(const Order &order) {
 //   - 但会从订单簿中移除/减少已匹配的对手方订单
 //   - 返回成交结果和剩余未成交数量
 // ============================================================
-std::optional<MatchingEngine::MatchResult>
+MatchingEngine::MatchResult
 MatchingEngine::match(const Order &order,
                       const std::optional<MarketData> &marketData) {
 
@@ -252,11 +252,6 @@ MatchingEngine::match(const Order &order,
     }
 
     result.remainingQty = remainingQty;
-
-    // 如果没有任何成交，返回 nullopt
-    if (result.executions.empty()) {
-        return std::nullopt;
-    }
 
     return result;
 }

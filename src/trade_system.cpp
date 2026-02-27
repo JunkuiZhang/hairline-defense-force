@@ -67,8 +67,8 @@ void TradeSystem::handleOrder(const nlohmann::json &input) {
         }
         // 尝试撮合交易
         auto matchResult = matchingEngine_.match(order);
-        if (matchResult.has_value()) {
-            auto &executions = matchResult->executions;
+        if (!matchResult.executions.empty()) {
+            auto &executions = matchResult.executions;
             if (sendToExchange_) {
                 // 交易所前置模式：对手方订单之前已转发给交易所，
                 // 需要先向交易所发送撤单请求，等待所有撤单确认后才发成交回报。
@@ -76,7 +76,7 @@ void TradeSystem::handleOrder(const nlohmann::json &input) {
                 pending.activeOrder = order;
                 pending.activeOrderRawInput = input;
                 pending.executions = executions;
-                pending.remainingQty = matchResult->remainingQty;
+                pending.remainingQty = matchResult.remainingQty;
                 pending.pendingCancelCount = executions.size();
                 pendingMatches_[order.clOrderId] = std::move(pending);
 
@@ -137,10 +137,10 @@ void TradeSystem::handleOrder(const nlohmann::json &input) {
                 riskController_.onOrderExecuted(order.clOrderId, totalExecQty);
 
                 // 部分成交：剩余数量需要显式入簿，并生成确认回报
-                if (matchResult->remainingQty > 0) {
+                if (matchResult.remainingQty > 0) {
                     // 由调用方显式将剩余量加入订单簿
                     Order remainingOrder = order;
-                    remainingOrder.qty = matchResult->remainingQty;
+                    remainingOrder.qty = matchResult.remainingQty;
                     matchingEngine_.addOrder(remainingOrder);
                     // 更新风控状态：剩余量入簿后需要被对敲检测追踪
                     riskController_.onOrderAccepted(remainingOrder);

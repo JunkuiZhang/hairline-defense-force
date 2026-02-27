@@ -37,9 +37,10 @@ class MatchingEngine {
      * @param order 要撮合的订单。
      * @param marketData 可选的市场数据输入，用于更复杂的撮合逻辑。
      * @return MatchResult
-     * 包含撮合结果和剩余未成交数量。如果无法匹配，返回 nullopt。
+     * 包含撮合结果和剩余未成交数量。无成交时 executions 为空，
+     * remainingQty 等于原始订单数量。
      */
-    std::optional<MatchResult>
+    MatchResult
     match(const Order &order,
           const std::optional<MarketData> &marketData = std::nullopt);
 
