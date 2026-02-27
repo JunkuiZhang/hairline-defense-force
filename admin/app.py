@@ -168,6 +168,92 @@ elif page == "手动下单":
                 else:
                     st.error(f"❌ 提交失败: {result.get('message', '未知错误')}")
 
+    # ======================== 订单跟踪 ========================
+    st.markdown("---")
+    st.subheader("📋 我的订单")
+
+    # 状态筛选
+    filter_col1, filter_col2 = st.columns([1, 3])
+    with filter_col1:
+        status_filter = st.selectbox(
+            "状态筛选",
+            ["全部", "已提交", "已确认", "部分成交", "完全成交", "已拒绝", "已撤单"],
+        )
+    with filter_col2:
+        if st.button("🔄 刷新订单"):
+            st.rerun()
+
+    # 获取订单列表
+    params = {}
+    if status_filter != "全部":
+        params["status"] = status_filter
+    orders_data = api_get("/api/orders", **params)
+
+    if orders_data and orders_data.get("orders"):
+        orders = orders_data["orders"]
+
+        for order in orders:
+            # 根据状态选择颜色和图标
+            status = order["status"]
+            progress = order["progress"]
+            if status == "完全成交":
+                icon, color = "✅", "green"
+            elif status == "部分成交":
+                icon, color = "🔶", "orange"
+            elif status == "已拒绝":
+                icon, color = "❌", "red"
+            elif status == "已撤单":
+                icon, color = "🚫", "gray"
+            elif status == "已确认":
+                icon, color = "📩", "blue"
+            else:
+                icon, color = "⏳", "blue"
+
+            side_text = order["sideText"]
+            side_emoji = "🟢" if order["side"] == "B" else "🔴"
+
+            with st.container():
+                # 标题行
+                header_col1, header_col2, header_col3 = st.columns([3, 1, 1])
+                with header_col1:
+                    st.markdown(
+                        f"**{side_emoji} {side_text} {order['securityId']}** "
+                        f"({order['market']}) — `{order['clOrderId']}`"
+                    )
+                with header_col2:
+                    st.markdown(f":{color}[**{icon} {status}**]")
+                with header_col3:
+                    st.markdown(f"**{progress}%** 成交")
+
+                # 进度条
+                st.progress(min(progress / 100.0, 1.0))
+
+                # 详情
+                detail_col1, detail_col2, detail_col3, detail_col4 = st.columns(4)
+                with detail_col1:
+                    st.metric("委托价", f"¥{order['price']:.2f}")
+                with detail_col2:
+                    st.metric("委托量", f"{order['qty']}")
+                with detail_col3:
+                    st.metric("已成交", f"{order['filledQty']}")
+                with detail_col4:
+                    avg_price_str = f"¥{order['avgPrice']:.2f}" if order['avgPrice'] > 0 else "—"
+                    st.metric("成交均价", avg_price_str)
+
+                # 成交明细展开
+                if order["fills"]:
+                    with st.expander(f"📄 成交明细 ({order['fillCount']} 笔)"):
+                        for i, fill in enumerate(order["fills"], 1):
+                            st.text(
+                                f"  {i}. {fill['execId']}  "
+                                f"数量: {fill['execQty']}  "
+                                f"价格: ¥{fill['execPrice']:.2f}"
+                            )
+
+                st.markdown("---")
+    else:
+        st.info("暂无订单记录，提交订单后将在此显示跟踪状态。")
+
 
 # ======================== 页面：手动撤单 ========================
 

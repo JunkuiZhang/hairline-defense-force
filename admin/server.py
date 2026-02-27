@@ -58,6 +58,84 @@ class CancelRequest(BaseModel):
 # ======================== 全局状态 ========================
 
 
+class OrderTracker:
+    """单个订单的跟踪状态"""
+
+    def __init__(self, cl_order_id: str, market: str, security_id: str,
+                 side: str, price: float, qty: int, shareholder_id: str):
+        self.cl_order_id = cl_order_id
+        self.market = market
+        self.security_id = security_id
+        self.side = side
+        self.price = price
+        self.qty = qty  # 原始委托数量
+        self.shareholder_id = shareholder_id
+        self.filled_qty = 0  # 已成交数量
+        self.avg_price = 0.0  # 成交均价
+        self.status = "已提交"  # 已提交 / 已确认 / 部分成交 / 完全成交 / 已拒绝 / 已撤单
+        self.fills: list[dict] = []  # 成交明细 [{execId, execQty, execPrice}]
+        self.created_at = time.time()
+        self.updated_at = time.time()
+
+    def on_confirm(self):
+        """收到确认回报"""
+        if self.status == "已提交":
+            self.status = "已确认"
+            self.updated_at = time.time()
+
+    def on_execution(self, exec_id: str, exec_qty: int, exec_price: float):
+        """收到成交回报"""
+        self.fills.append({
+            "execId": exec_id,
+            "execQty": exec_qty,
+            "execPrice": exec_price,
+        })
+        self.filled_qty += exec_qty
+        # 更新加权平均价
+        total_value = sum(f["execQty"] * f["execPrice"] for f in self.fills)
+        self.avg_price = total_value / self.filled_qty if self.filled_qty > 0 else 0.0
+        # 更新状态
+        if self.filled_qty >= self.qty:
+            self.status = "完全成交"
+        else:
+            self.status = "部分成交"
+        self.updated_at = time.time()
+
+    def on_reject(self, reject_code: int, reject_text: str):
+        """收到拒绝回报"""
+        self.status = "已拒绝"
+        self.reject_reason = reject_text
+        self.updated_at = time.time()
+
+    def on_cancel(self):
+        """收到撤单确认"""
+        if self.status not in ("完全成交", "已拒绝"):
+            self.status = "已撤单"
+            self.updated_at = time.time()
+
+    def to_dict(self) -> dict:
+        """导出为字典供前端展示"""
+        return {
+            "clOrderId": self.cl_order_id,
+            "market": self.market,
+            "securityId": self.security_id,
+            "side": self.side,
+            "sideText": "买入" if self.side == "B" else "卖出",
+            "price": self.price,
+            "qty": self.qty,
+            "filledQty": self.filled_qty,
+            "remainQty": self.qty - self.filled_qty,
+            "avgPrice": round(self.avg_price, 4),
+            "status": self.status,
+            "fillCount": len(self.fills),
+            "fills": self.fills,
+            "progress": round(self.filled_qty / self.qty * 100, 1) if self.qty > 0 else 0,
+            "shareholderId": self.shareholder_id,
+            "createdAt": self.created_at,
+            "updatedAt": self.updated_at,
+        }
+
+
 class AppState:
     """应用全局状态"""
 
@@ -70,16 +148,47 @@ class AppState:
         self.responses: list[dict] = []
         self.max_history = 1000
 
+        # 订单跟踪：clOrderId -> OrderTracker
+        self.orders: dict[str, OrderTracker] = {}
+
     def generate_order_id(self) -> str:
         """生成唯一订单号"""
         self.order_counter += 1
         return f"ADMIN-{int(time.time())}-{self.order_counter:04d}"
 
+    def track_order(self, cl_order_id: str, market: str, security_id: str,
+                    side: str, price: float, qty: int, shareholder_id: str):
+        """下单时开始跟踪"""
+        self.orders[cl_order_id] = OrderTracker(
+            cl_order_id, market, security_id, side, price, qty, shareholder_id
+        )
+
     def add_response(self, msg: dict):
-        """记录回报"""
+        """记录回报并更新订单跟踪状态"""
         self.responses.append(msg)
         if len(self.responses) > self.max_history:
             self.responses = self.responses[-self.max_history :]
+
+        # 更新对应订单的跟踪状态
+        cl_order_id = msg.get("clOrderId", "")
+        tracker = self.orders.get(cl_order_id)
+        if tracker:
+            if "rejectCode" in msg and msg["rejectCode"] != 0:
+                tracker.on_reject(msg["rejectCode"], msg.get("rejectText", ""))
+            elif "execId" in msg:
+                tracker.on_execution(
+                    msg["execId"],
+                    msg.get("execQty", 0),
+                    msg.get("execPrice", 0.0),
+                )
+            elif "origClOrderId" in msg:
+                # 撤单确认 — 更新原始订单
+                orig_tracker = self.orders.get(msg.get("origClOrderId", ""))
+                if orig_tracker:
+                    orig_tracker.on_cancel()
+            else:
+                # 确认回报（无 execId、无 rejectCode）
+                tracker.on_confirm()
 
 
 state = AppState()
@@ -163,6 +272,11 @@ async def submit_order(req: OrderRequest):
             qty=req.qty,
             shareholder_id=req.shareholderId,
         )
+        # 开始跟踪此订单
+        state.track_order(
+            cl_order_id, req.market, req.securityId,
+            req.side, req.price, req.qty, req.shareholderId,
+        )
         return {"status": "submitted", "clOrderId": cl_order_id}
     except ConnectionError:
         return {"status": "error", "message": "未连接到撮合系统"}
@@ -193,6 +307,29 @@ async def submit_cancel(req: CancelRequest):
 async def get_responses(limit: int = 50):
     """获取最近的回报记录"""
     return {"responses": state.responses[-limit:]}
+
+
+@app.get("/api/orders", summary="订单跟踪列表")
+async def get_orders(status: Optional[str] = None):
+    """
+    获取所有已提交订单的跟踪状态。
+    可选按状态过滤：已提交/已确认/部分成交/完全成交/已拒绝/已撤单
+    """
+    orders = [t.to_dict() for t in state.orders.values()]
+    if status:
+        orders = [o for o in orders if o["status"] == status]
+    # 按创建时间倒序
+    orders.sort(key=lambda o: o["createdAt"], reverse=True)
+    return {"orders": orders}
+
+
+@app.get("/api/orders/{cl_order_id}", summary="单个订单详情")
+async def get_order_detail(cl_order_id: str):
+    """获取指定订单的详细跟踪信息，包含所有成交明细"""
+    tracker = state.orders.get(cl_order_id)
+    if not tracker:
+        return {"error": "订单不存在", "clOrderId": cl_order_id}
+    return tracker.to_dict()
 
 
 @app.get("/api/status", summary="系统状态")
