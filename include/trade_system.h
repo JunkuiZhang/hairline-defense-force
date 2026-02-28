@@ -112,7 +112,7 @@ class TradeSystem {
     /**
      * 记录不同市场不同证券的最新行情数据，用于更复杂的撮合逻辑
      *
-     * key: market + securityId 的组合键
+     * key: market + securityId 的组合键，如：`XSHG+600030`
      * value: 最新的 MarketData 结构体
      */
     std::unordered_map<std::string, MarketData> latestMarketData_;

@@ -65,7 +65,8 @@ void TradeSystem::handleOrder(const nlohmann::json &input) {
             response["shareholderId"] = order.shareholderId;
             sendToClient_(response);
         }
-        // 尝试撮合交易
+        // 尝试拿去市场行情
+        // TODO: 在这里拿到市场行情，然后传入`match`函数
         auto matchResult = matchingEngine_.match(order);
         if (!matchResult.executions.empty()) {
             auto &executions = matchResult.executions;
