@@ -109,6 +109,9 @@ class TradeSystem {
      */
     std::unordered_set<std::string> localOnlyOrders_;
 
+    // 记录不同市场不同证券的最新行情数据，用于更复杂的撮合逻辑
+    std::unordered_map<std::string, MarketData> latestMarketData_;
+
     /**
      * @brief 所有撤单回报都回来后，处理最终结果
      */
