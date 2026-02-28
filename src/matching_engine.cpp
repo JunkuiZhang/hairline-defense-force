@@ -177,7 +177,7 @@ MatchingEngine::match(const Order &order,
                 break;
             }
 
-            // 行情约束：如果有行情数据，成交价价不能低于行情买价
+            // 行情约束：如果有行情数据，成交价不能低于行情买价
             if (marketData.has_value()) {
                 if (marketData->bidPrice > 0 &&
                     bidPrice < marketData->bidPrice) {
