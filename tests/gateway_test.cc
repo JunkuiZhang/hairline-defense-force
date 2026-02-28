@@ -789,3 +789,88 @@ TEST_F(PureGatewayTest, PendingMatch_WithRemaining_SomeRejected) {
     ASSERT_GE(exchangeRequests.size(), 1);
     EXPECT_EQ(exchangeRequests.back()["qty"], 500);
 }
+
+// ==================== 部分成交 → 剩余转发交易所 ====================
+
+TEST_F(PureGatewayTest, PartialMatch_RemainingForwardedToExchange) {
+    // 卖100挂簿
+    system.handleOrder(
+        makeOrder("S1", "XSHG", "600030", "S", 10.0, 100, "SH002"));
+    ASSERT_EQ(exchangeRequests.size(), 1);
+    exchangeRequests.clear();
+    // 交易所发送确认回报
+    system.handleResponse({{"clOrderId", "S1"},
+                           {"market", "XSHG"},
+                           {"securityId", "600030"},
+                           {"side", "S"},
+                           {"qty", 100},
+                           {"price", 10.0},
+                           {"shareholderId", "SH002"}});
+    ASSERT_EQ(clientResponses.size(), 1); // 卖单确认回报
+    clientResponses.clear();
+
+    // 买500来撮合 → 内部成交100 + 剩余400转发交易所
+    system.handleOrder(
+        makeOrder("B1", "XSHG", "600030", "B", 10.0, 500, "SH001"));
+
+    // resolvePendingMatch: 成交记录暂存，剩余400转发交易所
+    // 交易所确认后 → 发送确认回报(B1, qty=500) + 成交回报(S1×2)
+
+    // 交易所收到撤单请求
+    ASSERT_EQ(exchangeRequests.size(), 1);
+    ASSERT_EQ(exchangeRequests[0]["origClOrderId"], "S1");
+    ASSERT_EQ(exchangeRequests[0]["side"], "S");
+    ASSERT_EQ(exchangeRequests[0]["shareholderId"], "SH002");
+    exchangeRequests.clear();
+
+    // 交易所发送撤单确认回报
+    system.handleResponse({{"clOrderId", "C1"},
+                           {"origClOrderId", "S1"},
+                           {"market", "XSHG"},
+                           {"securityId", "600030"},
+                           {"shareholderId", "SH002"},
+                           {"side", "S"},
+                           {"qty", 100},
+                           {"price", 10.0},
+                           {"canceledQty", 100},
+                           {"cumQty", 0}});
+    clientResponses.clear();
+
+    // 交易所收到剩余400的订单
+    ASSERT_EQ(exchangeRequests.size(), 1);
+    EXPECT_EQ(exchangeRequests[0]["side"], "B");
+    EXPECT_EQ(exchangeRequests[0]["shareholderId"], "SH001");
+    EXPECT_EQ(exchangeRequests[0]["qty"], 400);
+    EXPECT_EQ(exchangeRequests[0]["price"], 10.0);
+
+    system.handleResponse({{"clOrderId", "B1"},
+                           {"market", "XSHG"},
+                           {"securityId", "600030"},
+                           {"side", "B"},
+                           {"qty", 400},
+                           {"price", 10.0},
+                           {"shareholderId", "SH001"}});
+    ASSERT_EQ(clientResponses.size(), 3);
+
+    // 确认回报在最前（原始订单数量500）
+    auto &first = clientResponses[0];
+    EXPECT_EQ(first["clOrderId"], "B1");
+    EXPECT_EQ(first["qty"], 500);
+    EXPECT_FALSE(first.contains("execId"));
+
+    // 找成交回报
+    int execReportCount = 0;
+    for (const auto &resp : clientResponses) {
+        if (resp.contains("execId")) {
+            execReportCount++;
+            EXPECT_EQ(resp["execQty"], 100);
+        }
+    }
+    EXPECT_EQ(execReportCount, 2); // 被动方 + 主动方
+
+    // 交易所收到剩余400的订单
+    ASSERT_GE(exchangeRequests.size(), 1);
+    auto &forwarded = exchangeRequests.back();
+    EXPECT_EQ(forwarded["clOrderId"], "B1");
+    EXPECT_EQ(forwarded["qty"], 400);
+}

@@ -999,3 +999,215 @@ TEST_F(MatchingEngineTest, Snapshot_AfterCancel) {
     EXPECT_EQ(snap["bids"][0]["orderCount"].get<int>(), 1);
     EXPECT_EQ(snap["totalOrders"].get<int>(), 1);
 }
+
+// ============================================================
+// B10: MarketData 行情约束测试
+// ============================================================
+
+/**
+ * @brief 无行情数据时，买单正常撮合（基线）
+ */
+TEST_F(MatchingEngineTest, MarketData_BuyNoConstraint) {
+    engine.addOrder(createOrder("M001", "600030", Side::SELL, 10.0, 100));
+    Order buy = createOrder("M002", "600030", Side::BUY, 10.0, 100);
+
+    auto result = engine.match(buy);
+    EXPECT_EQ(result.executions.size(), 1u);
+    EXPECT_EQ(result.remainingQty, 0u);
+}
+
+/**
+ * @brief 买价 <= 行情卖价时，正常撮合不受阻
+ */
+TEST_F(MatchingEngineTest, MarketData_BuyPriceBelowAsk) {
+    engine.addOrder(createOrder("M010", "600030", Side::SELL, 10.0, 100));
+
+    MarketData md;
+    md.market = Market::XSHE;
+    md.securityId = "600030";
+    md.bidPrice = 9.5;
+    md.askPrice = 10.5; // 买价 10.0 <= 行情卖价 10.5 → 正常成交
+
+    Order buy = createOrder("M011", "600030", Side::BUY, 10.0, 100);
+    auto result = engine.match(buy, md);
+    EXPECT_EQ(result.executions.size(), 1u);
+    EXPECT_EQ(result.remainingQty, 0u);
+}
+
+/**
+ * @brief 买价 > 行情卖价时，B10 约束阻止撮合
+ */
+TEST_F(MatchingEngineTest, MarketData_BuyPriceExceedsAsk) {
+    engine.addOrder(createOrder("M020", "600030", Side::SELL, 10.0, 100));
+
+    MarketData md;
+    md.market = Market::XSHE;
+    md.securityId = "600030";
+    md.bidPrice = 9.0;
+    md.askPrice = 9.5; // 买价 10.0 > 行情卖价 9.5 → 被约束阻止
+
+    Order buy = createOrder("M021", "600030", Side::BUY, 10.0, 100);
+    auto result = engine.match(buy, md);
+    EXPECT_TRUE(result.executions.empty());
+    EXPECT_EQ(result.remainingQty, 100u);
+}
+
+/**
+ * @brief 行情卖价为 0 时，约束被忽略，正常撮合
+ */
+TEST_F(MatchingEngineTest, MarketData_BuyAskPriceZero) {
+    engine.addOrder(createOrder("M030", "600030", Side::SELL, 10.0, 100));
+
+    MarketData md;
+    md.market = Market::XSHE;
+    md.securityId = "600030";
+    md.bidPrice = 0;
+    md.askPrice = 0; // askPrice == 0 → 约束被跳过
+
+    Order buy = createOrder("M031", "600030", Side::BUY, 10.0, 100);
+    auto result = engine.match(buy, md);
+    EXPECT_EQ(result.executions.size(), 1u);
+    EXPECT_EQ(result.remainingQty, 0u);
+}
+
+/**
+ * @brief 卖价 >= 行情买价时，正常撮合不受阻
+ */
+TEST_F(MatchingEngineTest, MarketData_SellPriceAboveBid) {
+    engine.addOrder(createOrder("M040", "600030", Side::BUY, 10.0, 100));
+
+    MarketData md;
+    md.market = Market::XSHE;
+    md.securityId = "600030";
+    md.bidPrice = 9.5; // 卖价 10.0 >= 行情买价 9.5 → 正常成交
+    md.askPrice = 10.5;
+
+    Order sell = createOrder("M041", "600030", Side::SELL, 10.0, 100);
+    auto result = engine.match(sell, md);
+    EXPECT_EQ(result.executions.size(), 1u);
+    EXPECT_EQ(result.remainingQty, 0u);
+}
+
+/**
+ * @brief 卖价 < 行情买价时，B10 约束阻止撮合
+ */
+TEST_F(MatchingEngineTest, MarketData_SellPriceBelowBid) {
+    engine.addOrder(createOrder("M050", "600030", Side::BUY, 10.0, 100));
+
+    MarketData md;
+    md.market = Market::XSHE;
+    md.securityId = "600030";
+    md.bidPrice = 10.5; // 卖价 10.0 < 行情买价 10.5 → 被约束阻止
+    md.askPrice = 11.0;
+
+    Order sell = createOrder("M051", "600030", Side::SELL, 10.0, 100);
+    auto result = engine.match(sell, md);
+    EXPECT_TRUE(result.executions.empty());
+    EXPECT_EQ(result.remainingQty, 100u);
+}
+
+/**
+ * @brief 行情买价为 0 时，约束被忽略，卖单正常撮合
+ */
+TEST_F(MatchingEngineTest, MarketData_SellBidPriceZero) {
+    engine.addOrder(createOrder("M060", "600030", Side::BUY, 10.0, 100));
+
+    MarketData md;
+    md.market = Market::XSHE;
+    md.securityId = "600030";
+    md.bidPrice = 0; // bidPrice == 0 → 约束被跳过
+    md.askPrice = 0;
+
+    Order sell = createOrder("M061", "600030", Side::SELL, 10.0, 100);
+    auto result = engine.match(sell, md);
+    EXPECT_EQ(result.executions.size(), 1u);
+    EXPECT_EQ(result.remainingQty, 0u);
+}
+
+/**
+ * @brief 多档卖盘部分撮合后遇到行情约束 —— 买单先吃到低价档，然后被
+ * 行情价格约束截停
+ *
+ * 场景：卖盘 9.0 和 10.0 两档，行情卖价 9.5，买入价 10.0
+ * → 9.0 档正常成交，10.0 档被约束阻止
+ */
+TEST_F(MatchingEngineTest, MarketData_BuyBlocksAllLevels) {
+    engine.addOrder(createOrder("M070", "600030", Side::SELL, 9.0, 100));
+    engine.addOrder(createOrder("M071", "600030", Side::SELL, 10.0, 100));
+
+    MarketData md;
+    md.market = Market::XSHE;
+    md.securityId = "600030";
+    md.bidPrice = 8.5;
+    md.askPrice = 9.5; // 买价 10.0 > 行情卖价 9.5
+
+    Order buy = createOrder("M072", "600030", Side::BUY, 10.0, 200);
+    auto result = engine.match(buy, md);
+    EXPECT_FALSE(result.executions.empty());
+    EXPECT_EQ(result.executions.size(), 1u); // 只成交了9.0档的100股
+    EXPECT_EQ(result.executions[0].execPrice, 9.0);
+    EXPECT_EQ(result.executions[0].execQty, 100);
+    EXPECT_EQ(result.remainingQty, 100u);
+}
+
+/**
+ * @brief 多档卖盘部分撮合后遇到行情约束 —— 卖单先吃到高价档，然后被
+ * 行情价格约束截停
+ *
+ * 场景：买盘 9.0 和 10.0 两档，行情买价 9.5，卖出价 9.0
+ * → 10.0 档正常成交，9.0 档被约束阻止
+ */
+TEST_F(MatchingEngineTest, MarketData_SellBlocksAllLevels) {
+    engine.addOrder(createOrder("M070", "600030", Side::BUY, 9.0, 100));
+    engine.addOrder(createOrder("M071", "600030", Side::BUY, 10.0, 100));
+
+    MarketData md;
+    md.market = Market::XSHE;
+    md.securityId = "600030";
+    md.bidPrice = 9.5;
+    md.askPrice = 10.5;
+
+    Order buy = createOrder("M072", "600030", Side::SELL, 9.0, 200);
+    auto result = engine.match(buy, md);
+    EXPECT_FALSE(result.executions.empty());
+    EXPECT_EQ(result.executions.size(), 1u); // 只成交了10.0档的100股
+    EXPECT_EQ(result.executions[0].execPrice, 10.0);
+    EXPECT_EQ(result.executions[0].execQty, 100);
+    EXPECT_EQ(result.remainingQty, 100u);
+}
+
+/**
+ * @brief 买价恰好等于行情卖价时（边界），不触发约束（条件为严格大于）
+ */
+TEST_F(MatchingEngineTest, MarketData_BuyPriceEqualsAsk) {
+    engine.addOrder(createOrder("M080", "600030", Side::SELL, 10.0, 100));
+
+    MarketData md;
+    md.market = Market::XSHE;
+    md.securityId = "600030";
+    md.bidPrice = 9.5;
+    md.askPrice = 10.0; // 买价 10.0 == 行情卖价 10.0 → 不触发（严格 >）
+
+    Order buy = createOrder("M081", "600030", Side::BUY, 10.0, 100);
+    auto result = engine.match(buy, md);
+    EXPECT_EQ(result.executions.size(), 1u);
+    EXPECT_EQ(result.remainingQty, 0u);
+}
+
+/**
+ * @brief 卖价恰好等于行情买价时（边界），不触发约束（条件为严格小于）
+ */
+TEST_F(MatchingEngineTest, MarketData_SellPriceEqualsBid) {
+    engine.addOrder(createOrder("M090", "600030", Side::BUY, 10.0, 100));
+
+    MarketData md;
+    md.market = Market::XSHE;
+    md.securityId = "600030";
+    md.bidPrice = 10.0; // 卖价 10.0 == 行情买价 10.0 → 不触发（严格 <）
+    md.askPrice = 10.5;
+
+    Order sell = createOrder("M091", "600030", Side::SELL, 10.0, 100);
+    auto result = engine.match(sell, md);
+    EXPECT_EQ(result.executions.size(), 1u);
+    EXPECT_EQ(result.remainingQty, 0u);
+}
