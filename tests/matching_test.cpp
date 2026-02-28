@@ -1151,8 +1151,8 @@ TEST_F(MatchingEngineTest, MarketData_SellBlocksAllLevels) {
     md.bidPrice = 9.5;
     md.askPrice = 10.5;
 
-    Order buy = createOrder("M072", "600030", Side::SELL, 9.0, 200);
-    auto result = engine.match(buy, md);
+    Order sell = createOrder("M072", "600030", Side::SELL, 9.0, 200);
+    auto result = engine.match(sell, md);
     EXPECT_FALSE(result.executions.empty());
     EXPECT_EQ(result.executions.size(), 1u); // 只成交了10.0档的100股
     EXPECT_DOUBLE_EQ(result.executions[0].execPrice, 10.0);
