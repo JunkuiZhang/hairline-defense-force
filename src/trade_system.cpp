@@ -266,6 +266,8 @@ void TradeSystem::handleCancel(const nlohmann::json &input) {
 
 void TradeSystem::handleMarketData(const nlohmann::json &input) {
     // TODO:
+    // 依据项目书，这里的input输入的json是以 JSON Array 格式输入的多个行情数据，
+    // 需要解析并对 latestMarketData_ 进行更新
 }
 
 void TradeSystem::handleResponse(const nlohmann::json &input) {
