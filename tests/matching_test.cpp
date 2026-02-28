@@ -857,3 +857,145 @@ TEST_F(MatchingEngineTest, DuplicateClOrderIdIgnored) {
     EXPECT_EQ(resp.qty, 100);           // 应为第一笔订单的数量
     EXPECT_DOUBLE_EQ(resp.price, 10.0); // 应为第一笔订单的价格
 }
+
+// ============================================================
+// getSnapshot 测试
+// ============================================================
+
+/**
+ * @brief 空订单簿的快照应返回空的 bids/asks
+ */
+TEST_F(MatchingEngineTest, Snapshot_EmptyBook) {
+    auto snap = engine.getSnapshot();
+    EXPECT_TRUE(snap["bids"].empty());
+    EXPECT_TRUE(snap["asks"].empty());
+    EXPECT_EQ(snap["totalOrders"].get<int>(), 0);
+}
+
+/**
+ * @brief 单个买单应出现在 bids 中
+ */
+TEST_F(MatchingEngineTest, Snapshot_SingleBid) {
+    engine.addOrder(createOrder("S001", "600030", Side::BUY, 10.0, 200));
+
+    auto snap = engine.getSnapshot();
+    ASSERT_EQ(snap["bids"].size(), 1u);
+    EXPECT_DOUBLE_EQ(snap["bids"][0]["price"].get<double>(), 10.0);
+    EXPECT_EQ(snap["bids"][0]["qty"].get<int>(), 200);
+    EXPECT_EQ(snap["bids"][0]["cumQty"].get<int>(), 200);
+    EXPECT_EQ(snap["bids"][0]["orderCount"].get<int>(), 1);
+    EXPECT_TRUE(snap["asks"].empty());
+    EXPECT_EQ(snap["totalOrders"].get<int>(), 1);
+}
+
+/**
+ * @brief 单个卖单应出现在 asks 中
+ */
+TEST_F(MatchingEngineTest, Snapshot_SingleAsk) {
+    engine.addOrder(createOrder("S002", "600030", Side::SELL, 11.0, 300));
+
+    auto snap = engine.getSnapshot();
+    EXPECT_TRUE(snap["bids"].empty());
+    ASSERT_EQ(snap["asks"].size(), 1u);
+    EXPECT_DOUBLE_EQ(snap["asks"][0]["price"].get<double>(), 11.0);
+    EXPECT_EQ(snap["asks"][0]["qty"].get<int>(), 300);
+    EXPECT_EQ(snap["asks"][0]["orderCount"].get<int>(), 1);
+    EXPECT_EQ(snap["totalOrders"].get<int>(), 1);
+}
+
+/**
+ * @brief 多档价格买盘：应按价格降序排列，cumQty 逐档累积
+ */
+TEST_F(MatchingEngineTest, Snapshot_MultipleBidLevels) {
+    engine.addOrder(createOrder("S010", "600030", Side::BUY, 10.0, 100));
+    engine.addOrder(createOrder("S011", "600030", Side::BUY, 10.5, 200));
+    engine.addOrder(createOrder("S012", "600030", Side::BUY, 9.5, 300));
+
+    auto snap = engine.getSnapshot();
+    ASSERT_EQ(snap["bids"].size(), 3u);
+
+    // bidBook_ 按价格降序：10.5, 10.0, 9.5
+    EXPECT_DOUBLE_EQ(snap["bids"][0]["price"].get<double>(), 10.5);
+    EXPECT_EQ(snap["bids"][0]["qty"].get<int>(), 200);
+    EXPECT_EQ(snap["bids"][0]["cumQty"].get<int>(), 200);
+
+    EXPECT_DOUBLE_EQ(snap["bids"][1]["price"].get<double>(), 10.0);
+    EXPECT_EQ(snap["bids"][1]["qty"].get<int>(), 100);
+    EXPECT_EQ(snap["bids"][1]["cumQty"].get<int>(), 300); // 200 + 100
+
+    EXPECT_DOUBLE_EQ(snap["bids"][2]["price"].get<double>(), 9.5);
+    EXPECT_EQ(snap["bids"][2]["qty"].get<int>(), 300);
+    EXPECT_EQ(snap["bids"][2]["cumQty"].get<int>(), 600); // 300 + 300
+}
+
+/**
+ * @brief 多档价格卖盘：应按价格升序排列，cumQty 逐档累积
+ */
+TEST_F(MatchingEngineTest, Snapshot_MultipleAskLevels) {
+    engine.addOrder(createOrder("S020", "600030", Side::SELL, 11.0, 100));
+    engine.addOrder(createOrder("S021", "600030", Side::SELL, 10.5, 50));
+    engine.addOrder(createOrder("S022", "600030", Side::SELL, 12.0, 200));
+
+    auto snap = engine.getSnapshot();
+    ASSERT_EQ(snap["asks"].size(), 3u);
+
+    // askBook_ 按价格升序：10.5, 11.0, 12.0
+    EXPECT_DOUBLE_EQ(snap["asks"][0]["price"].get<double>(), 10.5);
+    EXPECT_EQ(snap["asks"][0]["qty"].get<int>(), 50);
+    EXPECT_EQ(snap["asks"][0]["cumQty"].get<int>(), 50);
+
+    EXPECT_DOUBLE_EQ(snap["asks"][1]["price"].get<double>(), 11.0);
+    EXPECT_EQ(snap["asks"][1]["qty"].get<int>(), 100);
+    EXPECT_EQ(snap["asks"][1]["cumQty"].get<int>(), 150); // 50 + 100
+
+    EXPECT_DOUBLE_EQ(snap["asks"][2]["price"].get<double>(), 12.0);
+    EXPECT_EQ(snap["asks"][2]["qty"].get<int>(), 200);
+    EXPECT_EQ(snap["asks"][2]["cumQty"].get<int>(), 350); // 150 + 200
+}
+
+/**
+ * @brief 同价格多笔订单应聚合为一个档位，orderCount 正确计数
+ */
+TEST_F(MatchingEngineTest, Snapshot_SamePriceAggregation) {
+    engine.addOrder(createOrder("S030", "600030", Side::BUY, 10.0, 100));
+    engine.addOrder(createOrder("S031", "600030", Side::BUY, 10.0, 200));
+    engine.addOrder(createOrder("S032", "600030", Side::BUY, 10.0, 300));
+
+    auto snap = engine.getSnapshot();
+    ASSERT_EQ(snap["bids"].size(), 1u);                // 同价合并为一档
+    EXPECT_EQ(snap["bids"][0]["qty"].get<int>(), 600); // 100 + 200 + 300
+    EXPECT_EQ(snap["bids"][0]["orderCount"].get<int>(), 3);
+    EXPECT_EQ(snap["totalOrders"].get<int>(), 3);
+}
+
+/**
+ * @brief 部分成交后快照应反映剩余量
+ */
+TEST_F(MatchingEngineTest, Snapshot_AfterPartialMatch) {
+    engine.addOrder(createOrder("S040", "600030", Side::SELL, 10.0, 500));
+    // 买入 200，部分成交卖单
+    Order buy = createOrder("S041", "600030", Side::BUY, 10.0, 200);
+    engine.match(buy);
+
+    auto snap = engine.getSnapshot();
+    ASSERT_EQ(snap["asks"].size(), 1u);
+    EXPECT_EQ(snap["asks"][0]["qty"].get<int>(), 300); // 500 - 200
+    EXPECT_TRUE(snap["bids"].empty());
+    EXPECT_EQ(snap["totalOrders"].get<int>(), 1);
+}
+
+/**
+ * @brief 撤单后快照应更新
+ */
+TEST_F(MatchingEngineTest, Snapshot_AfterCancel) {
+    engine.addOrder(createOrder("S050", "600030", Side::BUY, 10.0, 100));
+    engine.addOrder(createOrder("S051", "600030", Side::BUY, 10.0, 200));
+
+    engine.cancelOrder("S050");
+
+    auto snap = engine.getSnapshot();
+    ASSERT_EQ(snap["bids"].size(), 1u);
+    EXPECT_EQ(snap["bids"][0]["qty"].get<int>(), 200);
+    EXPECT_EQ(snap["bids"][0]["orderCount"].get<int>(), 1);
+    EXPECT_EQ(snap["totalOrders"].get<int>(), 1);
+}
