@@ -1023,8 +1023,6 @@ TEST_F(MatchingEngineTest, MarketData_BuyPriceBelowAsk) {
     engine.addOrder(createOrder("M010", "600030", Side::SELL, 10.0, 100));
 
     MarketData md;
-    md.market = Market::XSHE;
-    md.securityId = "600030";
     md.bidPrice = 9.5;
     md.askPrice = 10.5; // 买价 10.0 <= 行情卖价 10.5 → 正常成交
 
@@ -1041,8 +1039,6 @@ TEST_F(MatchingEngineTest, MarketData_BuyPriceExceedsAsk) {
     engine.addOrder(createOrder("M020", "600030", Side::SELL, 10.0, 100));
 
     MarketData md;
-    md.market = Market::XSHE;
-    md.securityId = "600030";
     md.bidPrice = 9.0;
     md.askPrice = 9.5; // 买价 10.0 > 行情卖价 9.5 → 被约束阻止
 
@@ -1059,8 +1055,6 @@ TEST_F(MatchingEngineTest, MarketData_BuyAskPriceZero) {
     engine.addOrder(createOrder("M030", "600030", Side::SELL, 10.0, 100));
 
     MarketData md;
-    md.market = Market::XSHE;
-    md.securityId = "600030";
     md.bidPrice = 0;
     md.askPrice = 0; // askPrice == 0 → 约束被跳过
 
@@ -1077,8 +1071,6 @@ TEST_F(MatchingEngineTest, MarketData_SellPriceAboveBid) {
     engine.addOrder(createOrder("M040", "600030", Side::BUY, 10.0, 100));
 
     MarketData md;
-    md.market = Market::XSHE;
-    md.securityId = "600030";
     md.bidPrice = 9.5; // 卖价 10.0 >= 行情买价 9.5 → 正常成交
     md.askPrice = 10.5;
 
@@ -1095,8 +1087,6 @@ TEST_F(MatchingEngineTest, MarketData_SellPriceBelowBid) {
     engine.addOrder(createOrder("M050", "600030", Side::BUY, 10.0, 100));
 
     MarketData md;
-    md.market = Market::XSHE;
-    md.securityId = "600030";
     md.bidPrice = 10.5; // 卖价 10.0 < 行情买价 10.5 → 被约束阻止
     md.askPrice = 11.0;
 
@@ -1113,8 +1103,6 @@ TEST_F(MatchingEngineTest, MarketData_SellBidPriceZero) {
     engine.addOrder(createOrder("M060", "600030", Side::BUY, 10.0, 100));
 
     MarketData md;
-    md.market = Market::XSHE;
-    md.securityId = "600030";
     md.bidPrice = 0; // bidPrice == 0 → 约束被跳过
     md.askPrice = 0;
 
@@ -1136,8 +1124,6 @@ TEST_F(MatchingEngineTest, MarketData_BuyBlocksAllLevels) {
     engine.addOrder(createOrder("M071", "600030", Side::SELL, 10.0, 100));
 
     MarketData md;
-    md.market = Market::XSHE;
-    md.securityId = "600030";
     md.bidPrice = 8.5;
     md.askPrice = 9.5; // 买价 10.0 > 行情卖价 9.5
 
@@ -1162,8 +1148,6 @@ TEST_F(MatchingEngineTest, MarketData_SellBlocksAllLevels) {
     engine.addOrder(createOrder("M071", "600030", Side::BUY, 10.0, 100));
 
     MarketData md;
-    md.market = Market::XSHE;
-    md.securityId = "600030";
     md.bidPrice = 9.5;
     md.askPrice = 10.5;
 
@@ -1183,8 +1167,6 @@ TEST_F(MatchingEngineTest, MarketData_BuyPriceEqualsAsk) {
     engine.addOrder(createOrder("M080", "600030", Side::SELL, 10.0, 100));
 
     MarketData md;
-    md.market = Market::XSHE;
-    md.securityId = "600030";
     md.bidPrice = 9.5;
     md.askPrice = 10.0; // 买价 10.0 == 行情卖价 10.0 → 不触发（严格 >）
 
@@ -1201,8 +1183,6 @@ TEST_F(MatchingEngineTest, MarketData_SellPriceEqualsBid) {
     engine.addOrder(createOrder("M090", "600030", Side::BUY, 10.0, 100));
 
     MarketData md;
-    md.market = Market::XSHE;
-    md.securityId = "600030";
     md.bidPrice = 10.0; // 卖价 10.0 == 行情买价 10.0 → 不触发（严格 <）
     md.askPrice = 10.5;
 
