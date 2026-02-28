@@ -110,6 +110,14 @@ class TradeSystem {
     std::unordered_set<std::string> localOnlyOrders_;
 
     /**
+     * 记录不同市场不同证券的最新行情数据，用于更复杂的撮合逻辑
+     *
+     * key: market + securityId 的组合键，如：`XSHG+600030`
+     * value: 最新的 MarketData 结构体
+     */
+    std::unordered_map<std::string, MarketData> latestMarketData_;
+
+    /**
      * @brief 所有撤单回报都回来后，处理最终结果
      */
     void resolvePendingMatch(const std::string &activeOrderId);

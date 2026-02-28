@@ -65,7 +65,8 @@ void TradeSystem::handleOrder(const nlohmann::json &input) {
             response["shareholderId"] = order.shareholderId;
             sendToClient_(response);
         }
-        // 尝试撮合交易
+        // 尝试拿去市场行情
+        // TODO: 在这里拿到市场行情，然后传入`match`函数
         auto matchResult = matchingEngine_.match(order);
         if (!matchResult.executions.empty()) {
             auto &executions = matchResult.executions;
@@ -266,6 +267,8 @@ void TradeSystem::handleCancel(const nlohmann::json &input) {
 
 void TradeSystem::handleMarketData(const nlohmann::json &input) {
     // TODO:
+    // 依据项目书，这里的input输入的json是以 JSON Array 格式输入的多个行情数据，
+    // 需要解析并对 latestMarketData_ 进行更新
 }
 
 void TradeSystem::handleResponse(const nlohmann::json &input) {
