@@ -1131,7 +1131,7 @@ TEST_F(MatchingEngineTest, MarketData_BuyBlocksAllLevels) {
     auto result = engine.match(buy, md);
     EXPECT_FALSE(result.executions.empty());
     EXPECT_EQ(result.executions.size(), 1u); // 只成交了9.0档的100股
-    EXPECT_EQ(result.executions[0].execPrice, 9.0);
+    EXPECT_DOUBLE_EQ(result.executions[0].execPrice, 9.0);
     EXPECT_EQ(result.executions[0].execQty, 100);
     EXPECT_EQ(result.remainingQty, 100u);
 }
@@ -1155,7 +1155,7 @@ TEST_F(MatchingEngineTest, MarketData_SellBlocksAllLevels) {
     auto result = engine.match(buy, md);
     EXPECT_FALSE(result.executions.empty());
     EXPECT_EQ(result.executions.size(), 1u); // 只成交了10.0档的100股
-    EXPECT_EQ(result.executions[0].execPrice, 10.0);
+    EXPECT_DOUBLE_EQ(result.executions[0].execPrice, 10.0);
     EXPECT_EQ(result.executions[0].execQty, 100);
     EXPECT_EQ(result.remainingQty, 100u);
 }
