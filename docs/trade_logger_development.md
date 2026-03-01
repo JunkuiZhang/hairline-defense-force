@@ -4,8 +4,6 @@
 
 `TradeLogger` 是交易系统的历史记录组件，负责将所有交易事件以 JSONL 格式异步写入磁盘，供后续 Python 离线分析使用。
 
-**核心设计目标**：零阻塞 —— 日志写入不能拖慢交易主线程。
-
 ---
 
 ## 一、架构设计
@@ -20,15 +18,10 @@
                                └──────────────┘
 ```
 
-### 1.1 异步队列
-
 - 生产者：交易线程调用 `log*()` → `enqueue()` → `mutex` + `queue_.push()`
 - 消费者：后台 `writerLoop` 线程 `cv_.wait()` → `swap` 整个队列 → 批量写入
 - 关闭时：`close()` 设置 `stopRequested_` → 等待队列排空 → `join` 线程 → 关闭文件
 
-### 1.2 为什么不用 lock-free 队列
-
-当前场景瓶颈在磁盘 I/O，不在队列。`std::mutex` + `std::queue` + `std::condition_variable` 足够，且无外部依赖。如果未来有微秒级延迟需求，可替换为 `moodycamel::ConcurrentQueue`。
 
 ---
 
@@ -116,44 +109,3 @@ TradeLogger &logger();                              // 获取引用
 | 交易所撤单回报 | `logCancelConfirm / logCancelReject` |
 
 未启用日志时（未调用 `enableLogging`），所有 `log*()` 调用会因 `isOpen_` 检查立即返回，零开销。
-
----
-
-## 六、使用示例
-
-```cpp
-#include "trade_system.h"
-
-int main() {
-    hdf::TradeSystem system;
-    system.enableLogging("data/history_20260301.jsonl");
-
-    system.setSendToClient([](const nlohmann::json &resp) {
-        std::cout << resp.dump() << std::endl;
-    });
-
-    // 正常处理订单，日志自动记录
-    nlohmann::json order = {
-        {"clOrderId", "O001"}, {"market", "XSHG"},
-        {"securityId", "600030"}, {"side", "B"},
-        {"price", 10.0}, {"qty", 100},
-        {"shareholderId", "SH001"}
-    };
-    system.handleOrder(order);
-
-    // 关闭时自动等待队列写完
-    system.disableLogging();
-    return 0;
-}
-```
-
----
-
-## 七、后续计划
-
-- **离线分析（Python）**：读取 JSONL 文件，使用 pandas + Altair 生成报表
-  - 成交汇总：按股票统计成交量、成交额、笔数
-  - 价格走势：成交价时间序列图
-  - 撤单率 / 拒绝率统计
-  - 撮合延迟分析（ORDER_NEW → EXECUTION 时间差）
-- **集成到 admin UI**：在 Streamlit 管理界面添加"历史分析"页面
