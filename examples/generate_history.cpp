@@ -55,7 +55,7 @@ int main(int argc, char *argv[]) {
             auto json = nlohmann::json::parse(line);
 
             std::string type = json.value("type", "order");
-            // 移除 type 字段（TradeSystem 不认识它）
+            // 移除 type 字段，该字段对 TradeSystem 无用
             json.erase("type");
 
             if (type == "cancel") {
