@@ -8,6 +8,14 @@ TradeSystem::TradeSystem() {}
 
 TradeSystem::~TradeSystem() {}
 
+bool TradeSystem::enableLogging(const std::string &filePath) {
+    return logger_.open(filePath);
+}
+
+void TradeSystem::disableLogging() { logger_.close(); }
+
+TradeLogger &TradeSystem::logger() { return logger_; }
+
 void TradeSystem::setSendToClient(SendToClient callback) {
     sendToClient_ = callback;
 }
@@ -51,6 +59,8 @@ void TradeSystem::handleOrder(const nlohmann::json &input) {
             response["rejectText"] = ORDER_CROSS_TRADE_REJECT_REASON;
             sendToClient_(response);
         }
+        logger_.logOrderReject(order.clOrderId, ORDER_CROSS_TRADE_REJECT_CODE,
+                               ORDER_CROSS_TRADE_REJECT_REASON);
     } else {
         // 纯撮合模式，首先发送确认回报
         // 对于交易所前置模式，需要考虑情况，比如，如果需要转发至交易所，则应该等交易所的确认回报收到后再发给客户端。
@@ -64,6 +74,7 @@ void TradeSystem::handleOrder(const nlohmann::json &input) {
             response["price"] = order.price;
             response["shareholderId"] = order.shareholderId;
             sendToClient_(response);
+            logger_.logOrderConfirm(order.clOrderId);
         }
         // 尝试拿去市场行情
         // TODO: 在这里拿到市场行情，然后传入`match`函数
@@ -103,6 +114,9 @@ void TradeSystem::handleOrder(const nlohmann::json &input) {
                     // 更新对手方（被动方）风控状态
                     riskController_.onOrderExecuted(exec.clOrderId,
                                                     exec.execQty);
+                    logger_.logExecution(exec.execId, exec.clOrderId,
+                                         exec.securityId, exec.side,
+                                         exec.execQty, exec.execPrice, true);
                     totalExecQty += exec.execQty;
                     if (sendToClient_) {
                         // 对手方（被动方）成交回报
@@ -133,6 +147,10 @@ void TradeSystem::handleOrder(const nlohmann::json &input) {
                         activeResponse["execPrice"] = exec.execPrice;
                         sendToClient_(activeResponse);
                     }
+                    // 记录主动方成交
+                    logger_.logExecution(exec.execId, order.clOrderId,
+                                         order.securityId, order.side,
+                                         exec.execQty, exec.execPrice, false);
                 }
                 // 更新主动方风控状态
                 riskController_.onOrderExecuted(order.clOrderId, totalExecQty);
@@ -192,6 +210,8 @@ void TradeSystem::handleCancel(const nlohmann::json &input) {
             CancelResponse result =
                 matchingEngine_.cancelOrder(order.origClOrderId);
             if (result.type == CancelResponse::Type::REJECT) {
+                logger_.logCancelReject(order.origClOrderId, result.rejectCode,
+                                        result.rejectText);
                 if (sendToClient_) {
                     nlohmann::json response;
                     response["clOrderId"] = order.clOrderId;
@@ -206,6 +226,8 @@ void TradeSystem::handleCancel(const nlohmann::json &input) {
                 }
             } else {
                 riskController_.onOrderCanceled(order.origClOrderId);
+                logger_.logCancelConfirm(order.origClOrderId,
+                                         result.canceledQty, result.cumQty);
                 if (sendToClient_) {
                     nlohmann::json response;
                     response["clOrderId"] = result.clOrderId;
@@ -230,6 +252,8 @@ void TradeSystem::handleCancel(const nlohmann::json &input) {
         CancelResponse result =
             matchingEngine_.cancelOrder(order.origClOrderId);
         if (result.type == CancelResponse::Type::REJECT) {
+            logger_.logCancelReject(order.origClOrderId, result.rejectCode,
+                                    result.rejectText);
             // 订单不在簿中（已完全成交或不存在）
             if (sendToClient_) {
                 nlohmann::json response;
@@ -246,6 +270,8 @@ void TradeSystem::handleCancel(const nlohmann::json &input) {
         } else {
             // 更新风控系统订单状态
             riskController_.onOrderCanceled(order.origClOrderId);
+            logger_.logCancelConfirm(order.origClOrderId, result.canceledQty,
+                                     result.cumQty);
             // 生成撤单确认回报
             if (sendToClient_) {
                 nlohmann::json response;
@@ -283,6 +309,11 @@ void TradeSystem::handleResponse(const nlohmann::json &input) {
         uint32_t execQty = input["execQty"].get<uint32_t>();
         matchingEngine_.reduceOrderQty(clOrderId, execQty);
         riskController_.onOrderExecuted(clOrderId, execQty);
+        // 记录来自交易所的成交
+        logger_.logExecution(input.value("execId", ""), clOrderId,
+                             input.value("securityId", ""),
+                             side_from_string(input.value("side", "B")),
+                             execQty, input.value("execPrice", 0.0), false);
     } else if (input.contains("origClOrderId")) {
         // 处理撤单回报
         std::string origClOrderId = input["origClOrderId"].get<std::string>();
@@ -314,6 +345,9 @@ void TradeSystem::handleResponse(const nlohmann::json &input) {
             // 普通撤单回报（用户主动撤单）
             if (input.contains("rejectCode")) {
                 // 撤单被交易所拒绝：仅转发给客户端，不更新内部状态
+                logger_.logCancelReject(origClOrderId,
+                                        input.value("rejectCode", 0),
+                                        input.value("rejectText", ""));
                 if (sendToClient_) {
                     sendToClient_(input);
                 }
@@ -321,6 +355,9 @@ void TradeSystem::handleResponse(const nlohmann::json &input) {
                 // 撤单成功：更新风控和撮合引擎，并转发给客户端
                 riskController_.onOrderCanceled(origClOrderId);
                 matchingEngine_.cancelOrder(origClOrderId);
+                logger_.logCancelConfirm(origClOrderId,
+                                         input.value("canceledQty", 0u),
+                                         input.value("cumQty", 0u));
                 if (sendToClient_) {
                     sendToClient_(input);
                 }
@@ -425,6 +462,7 @@ void TradeSystem::sendConfirmAndExecReports(
         return;
 
     // 主动方确认回报（原始订单完整数量）
+    logger_.logOrderConfirm(activeOrder.clOrderId);
     nlohmann::json confirm;
     confirm["clOrderId"] = activeOrder.clOrderId;
     confirm["market"] = to_string(activeOrder.market);
@@ -451,6 +489,10 @@ void TradeSystem::sendConfirmAndExecReports(
         passiveResponse["execPrice"] = exec.execPrice;
         sendToClient_(passiveResponse);
 
+        // 记录被动方成交
+        logger_.logExecution(exec.execId, exec.clOrderId, exec.securityId,
+                             exec.side, exec.execQty, exec.execPrice, true);
+
         // 主动方（taker）成交回报
         nlohmann::json activeResponse;
         activeResponse["clOrderId"] = activeOrder.clOrderId;
@@ -464,6 +506,11 @@ void TradeSystem::sendConfirmAndExecReports(
         activeResponse["execQty"] = exec.execQty;
         activeResponse["execPrice"] = exec.execPrice;
         sendToClient_(activeResponse);
+
+        // 记录主动方成交
+        logger_.logExecution(exec.execId, activeOrder.clOrderId,
+                             activeOrder.securityId, activeOrder.side,
+                             exec.execQty, exec.execPrice, false);
     }
 }
 

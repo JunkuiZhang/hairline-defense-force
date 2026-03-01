@@ -2,6 +2,7 @@
 
 #include "matching_engine.h"
 #include "risk_controller.h"
+#include "trade_logger.h"
 #include <functional>
 #include <nlohmann/json.hpp>
 #include <string>
@@ -26,6 +27,23 @@ class TradeSystem {
 
     using SendToClient = std::function<void(const nlohmann::json &)>;
     using SendToExchange = std::function<void(const nlohmann::json &)>;
+
+    /**
+     * @brief 启用交易历史记录。调用后所有事件将写入指定文件。
+     * @param filePath JSONL 文件路径
+     * @return true 打开成功
+     */
+    bool enableLogging(const std::string &filePath);
+
+    /**
+     * @brief 关闭交易历史记录
+     */
+    void disableLogging();
+
+    /**
+     * @brief 获取日志器引用（供离线分析使用）
+     */
+    TradeLogger &logger();
 
     /**
      * @brief 设置与客户端的交互接口，图中op4
@@ -58,6 +76,7 @@ class TradeSystem {
   private:
     RiskController riskController_;
     MatchingEngine matchingEngine_;
+    TradeLogger logger_;
 
     // 以下是系统与客户端和交易所交互的接口，系统可以根据是否设置了
     // sendToExchange_来判断自己是交易所前置还是纯撮合系统。

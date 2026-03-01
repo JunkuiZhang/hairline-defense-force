@@ -29,6 +29,7 @@ add_library(trade_engine
   src/risk_controller.cpp
   src/matching_engine.cpp
   src/trade_system.cpp
+  src/trade_logger.cpp
   src/admin_server.cpp
 )
 target_link_libraries(trade_engine nlohmann_json::nlohmann_json)
