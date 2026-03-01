@@ -41,6 +41,9 @@ void TradeSystem::handleOrder(const nlohmann::json &input) {
         return;
     }
 
+    // 记录新订单
+    logger_.logOrderNew(order);
+
     // 风控
     auto riskResult = riskController_.checkOrder(order);
 
