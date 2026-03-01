@@ -65,10 +65,7 @@ bool TradeLogger::isOpen() const { return isOpen_; }
 // ============================================================
 
 void TradeLogger::enqueue(nlohmann::json record) {
-    if (!isOpen_)
-        return;
-
-    // 添加毫秒级时间戳
+    // 添加时间戳
     auto now = std::chrono::system_clock::now();
     auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(
                   now.time_since_epoch())
@@ -114,6 +111,9 @@ void TradeLogger::writerLoop() {
 // ============================================================
 
 void TradeLogger::logOrderNew(const Order &order) {
+    if (!isOpen_)
+        return;
+
     nlohmann::json record;
     record["event"] = "ORDER_NEW";
     record["clOrderId"] = order.clOrderId;
@@ -127,6 +127,9 @@ void TradeLogger::logOrderNew(const Order &order) {
 }
 
 void TradeLogger::logOrderConfirm(const std::string &clOrderId) {
+    if (!isOpen_)
+        return;
+
     nlohmann::json record;
     record["event"] = "ORDER_CONFIRM";
     record["clOrderId"] = clOrderId;
@@ -136,6 +139,9 @@ void TradeLogger::logOrderConfirm(const std::string &clOrderId) {
 void TradeLogger::logOrderReject(const std::string &clOrderId,
                                  int32_t rejectCode,
                                  const std::string &rejectText) {
+    if (!isOpen_)
+        return;
+
     nlohmann::json record;
     record["event"] = "ORDER_REJECT";
     record["clOrderId"] = clOrderId;
@@ -149,6 +155,9 @@ void TradeLogger::logExecution(const std::string &execId,
                                const std::string &securityId, Side side,
                                uint32_t execQty, double execPrice,
                                bool isMaker) {
+    if (!isOpen_)
+        return;
+
     nlohmann::json record;
     record["event"] = "EXECUTION";
     record["execId"] = execId;
@@ -163,6 +172,9 @@ void TradeLogger::logExecution(const std::string &execId,
 
 void TradeLogger::logCancelConfirm(const std::string &origClOrderId,
                                    uint32_t canceledQty, uint32_t cumQty) {
+    if (!isOpen_)
+        return;
+
     nlohmann::json record;
     record["event"] = "CANCEL_CONFIRM";
     record["origClOrderId"] = origClOrderId;
@@ -174,6 +186,9 @@ void TradeLogger::logCancelConfirm(const std::string &origClOrderId,
 void TradeLogger::logCancelReject(const std::string &origClOrderId,
                                   int32_t rejectCode,
                                   const std::string &rejectText) {
+    if (!isOpen_)
+        return;
+
     nlohmann::json record;
     record["event"] = "CANCEL_REJECT";
     record["origClOrderId"] = origClOrderId;
@@ -184,6 +199,9 @@ void TradeLogger::logCancelReject(const std::string &origClOrderId,
 
 void TradeLogger::logMarketData(const std::string &securityId, Market market,
                                 double bidPrice, double askPrice) {
+    if (!isOpen_)
+        return;
+
     nlohmann::json record;
     record["event"] = "MARKET_DATA";
     record["securityId"] = securityId;
