@@ -1,0 +1,1284 @@
+{"clOrderId":"ORD000001","event":"ORDER_NEW","market":"XSHE","price":13.58,"qty":300,"securityId":"000001","shareholderId":"SH004","side":"B","timestamp":1772378718259}
+{"clOrderId":"ORD000001","event":"ORDER_CONFIRM","timestamp":1772378718259}
+{"clOrderId":"ORD000002","event":"ORDER_NEW","market":"XSHE","price":15.53,"qty":1000,"securityId":"000001","shareholderId":"SH002","side":"B","timestamp":1772378718259}
+{"clOrderId":"ORD000002","event":"ORDER_CONFIRM","timestamp":1772378718259}
+{"clOrderId":"ORD000003","event":"ORDER_NEW","market":"XSHG","price":28.37,"qty":200,"securityId":"600030","shareholderId":"SH009","side":"B","timestamp":1772378718259}
+{"clOrderId":"ORD000003","event":"ORDER_CONFIRM","timestamp":1772378718259}
+{"clOrderId":"ORD000004","event":"ORDER_NEW","market":"XSHE","price":15.65,"qty":1000,"securityId":"000001","shareholderId":"SH007","side":"B","timestamp":1772378718259}
+{"clOrderId":"ORD000004","event":"ORDER_CONFIRM","timestamp":1772378718259}
+{"clOrderId":"ORD000005","event":"ORDER_NEW","market":"XSHE","price":15.93,"qty":100,"securityId":"000001","shareholderId":"SH003","side":"S","timestamp":1772378718259}
+{"clOrderId":"ORD000005","event":"ORDER_CONFIRM","timestamp":1772378718259}
+{"clOrderId":"ORD000006","event":"ORDER_NEW","market":"XSHG","price":1786.22,"qty":300,"securityId":"600519","shareholderId":"SH002","side":"S","timestamp":1772378718259}
+{"clOrderId":"ORD000006","event":"ORDER_CONFIRM","timestamp":1772378718259}
+{"clOrderId":"ORD000007","event":"ORDER_NEW","market":"XSHG","price":31.39,"qty":1000,"securityId":"600030","shareholderId":"SH005","side":"S","timestamp":1772378718259}
+{"clOrderId":"ORD000007","event":"ORDER_CONFIRM","timestamp":1772378718259}
+{"clOrderId":"ORD000008","event":"ORDER_NEW","market":"XSHE","price":15.11,"qty":500,"securityId":"000001","shareholderId":"SH002","side":"S","timestamp":1772378718259}
+{"clOrderId":"ORD000008","event":"ORDER_REJECT","rejectCode":1,"rejectText":"Cross trade detected","timestamp":1772378718259}
+{"clOrderId":"ORD000009","event":"ORDER_NEW","market":"XSHE","price":15.23,"qty":100,"securityId":"000001","shareholderId":"SH001","side":"S","timestamp":1772378718259}
+{"clOrderId":"ORD000009","event":"ORDER_CONFIRM","timestamp":1772378718259}
+{"clOrderId":"ORD000004","event":"EXECUTION","execId":"EXEC0000000000000001","execPrice":15.65,"execQty":100,"isMaker":true,"securityId":"000001","side":"B","timestamp":1772378718259}
+{"clOrderId":"ORD000009","event":"EXECUTION","execId":"EXEC0000000000000001","execPrice":15.65,"execQty":100,"isMaker":false,"securityId":"000001","side":"S","timestamp":1772378718259}
+{"clOrderId":"ORD000010","event":"ORDER_NEW","market":"XSHG","price":1814.21,"qty":100,"securityId":"600519","shareholderId":"SH007","side":"B","timestamp":1772378718259}
+{"clOrderId":"ORD000010","event":"ORDER_CONFIRM","timestamp":1772378718259}
+{"clOrderId":"ORD000006","event":"EXECUTION","execId":"EXEC0000000000000002","execPrice":1786.22,"execQty":100,"isMaker":true,"securityId":"600519","side":"S","timestamp":1772378718259}
+{"clOrderId":"ORD000010","event":"EXECUTION","execId":"EXEC0000000000000002","execPrice":1786.22,"execQty":100,"isMaker":false,"securityId":"600519","side":"B","timestamp":1772378718259}
+{"clOrderId":"ORD000011","event":"ORDER_NEW","market":"XSHE","price":13.99,"qty":300,"securityId":"000001","shareholderId":"SH004","side":"S","timestamp":1772378718259}
+{"clOrderId":"ORD000011","event":"ORDER_REJECT","rejectCode":1,"rejectText":"Cross trade detected","timestamp":1772378718259}
+{"clOrderId":"ORD000012","event":"ORDER_NEW","market":"XSHE","price":15.33,"qty":200,"securityId":"000001","shareholderId":"SH009","side":"B","timestamp":1772378718259}
+{"clOrderId":"ORD000012","event":"ORDER_CONFIRM","timestamp":1772378718259}
+{"clOrderId":"ORD000013","event":"ORDER_NEW","market":"XSHG","price":29.52,"qty":1000,"securityId":"600030","shareholderId":"SH004","side":"S","timestamp":1772378718259}
+{"clOrderId":"ORD000013","event":"ORDER_CONFIRM","timestamp":1772378718259}
+{"clOrderId":"ORD000014","event":"ORDER_NEW","market":"XSHG","price":31.29,"qty":300,"securityId":"600030","shareholderId":"SH007","side":"B","timestamp":1772378718259}
+{"clOrderId":"ORD000014","event":"ORDER_CONFIRM","timestamp":1772378718259}
+{"clOrderId":"ORD000013","event":"EXECUTION","execId":"EXEC0000000000000003","execPrice":29.52,"execQty":300,"isMaker":true,"securityId":"600030","side":"S","timestamp":1772378718259}
+{"clOrderId":"ORD000014","event":"EXECUTION","execId":"EXEC0000000000000003","execPrice":29.52,"execQty":300,"isMaker":false,"securityId":"600030","side":"B","timestamp":1772378718259}
+{"clOrderId":"ORD000015","event":"ORDER_NEW","market":"XSHG","price":28.85,"qty":500,"securityId":"600030","shareholderId":"SH007","side":"S","timestamp":1772378718259}
+{"clOrderId":"ORD000015","event":"ORDER_CONFIRM","timestamp":1772378718259}
+{"clOrderId":"ORD000016","event":"ORDER_NEW","market":"XSHE","price":13.93,"qty":200,"securityId":"000001","shareholderId":"SH004","side":"S","timestamp":1772378718259}
+{"clOrderId":"ORD000016","event":"ORDER_REJECT","rejectCode":1,"rejectText":"Cross trade detected","timestamp":1772378718259}
+{"clOrderId":"ORD000017","event":"ORDER_NEW","market":"XSHE","price":15.74,"qty":500,"securityId":"000001","shareholderId":"SH010","side":"S","timestamp":1772378718259}
+{"clOrderId":"ORD000017","event":"ORDER_CONFIRM","timestamp":1772378718259}
+{"clOrderId":"ORD000018","event":"ORDER_NEW","market":"XSHG","price":30.04,"qty":100,"securityId":"600030","shareholderId":"SH001","side":"B","timestamp":1772378718259}
+{"clOrderId":"ORD000018","event":"ORDER_CONFIRM","timestamp":1772378718259}
+{"clOrderId":"ORD000015","event":"EXECUTION","execId":"EXEC0000000000000004","execPrice":28.85,"execQty":100,"isMaker":true,"securityId":"600030","side":"S","timestamp":1772378718259}
+{"clOrderId":"ORD000018","event":"EXECUTION","execId":"EXEC0000000000000004","execPrice":28.85,"execQty":100,"isMaker":false,"securityId":"600030","side":"B","timestamp":1772378718259}
+{"clOrderId":"ORD000019","event":"ORDER_NEW","market":"XSHG","price":31.17,"qty":500,"securityId":"600030","shareholderId":"SH010","side":"B","timestamp":1772378718259}
+{"clOrderId":"ORD000019","event":"ORDER_CONFIRM","timestamp":1772378718259}
+{"clOrderId":"ORD000015","event":"EXECUTION","execId":"EXEC0000000000000005","execPrice":28.85,"execQty":400,"isMaker":true,"securityId":"600030","side":"S","timestamp":1772378718259}
+{"clOrderId":"ORD000019","event":"EXECUTION","execId":"EXEC0000000000000005","execPrice":28.85,"execQty":400,"isMaker":false,"securityId":"600030","side":"B","timestamp":1772378718259}
+{"clOrderId":"ORD000013","event":"EXECUTION","execId":"EXEC0000000000000006","execPrice":29.52,"execQty":100,"isMaker":true,"securityId":"600030","side":"S","timestamp":1772378718260}
+{"clOrderId":"ORD000019","event":"EXECUTION","execId":"EXEC0000000000000006","execPrice":29.52,"execQty":100,"isMaker":false,"securityId":"600030","side":"B","timestamp":1772378718260}
+{"canceledQty":600,"cumQty":400,"event":"CANCEL_CONFIRM","origClOrderId":"ORD000013","timestamp":1772378718260}
+{"clOrderId":"ORD000021","event":"ORDER_NEW","market":"XSHG","price":1818.84,"qty":100,"securityId":"600519","shareholderId":"SH002","side":"S","timestamp":1772378718260}
+{"clOrderId":"ORD000021","event":"ORDER_CONFIRM","timestamp":1772378718260}
+{"clOrderId":"ORD000022","event":"ORDER_NEW","market":"XSHE","price":15.81,"qty":300,"securityId":"000001","shareholderId":"SH002","side":"S","timestamp":1772378718260}
+{"clOrderId":"ORD000022","event":"ORDER_REJECT","rejectCode":1,"rejectText":"Cross trade detected","timestamp":1772378718260}
+{"clOrderId":"ORD000023","event":"ORDER_NEW","market":"XSHG","price":28.01,"qty":300,"securityId":"600030","shareholderId":"SH009","side":"S","timestamp":1772378718260}
+{"clOrderId":"ORD000023","event":"ORDER_REJECT","rejectCode":1,"rejectText":"Cross trade detected","timestamp":1772378718260}
+{"clOrderId":"ORD000024","event":"ORDER_NEW","market":"XSHE","price":16.11,"qty":300,"securityId":"000001","shareholderId":"SH009","side":"B","timestamp":1772378718260}
+{"clOrderId":"ORD000024","event":"ORDER_CONFIRM","timestamp":1772378718260}
+{"clOrderId":"ORD000017","event":"EXECUTION","execId":"EXEC0000000000000007","execPrice":15.74,"execQty":300,"isMaker":true,"securityId":"000001","side":"S","timestamp":1772378718260}
+{"clOrderId":"ORD000024","event":"EXECUTION","execId":"EXEC0000000000000007","execPrice":15.74,"execQty":300,"isMaker":false,"securityId":"000001","side":"B","timestamp":1772378718260}
+{"clOrderId":"ORD000025","event":"ORDER_NEW","market":"XSHG","price":31.05,"qty":1000,"securityId":"600030","shareholderId":"SH009","side":"S","timestamp":1772378718260}
+{"clOrderId":"ORD000025","event":"ORDER_REJECT","rejectCode":1,"rejectText":"Cross trade detected","timestamp":1772378718260}
+{"clOrderId":"ORD000026","event":"ORDER_NEW","market":"XSHE","price":14.97,"qty":100,"securityId":"000001","shareholderId":"SH006","side":"S","timestamp":1772378718260}
+{"clOrderId":"ORD000026","event":"ORDER_CONFIRM","timestamp":1772378718260}
+{"clOrderId":"ORD000004","event":"EXECUTION","execId":"EXEC0000000000000008","execPrice":15.65,"execQty":100,"isMaker":true,"securityId":"000001","side":"B","timestamp":1772378718260}
+{"clOrderId":"ORD000026","event":"EXECUTION","execId":"EXEC0000000000000008","execPrice":15.65,"execQty":100,"isMaker":false,"securityId":"000001","side":"S","timestamp":1772378718260}
+{"clOrderId":"ORD000027","event":"ORDER_NEW","market":"XSHG","price":1782.32,"qty":1000,"securityId":"600519","shareholderId":"SH002","side":"B","timestamp":1772378718260}
+{"clOrderId":"ORD000027","event":"ORDER_REJECT","rejectCode":1,"rejectText":"Cross trade detected","timestamp":1772378718260}
+{"clOrderId":"ORD000028","event":"ORDER_NEW","market":"XSHG","price":1819.12,"qty":1000,"securityId":"600519","shareholderId":"SH003","side":"B","timestamp":1772378718260}
+{"clOrderId":"ORD000028","event":"ORDER_CONFIRM","timestamp":1772378718260}
+{"clOrderId":"ORD000006","event":"EXECUTION","execId":"EXEC0000000000000009","execPrice":1786.22,"execQty":200,"isMaker":true,"securityId":"600519","side":"S","timestamp":1772378718260}
+{"clOrderId":"ORD000028","event":"EXECUTION","execId":"EXEC0000000000000009","execPrice":1786.22,"execQty":200,"isMaker":false,"securityId":"600519","side":"B","timestamp":1772378718260}
+{"clOrderId":"ORD000021","event":"EXECUTION","execId":"EXEC0000000000000010","execPrice":1818.84,"execQty":100,"isMaker":true,"securityId":"600519","side":"S","timestamp":1772378718260}
+{"clOrderId":"ORD000028","event":"EXECUTION","execId":"EXEC0000000000000010","execPrice":1818.84,"execQty":100,"isMaker":false,"securityId":"600519","side":"B","timestamp":1772378718260}
+{"clOrderId":"ORD000029","event":"ORDER_NEW","market":"XSHG","price":1790.6,"qty":1000,"securityId":"600519","shareholderId":"SH007","side":"B","timestamp":1772378718260}
+{"clOrderId":"ORD000029","event":"ORDER_CONFIRM","timestamp":1772378718260}
+{"clOrderId":"ORD000030","event":"ORDER_NEW","market":"XSHE","price":15.64,"qty":500,"securityId":"000001","shareholderId":"SH006","side":"B","timestamp":1772378718260}
+{"clOrderId":"ORD000030","event":"ORDER_CONFIRM","timestamp":1772378718260}
+{"clOrderId":"ORD000031","event":"ORDER_NEW","market":"XSHE","price":13.86,"qty":200,"securityId":"000001","shareholderId":"SH002","side":"S","timestamp":1772378718260}
+{"clOrderId":"ORD000031","event":"ORDER_REJECT","rejectCode":1,"rejectText":"Cross trade detected","timestamp":1772378718260}
+{"clOrderId":"ORD000032","event":"ORDER_NEW","market":"XSHE","price":15.27,"qty":100,"securityId":"000001","shareholderId":"SH002","side":"B","timestamp":1772378718260}
+{"clOrderId":"ORD000032","event":"ORDER_CONFIRM","timestamp":1772378718260}
+{"clOrderId":"ORD000033","event":"ORDER_NEW","market":"XSHG","price":28.27,"qty":100,"securityId":"600030","shareholderId":"SH006","side":"B","timestamp":1772378718260}
+{"clOrderId":"ORD000033","event":"ORDER_CONFIRM","timestamp":1772378718260}
+{"event":"CANCEL_REJECT","origClOrderId":"ORD000008","rejectCode":1,"rejectText":"Order not found in book","timestamp":1772378718260}
+{"clOrderId":"ORD000035","event":"ORDER_NEW","market":"XSHG","price":1801.57,"qty":1000,"securityId":"600519","shareholderId":"SH010","side":"B","timestamp":1772378718260}
+{"clOrderId":"ORD000035","event":"ORDER_CONFIRM","timestamp":1772378718260}
+{"clOrderId":"ORD000036","event":"ORDER_NEW","market":"XSHG","price":1787.62,"qty":100,"securityId":"600519","shareholderId":"SH007","side":"S","timestamp":1772378718260}
+{"clOrderId":"ORD000036","event":"ORDER_REJECT","rejectCode":1,"rejectText":"Cross trade detected","timestamp":1772378718260}
+{"clOrderId":"ORD000037","event":"ORDER_NEW","market":"XSHG","price":1814.55,"qty":100,"securityId":"600519","shareholderId":"SH002","side":"S","timestamp":1772378718260}
+{"clOrderId":"ORD000037","event":"ORDER_CONFIRM","timestamp":1772378718260}
+{"clOrderId":"ORD000028","event":"EXECUTION","execId":"EXEC0000000000000011","execPrice":1819.12,"execQty":100,"isMaker":true,"securityId":"600519","side":"B","timestamp":1772378718260}
+{"clOrderId":"ORD000037","event":"EXECUTION","execId":"EXEC0000000000000011","execPrice":1819.12,"execQty":100,"isMaker":false,"securityId":"600519","side":"S","timestamp":1772378718260}
+{"event":"CANCEL_REJECT","origClOrderId":"ORD000025","rejectCode":1,"rejectText":"Order not found in book","timestamp":1772378718260}
+{"clOrderId":"ORD000039","event":"ORDER_NEW","market":"XSHG","price":28.77,"qty":1000,"securityId":"600030","shareholderId":"SH008","side":"B","timestamp":1772378718261}
+{"clOrderId":"ORD000039","event":"ORDER_CONFIRM","timestamp":1772378718261}
+{"clOrderId":"ORD000040","event":"ORDER_NEW","market":"XSHG","price":29.85,"qty":100,"securityId":"600030","shareholderId":"SH008","side":"S","timestamp":1772378718261}
+{"clOrderId":"ORD000040","event":"ORDER_REJECT","rejectCode":1,"rejectText":"Cross trade detected","timestamp":1772378718261}
+{"clOrderId":"ORD000041","event":"ORDER_NEW","market":"XSHE","price":13.65,"qty":1000,"securityId":"000001","shareholderId":"SH001","side":"B","timestamp":1772378718261}
+{"clOrderId":"ORD000041","event":"ORDER_CONFIRM","timestamp":1772378718261}
+{"clOrderId":"ORD000042","event":"ORDER_NEW","market":"XSHG","price":29.63,"qty":500,"securityId":"600030","shareholderId":"SH004","side":"B","timestamp":1772378718261}
+{"clOrderId":"ORD000042","event":"ORDER_CONFIRM","timestamp":1772378718261}
+{"clOrderId":"ORD000043","event":"ORDER_NEW","market":"XSHG","price":29.52,"qty":500,"securityId":"600030","shareholderId":"SH005","side":"B","timestamp":1772378718261}
+{"clOrderId":"ORD000043","event":"ORDER_REJECT","rejectCode":1,"rejectText":"Cross trade detected","timestamp":1772378718261}
+{"clOrderId":"ORD000044","event":"ORDER_NEW","market":"XSHG","price":1796.92,"qty":1000,"securityId":"600519","shareholderId":"SH008","side":"S","timestamp":1772378718261}
+{"clOrderId":"ORD000044","event":"ORDER_CONFIRM","timestamp":1772378718261}
+{"clOrderId":"ORD000028","event":"EXECUTION","execId":"EXEC0000000000000012","execPrice":1819.12,"execQty":600,"isMaker":true,"securityId":"600519","side":"B","timestamp":1772378718261}
+{"clOrderId":"ORD000044","event":"EXECUTION","execId":"EXEC0000000000000012","execPrice":1819.12,"execQty":600,"isMaker":false,"securityId":"600519","side":"S","timestamp":1772378718261}
+{"clOrderId":"ORD000035","event":"EXECUTION","execId":"EXEC0000000000000013","execPrice":1801.57,"execQty":400,"isMaker":true,"securityId":"600519","side":"B","timestamp":1772378718261}
+{"clOrderId":"ORD000044","event":"EXECUTION","execId":"EXEC0000000000000013","execPrice":1801.57,"execQty":400,"isMaker":false,"securityId":"600519","side":"S","timestamp":1772378718261}
+{"clOrderId":"ORD000045","event":"ORDER_NEW","market":"XSHG","price":1818.75,"qty":1000,"securityId":"600519","shareholderId":"SH009","side":"B","timestamp":1772378718261}
+{"clOrderId":"ORD000045","event":"ORDER_CONFIRM","timestamp":1772378718261}
+{"event":"CANCEL_REJECT","origClOrderId":"ORD000024","rejectCode":1,"rejectText":"Order not found in book","timestamp":1772378718261}
+{"canceledQty":1000,"cumQty":0,"event":"CANCEL_CONFIRM","origClOrderId":"ORD000045","timestamp":1772378718261}
+{"clOrderId":"ORD000048","event":"ORDER_NEW","market":"XSHE","price":13.67,"qty":1000,"securityId":"000001","shareholderId":"SH002","side":"B","timestamp":1772378718261}
+{"clOrderId":"ORD000048","event":"ORDER_CONFIRM","timestamp":1772378718261}
+{"clOrderId":"ORD000049","event":"ORDER_NEW","market":"XSHG","price":30.7,"qty":200,"securityId":"600030","shareholderId":"SH007","side":"B","timestamp":1772378718261}
+{"clOrderId":"ORD000049","event":"ORDER_CONFIRM","timestamp":1772378718261}
+{"clOrderId":"ORD000050","event":"ORDER_NEW","market":"XSHE","price":15.24,"qty":100,"securityId":"000001","shareholderId":"SH010","side":"B","timestamp":1772378718261}
+{"clOrderId":"ORD000050","event":"ORDER_REJECT","rejectCode":1,"rejectText":"Cross trade detected","timestamp":1772378718261}
+{"clOrderId":"ORD000051","event":"ORDER_NEW","market":"XSHE","price":16.3,"qty":200,"securityId":"000001","shareholderId":"SH006","side":"S","timestamp":1772378718261}
+{"clOrderId":"ORD000051","event":"ORDER_REJECT","rejectCode":1,"rejectText":"Cross trade detected","timestamp":1772378718261}
+{"clOrderId":"ORD000052","event":"ORDER_NEW","market":"XSHG","price":1806.87,"qty":300,"securityId":"600519","shareholderId":"SH008","side":"B","timestamp":1772378718261}
+{"clOrderId":"ORD000052","event":"ORDER_CONFIRM","timestamp":1772378718261}
+{"clOrderId":"ORD000053","event":"ORDER_NEW","market":"XSHG","price":29.83,"qty":1000,"securityId":"600030","shareholderId":"SH002","side":"B","timestamp":1772378718261}
+{"clOrderId":"ORD000053","event":"ORDER_CONFIRM","timestamp":1772378718261}
+{"event":"CANCEL_REJECT","origClOrderId":"ORD000016","rejectCode":1,"rejectText":"Order not found in book","timestamp":1772378718261}
+{"clOrderId":"ORD000055","event":"ORDER_NEW","market":"XSHG","price":31.52,"qty":200,"securityId":"600030","shareholderId":"SH006","side":"S","timestamp":1772378718261}
+{"clOrderId":"ORD000055","event":"ORDER_REJECT","rejectCode":1,"rejectText":"Cross trade detected","timestamp":1772378718261}
+{"clOrderId":"ORD000056","event":"ORDER_NEW","market":"XSHG","price":1804.47,"qty":1000,"securityId":"600519","shareholderId":"SH001","side":"S","timestamp":1772378718261}
+{"clOrderId":"ORD000056","event":"ORDER_CONFIRM","timestamp":1772378718261}
+{"clOrderId":"ORD000052","event":"EXECUTION","execId":"EXEC0000000000000014","execPrice":1806.87,"execQty":300,"isMaker":true,"securityId":"600519","side":"B","timestamp":1772378718261}
+{"clOrderId":"ORD000056","event":"EXECUTION","execId":"EXEC0000000000000014","execPrice":1806.87,"execQty":300,"isMaker":false,"securityId":"600519","side":"S","timestamp":1772378718261}
+{"clOrderId":"ORD000057","event":"ORDER_NEW","market":"XSHE","price":16.3,"qty":100,"securityId":"000001","shareholderId":"SH003","side":"S","timestamp":1772378718261}
+{"clOrderId":"ORD000057","event":"ORDER_CONFIRM","timestamp":1772378718261}
+{"clOrderId":"ORD000058","event":"ORDER_NEW","market":"XSHG","price":29.09,"qty":1000,"securityId":"600030","shareholderId":"SH004","side":"B","timestamp":1772378718261}
+{"clOrderId":"ORD000058","event":"ORDER_CONFIRM","timestamp":1772378718261}
+{"clOrderId":"ORD000059","event":"ORDER_NEW","market":"XSHG","price":30.02,"qty":300,"securityId":"600030","shareholderId":"SH001","side":"S","timestamp":1772378718262}
+{"clOrderId":"ORD000059","event":"ORDER_CONFIRM","timestamp":1772378718262}
+{"clOrderId":"ORD000049","event":"EXECUTION","execId":"EXEC0000000000000015","execPrice":30.7,"execQty":200,"isMaker":true,"securityId":"600030","side":"B","timestamp":1772378718262}
+{"clOrderId":"ORD000059","event":"EXECUTION","execId":"EXEC0000000000000015","execPrice":30.7,"execQty":200,"isMaker":false,"securityId":"600030","side":"S","timestamp":1772378718262}
+{"clOrderId":"ORD000060","event":"ORDER_NEW","market":"XSHG","price":1781.76,"qty":300,"securityId":"600519","shareholderId":"SH003","side":"S","timestamp":1772378718262}
+{"clOrderId":"ORD000060","event":"ORDER_CONFIRM","timestamp":1772378718262}
+{"clOrderId":"ORD000035","event":"EXECUTION","execId":"EXEC0000000000000016","execPrice":1801.57,"execQty":300,"isMaker":true,"securityId":"600519","side":"B","timestamp":1772378718262}
+{"clOrderId":"ORD000060","event":"EXECUTION","execId":"EXEC0000000000000016","execPrice":1801.57,"execQty":300,"isMaker":false,"securityId":"600519","side":"S","timestamp":1772378718262}
+{"clOrderId":"ORD000061","event":"ORDER_NEW","market":"XSHG","price":1809.65,"qty":1000,"securityId":"600519","shareholderId":"SH007","side":"B","timestamp":1772378718262}
+{"clOrderId":"ORD000061","event":"ORDER_CONFIRM","timestamp":1772378718262}
+{"clOrderId":"ORD000056","event":"EXECUTION","execId":"EXEC0000000000000017","execPrice":1804.47,"execQty":700,"isMaker":true,"securityId":"600519","side":"S","timestamp":1772378718262}
+{"clOrderId":"ORD000061","event":"EXECUTION","execId":"EXEC0000000000000017","execPrice":1804.47,"execQty":700,"isMaker":false,"securityId":"600519","side":"B","timestamp":1772378718262}
+{"clOrderId":"ORD000062","event":"ORDER_NEW","market":"XSHG","price":31.78,"qty":200,"securityId":"600030","shareholderId":"SH009","side":"B","timestamp":1772378718262}
+{"clOrderId":"ORD000062","event":"ORDER_CONFIRM","timestamp":1772378718262}
+{"clOrderId":"ORD000059","event":"EXECUTION","execId":"EXEC0000000000000018","execPrice":30.02,"execQty":100,"isMaker":true,"securityId":"600030","side":"S","timestamp":1772378718262}
+{"clOrderId":"ORD000062","event":"EXECUTION","execId":"EXEC0000000000000018","execPrice":30.02,"execQty":100,"isMaker":false,"securityId":"600030","side":"B","timestamp":1772378718262}
+{"clOrderId":"ORD000007","event":"EXECUTION","execId":"EXEC0000000000000019","execPrice":31.39,"execQty":100,"isMaker":true,"securityId":"600030","side":"S","timestamp":1772378718262}
+{"clOrderId":"ORD000062","event":"EXECUTION","execId":"EXEC0000000000000019","execPrice":31.39,"execQty":100,"isMaker":false,"securityId":"600030","side":"B","timestamp":1772378718262}
+{"canceledQty":500,"cumQty":0,"event":"CANCEL_CONFIRM","origClOrderId":"ORD000030","timestamp":1772378718262}
+{"clOrderId":"ORD000064","event":"ORDER_NEW","market":"XSHG","price":28.51,"qty":300,"securityId":"600030","shareholderId":"SH006","side":"S","timestamp":1772378718262}
+{"clOrderId":"ORD000064","event":"ORDER_REJECT","rejectCode":1,"rejectText":"Cross trade detected","timestamp":1772378718262}
+{"clOrderId":"ORD000065","event":"ORDER_NEW","market":"XSHG","price":28.84,"qty":200,"securityId":"600030","shareholderId":"SH002","side":"S","timestamp":1772378718262}
+{"clOrderId":"ORD000065","event":"ORDER_REJECT","rejectCode":1,"rejectText":"Cross trade detected","timestamp":1772378718262}
+{"clOrderId":"ORD000066","event":"ORDER_NEW","market":"XSHE","price":16.42,"qty":200,"securityId":"000001","shareholderId":"SH004","side":"S","timestamp":1772378718262}
+{"clOrderId":"ORD000066","event":"ORDER_REJECT","rejectCode":1,"rejectText":"Cross trade detected","timestamp":1772378718262}
+{"clOrderId":"ORD000067","event":"ORDER_NEW","market":"XSHG","price":28.1,"qty":300,"securityId":"600030","shareholderId":"SH007","side":"S","timestamp":1772378718262}
+{"clOrderId":"ORD000067","event":"ORDER_CONFIRM","timestamp":1772378718262}
+{"clOrderId":"ORD000053","event":"EXECUTION","execId":"EXEC0000000000000020","execPrice":29.83,"execQty":300,"isMaker":true,"securityId":"600030","side":"B","timestamp":1772378718262}
+{"clOrderId":"ORD000067","event":"EXECUTION","execId":"EXEC0000000000000020","execPrice":29.83,"execQty":300,"isMaker":false,"securityId":"600030","side":"S","timestamp":1772378718262}
+{"clOrderId":"ORD000068","event":"ORDER_NEW","market":"XSHE","price":14.3,"qty":100,"securityId":"000001","shareholderId":"SH007","side":"B","timestamp":1772378718262}
+{"clOrderId":"ORD000068","event":"ORDER_CONFIRM","timestamp":1772378718262}
+{"clOrderId":"ORD000069","event":"ORDER_NEW","market":"XSHG","price":1787.98,"qty":500,"securityId":"600519","shareholderId":"SH006","side":"B","timestamp":1772378718262}
+{"clOrderId":"ORD000069","event":"ORDER_CONFIRM","timestamp":1772378718262}
+{"clOrderId":"ORD000070","event":"ORDER_NEW","market":"XSHG","price":28.09,"qty":200,"securityId":"600030","shareholderId":"SH007","side":"B","timestamp":1772378718262}
+{"clOrderId":"ORD000070","event":"ORDER_CONFIRM","timestamp":1772378718262}
+{"clOrderId":"ORD000071","event":"ORDER_NEW","market":"XSHG","price":29.4,"qty":1000,"securityId":"600030","shareholderId":"SH007","side":"S","timestamp":1772378718262}
+{"clOrderId":"ORD000071","event":"ORDER_REJECT","rejectCode":1,"rejectText":"Cross trade detected","timestamp":1772378718262}
+{"clOrderId":"ORD000072","event":"ORDER_NEW","market":"XSHE","price":16.32,"qty":100,"securityId":"000001","shareholderId":"SH005","side":"S","timestamp":1772378718262}
+{"clOrderId":"ORD000072","event":"ORDER_CONFIRM","timestamp":1772378718262}
+{"clOrderId":"ORD000073","event":"ORDER_NEW","market":"XSHG","price":1784.34,"qty":500,"securityId":"600519","shareholderId":"SH006","side":"B","timestamp":1772378718262}
+{"clOrderId":"ORD000073","event":"ORDER_CONFIRM","timestamp":1772378718262}
+{"clOrderId":"ORD000074","event":"ORDER_NEW","market":"XSHG","price":1804.25,"qty":1000,"securityId":"600519","shareholderId":"SH002","side":"S","timestamp":1772378718262}
+{"clOrderId":"ORD000074","event":"ORDER_CONFIRM","timestamp":1772378718262}
+{"clOrderId":"ORD000061","event":"EXECUTION","execId":"EXEC0000000000000021","execPrice":1809.65,"execQty":300,"isMaker":true,"securityId":"600519","side":"B","timestamp":1772378718262}
+{"clOrderId":"ORD000074","event":"EXECUTION","execId":"EXEC0000000000000021","execPrice":1809.65,"execQty":300,"isMaker":false,"securityId":"600519","side":"S","timestamp":1772378718262}
+{"clOrderId":"ORD000075","event":"ORDER_NEW","market":"XSHE","price":14.26,"qty":500,"securityId":"000001","shareholderId":"SH001","side":"B","timestamp":1772378718263}
+{"clOrderId":"ORD000075","event":"ORDER_CONFIRM","timestamp":1772378718263}
+{"clOrderId":"ORD000076","event":"ORDER_NEW","market":"XSHE","price":14.59,"qty":100,"securityId":"000001","shareholderId":"SH006","side":"B","timestamp":1772378718263}
+{"clOrderId":"ORD000076","event":"ORDER_CONFIRM","timestamp":1772378718263}
+{"clOrderId":"ORD000077","event":"ORDER_NEW","market":"XSHE","price":15.66,"qty":300,"securityId":"000001","shareholderId":"SH009","side":"B","timestamp":1772378718263}
+{"clOrderId":"ORD000077","event":"ORDER_CONFIRM","timestamp":1772378718263}
+{"clOrderId":"ORD000078","event":"ORDER_NEW","market":"XSHG","price":1796.1,"qty":300,"securityId":"600519","shareholderId":"SH009","side":"S","timestamp":1772378718263}
+{"clOrderId":"ORD000078","event":"ORDER_CONFIRM","timestamp":1772378718263}
+{"clOrderId":"ORD000035","event":"EXECUTION","execId":"EXEC0000000000000022","execPrice":1801.57,"execQty":300,"isMaker":true,"securityId":"600519","side":"B","timestamp":1772378718263}
+{"clOrderId":"ORD000078","event":"EXECUTION","execId":"EXEC0000000000000022","execPrice":1801.57,"execQty":300,"isMaker":false,"securityId":"600519","side":"S","timestamp":1772378718263}
+{"clOrderId":"ORD000079","event":"ORDER_NEW","market":"XSHG","price":1807.09,"qty":200,"securityId":"600519","shareholderId":"SH010","side":"S","timestamp":1772378718263}
+{"clOrderId":"ORD000079","event":"ORDER_CONFIRM","timestamp":1772378718263}
+{"clOrderId":"ORD000080","event":"ORDER_NEW","market":"XSHG","price":1792.15,"qty":200,"securityId":"600519","shareholderId":"SH007","side":"B","timestamp":1772378718263}
+{"clOrderId":"ORD000080","event":"ORDER_CONFIRM","timestamp":1772378718263}
+{"clOrderId":"ORD000081","event":"ORDER_NEW","market":"XSHE","price":14.89,"qty":500,"securityId":"000001","shareholderId":"SH004","side":"S","timestamp":1772378718263}
+{"clOrderId":"ORD000081","event":"ORDER_REJECT","rejectCode":1,"rejectText":"Cross trade detected","timestamp":1772378718263}
+{"clOrderId":"ORD000082","event":"ORDER_NEW","market":"XSHE","price":15.48,"qty":300,"securityId":"000001","shareholderId":"SH009","side":"B","timestamp":1772378718263}
+{"clOrderId":"ORD000082","event":"ORDER_CONFIRM","timestamp":1772378718263}
+{"clOrderId":"ORD000083","event":"ORDER_NEW","market":"XSHE","price":13.78,"qty":200,"securityId":"000001","shareholderId":"SH005","side":"S","timestamp":1772378718263}
+{"clOrderId":"ORD000083","event":"ORDER_CONFIRM","timestamp":1772378718263}
+{"clOrderId":"ORD000077","event":"EXECUTION","execId":"EXEC0000000000000023","execPrice":15.66,"execQty":200,"isMaker":true,"securityId":"000001","side":"B","timestamp":1772378718263}
+{"clOrderId":"ORD000083","event":"EXECUTION","execId":"EXEC0000000000000023","execPrice":15.66,"execQty":200,"isMaker":false,"securityId":"000001","side":"S","timestamp":1772378718263}
+{"clOrderId":"ORD000084","event":"ORDER_NEW","market":"XSHG","price":28.1,"qty":200,"securityId":"600030","shareholderId":"SH008","side":"B","timestamp":1772378718263}
+{"clOrderId":"ORD000084","event":"ORDER_CONFIRM","timestamp":1772378718263}
+{"clOrderId":"ORD000085","event":"ORDER_NEW","market":"XSHG","price":29.66,"qty":1000,"securityId":"600030","shareholderId":"SH004","side":"S","timestamp":1772378718263}
+{"clOrderId":"ORD000085","event":"ORDER_REJECT","rejectCode":1,"rejectText":"Cross trade detected","timestamp":1772378718263}
+{"clOrderId":"ORD000086","event":"ORDER_NEW","market":"XSHG","price":1795.99,"qty":200,"securityId":"600519","shareholderId":"SH001","side":"S","timestamp":1772378718263}
+{"clOrderId":"ORD000086","event":"ORDER_CONFIRM","timestamp":1772378718263}
+{"clOrderId":"ORD000087","event":"ORDER_NEW","market":"XSHG","price":28.88,"qty":1000,"securityId":"600030","shareholderId":"SH008","side":"S","timestamp":1772378718263}
+{"clOrderId":"ORD000087","event":"ORDER_REJECT","rejectCode":1,"rejectText":"Cross trade detected","timestamp":1772378718263}
+{"canceledQty":1000,"cumQty":0,"event":"CANCEL_CONFIRM","origClOrderId":"ORD000041","timestamp":1772378718263}
+{"clOrderId":"ORD000089","event":"ORDER_NEW","market":"XSHG","price":28.53,"qty":500,"securityId":"600030","shareholderId":"SH009","side":"S","timestamp":1772378718263}
+{"clOrderId":"ORD000089","event":"ORDER_REJECT","rejectCode":1,"rejectText":"Cross trade detected","timestamp":1772378718263}
+{"clOrderId":"ORD000090","event":"ORDER_NEW","market":"XSHE","price":16.35,"qty":500,"securityId":"000001","shareholderId":"SH010","side":"S","timestamp":1772378718263}
+{"clOrderId":"ORD000090","event":"ORDER_CONFIRM","timestamp":1772378718263}
+{"clOrderId":"ORD000091","event":"ORDER_NEW","market":"XSHE","price":15.99,"qty":1000,"securityId":"000001","shareholderId":"SH008","side":"S","timestamp":1772378718263}
+{"clOrderId":"ORD000091","event":"ORDER_CONFIRM","timestamp":1772378718263}
+{"clOrderId":"ORD000092","event":"ORDER_NEW","market":"XSHE","price":14.85,"qty":200,"securityId":"000001","shareholderId":"SH005","side":"S","timestamp":1772378718263}
+{"clOrderId":"ORD000092","event":"ORDER_CONFIRM","timestamp":1772378718263}
+{"clOrderId":"ORD000077","event":"EXECUTION","execId":"EXEC0000000000000024","execPrice":15.66,"execQty":100,"isMaker":true,"securityId":"000001","side":"B","timestamp":1772378718263}
+{"clOrderId":"ORD000092","event":"EXECUTION","execId":"EXEC0000000000000024","execPrice":15.66,"execQty":100,"isMaker":false,"securityId":"000001","side":"S","timestamp":1772378718263}
+{"clOrderId":"ORD000004","event":"EXECUTION","execId":"EXEC0000000000000025","execPrice":15.65,"execQty":100,"isMaker":true,"securityId":"000001","side":"B","timestamp":1772378718263}
+{"clOrderId":"ORD000092","event":"EXECUTION","execId":"EXEC0000000000000025","execPrice":15.65,"execQty":100,"isMaker":false,"securityId":"000001","side":"S","timestamp":1772378718263}
+{"clOrderId":"ORD000093","event":"ORDER_NEW","market":"XSHE","price":15.38,"qty":300,"securityId":"000001","shareholderId":"SH008","side":"S","timestamp":1772378718263}
+{"clOrderId":"ORD000093","event":"ORDER_CONFIRM","timestamp":1772378718263}
+{"clOrderId":"ORD000004","event":"EXECUTION","execId":"EXEC0000000000000026","execPrice":15.65,"execQty":300,"isMaker":true,"securityId":"000001","side":"B","timestamp":1772378718263}
+{"clOrderId":"ORD000093","event":"EXECUTION","execId":"EXEC0000000000000026","execPrice":15.65,"execQty":300,"isMaker":false,"securityId":"000001","side":"S","timestamp":1772378718263}
+{"event":"CANCEL_REJECT","origClOrderId":"ORD000050","rejectCode":1,"rejectText":"Order not found in book","timestamp":1772378718264}
+{"clOrderId":"ORD000095","event":"ORDER_NEW","market":"XSHG","price":1815.72,"qty":100,"securityId":"600519","shareholderId":"SH003","side":"S","timestamp":1772378718264}
+{"clOrderId":"ORD000095","event":"ORDER_CONFIRM","timestamp":1772378718264}
+{"clOrderId":"ORD000096","event":"ORDER_NEW","market":"XSHG","price":1808.26,"qty":100,"securityId":"600519","shareholderId":"SH007","side":"B","timestamp":1772378718264}
+{"clOrderId":"ORD000096","event":"ORDER_CONFIRM","timestamp":1772378718264}
+{"clOrderId":"ORD000086","event":"EXECUTION","execId":"EXEC0000000000000027","execPrice":1795.99,"execQty":100,"isMaker":true,"securityId":"600519","side":"S","timestamp":1772378718264}
+{"clOrderId":"ORD000096","event":"EXECUTION","execId":"EXEC0000000000000027","execPrice":1795.99,"execQty":100,"isMaker":false,"securityId":"600519","side":"B","timestamp":1772378718264}
+{"clOrderId":"ORD000097","event":"ORDER_NEW","market":"XSHE","price":14.75,"qty":200,"securityId":"000001","shareholderId":"SH007","side":"S","timestamp":1772378718264}
+{"clOrderId":"ORD000097","event":"ORDER_REJECT","rejectCode":1,"rejectText":"Cross trade detected","timestamp":1772378718264}
+{"clOrderId":"ORD000098","event":"ORDER_NEW","market":"XSHE","price":16.07,"qty":1000,"securityId":"000001","shareholderId":"SH007","side":"B","timestamp":1772378718264}
+{"clOrderId":"ORD000098","event":"ORDER_CONFIRM","timestamp":1772378718264}
+{"clOrderId":"ORD000017","event":"EXECUTION","execId":"EXEC0000000000000028","execPrice":15.74,"execQty":200,"isMaker":true,"securityId":"000001","side":"S","timestamp":1772378718264}
+{"clOrderId":"ORD000098","event":"EXECUTION","execId":"EXEC0000000000000028","execPrice":15.74,"execQty":200,"isMaker":false,"securityId":"000001","side":"B","timestamp":1772378718264}
+{"clOrderId":"ORD000005","event":"EXECUTION","execId":"EXEC0000000000000029","execPrice":15.93,"execQty":100,"isMaker":true,"securityId":"000001","side":"S","timestamp":1772378718264}
+{"clOrderId":"ORD000098","event":"EXECUTION","execId":"EXEC0000000000000029","execPrice":15.93,"execQty":100,"isMaker":false,"securityId":"000001","side":"B","timestamp":1772378718264}
+{"clOrderId":"ORD000091","event":"EXECUTION","execId":"EXEC0000000000000030","execPrice":15.99,"execQty":700,"isMaker":true,"securityId":"000001","side":"S","timestamp":1772378718264}
+{"clOrderId":"ORD000098","event":"EXECUTION","execId":"EXEC0000000000000030","execPrice":15.99,"execQty":700,"isMaker":false,"securityId":"000001","side":"B","timestamp":1772378718264}
+{"clOrderId":"ORD000099","event":"ORDER_NEW","market":"XSHG","price":1810.14,"qty":500,"securityId":"600519","shareholderId":"SH009","side":"S","timestamp":1772378718264}
+{"clOrderId":"ORD000099","event":"ORDER_CONFIRM","timestamp":1772378718264}
+{"clOrderId":"ORD000100","event":"ORDER_NEW","market":"XSHE","price":14.96,"qty":300,"securityId":"000001","shareholderId":"SH007","side":"B","timestamp":1772378718264}
+{"clOrderId":"ORD000100","event":"ORDER_CONFIRM","timestamp":1772378718264}
+{"clOrderId":"ORD000101","event":"ORDER_NEW","market":"XSHG","price":1806.75,"qty":500,"securityId":"600519","shareholderId":"SH003","side":"S","timestamp":1772378718264}
+{"clOrderId":"ORD000101","event":"ORDER_CONFIRM","timestamp":1772378718264}
+{"clOrderId":"ORD000102","event":"ORDER_NEW","market":"XSHG","price":31.63,"qty":1000,"securityId":"600030","shareholderId":"SH010","side":"B","timestamp":1772378718264}
+{"clOrderId":"ORD000102","event":"ORDER_CONFIRM","timestamp":1772378718264}
+{"clOrderId":"ORD000007","event":"EXECUTION","execId":"EXEC0000000000000031","execPrice":31.39,"execQty":900,"isMaker":true,"securityId":"600030","side":"S","timestamp":1772378718264}
+{"clOrderId":"ORD000102","event":"EXECUTION","execId":"EXEC0000000000000031","execPrice":31.39,"execQty":900,"isMaker":false,"securityId":"600030","side":"B","timestamp":1772378718264}
+{"clOrderId":"ORD000103","event":"ORDER_NEW","market":"XSHG","price":28.54,"qty":500,"securityId":"600030","shareholderId":"SH003","side":"S","timestamp":1772378718264}
+{"clOrderId":"ORD000103","event":"ORDER_CONFIRM","timestamp":1772378718264}
+{"clOrderId":"ORD000102","event":"EXECUTION","execId":"EXEC0000000000000032","execPrice":31.63,"execQty":100,"isMaker":true,"securityId":"600030","side":"B","timestamp":1772378718264}
+{"clOrderId":"ORD000103","event":"EXECUTION","execId":"EXEC0000000000000032","execPrice":31.63,"execQty":100,"isMaker":false,"securityId":"600030","side":"S","timestamp":1772378718264}
+{"clOrderId":"ORD000053","event":"EXECUTION","execId":"EXEC0000000000000033","execPrice":29.83,"execQty":400,"isMaker":true,"securityId":"600030","side":"B","timestamp":1772378718264}
+{"clOrderId":"ORD000103","event":"EXECUTION","execId":"EXEC0000000000000033","execPrice":29.83,"execQty":400,"isMaker":false,"securityId":"600030","side":"S","timestamp":1772378718264}
+{"event":"CANCEL_REJECT","origClOrderId":"ORD000065","rejectCode":1,"rejectText":"Order not found in book","timestamp":1772378718264}
+{"clOrderId":"ORD000105","event":"ORDER_NEW","market":"XSHG","price":1793.5,"qty":500,"securityId":"600519","shareholderId":"SH005","side":"S","timestamp":1772378718264}
+{"clOrderId":"ORD000105","event":"ORDER_CONFIRM","timestamp":1772378718264}
+{"clOrderId":"ORD000106","event":"ORDER_NEW","market":"XSHG","price":1813.4,"qty":500,"securityId":"600519","shareholderId":"SH001","side":"S","timestamp":1772378718264}
+{"clOrderId":"ORD000106","event":"ORDER_CONFIRM","timestamp":1772378718264}
+{"clOrderId":"ORD000107","event":"ORDER_NEW","market":"XSHG","price":28.9,"qty":100,"securityId":"600030","shareholderId":"SH001","side":"S","timestamp":1772378718264}
+{"clOrderId":"ORD000107","event":"ORDER_CONFIRM","timestamp":1772378718264}
+{"clOrderId":"ORD000053","event":"EXECUTION","execId":"EXEC0000000000000034","execPrice":29.83,"execQty":100,"isMaker":true,"securityId":"600030","side":"B","timestamp":1772378718264}
+{"clOrderId":"ORD000107","event":"EXECUTION","execId":"EXEC0000000000000034","execPrice":29.83,"execQty":100,"isMaker":false,"securityId":"600030","side":"S","timestamp":1772378718264}
+{"clOrderId":"ORD000108","event":"ORDER_NEW","market":"XSHG","price":31.36,"qty":1000,"securityId":"600030","shareholderId":"SH003","side":"B","timestamp":1772378718264}
+{"clOrderId":"ORD000108","event":"ORDER_CONFIRM","timestamp":1772378718264}
+{"clOrderId":"ORD000109","event":"ORDER_NEW","market":"XSHG","price":1802.56,"qty":200,"securityId":"600519","shareholderId":"SH008","side":"B","timestamp":1772378718264}
+{"clOrderId":"ORD000109","event":"ORDER_CONFIRM","timestamp":1772378718264}
+{"clOrderId":"ORD000105","event":"EXECUTION","execId":"EXEC0000000000000035","execPrice":1793.5,"execQty":200,"isMaker":true,"securityId":"600519","side":"S","timestamp":1772378718264}
+{"clOrderId":"ORD000109","event":"EXECUTION","execId":"EXEC0000000000000035","execPrice":1793.5,"execQty":200,"isMaker":false,"securityId":"600519","side":"B","timestamp":1772378718264}
+{"clOrderId":"ORD000110","event":"ORDER_NEW","market":"XSHG","price":1804.24,"qty":100,"securityId":"600519","shareholderId":"SH003","side":"B","timestamp":1772378718264}
+{"clOrderId":"ORD000110","event":"ORDER_REJECT","rejectCode":1,"rejectText":"Cross trade detected","timestamp":1772378718265}
+{"clOrderId":"ORD000111","event":"ORDER_NEW","market":"XSHG","price":31.72,"qty":1000,"securityId":"600030","shareholderId":"SH007","side":"B","timestamp":1772378718265}
+{"clOrderId":"ORD000111","event":"ORDER_CONFIRM","timestamp":1772378718265}
+{"clOrderId":"ORD000112","event":"ORDER_NEW","market":"XSHE","price":13.73,"qty":200,"securityId":"000001","shareholderId":"SH002","side":"B","timestamp":1772378718265}
+{"clOrderId":"ORD000112","event":"ORDER_CONFIRM","timestamp":1772378718265}
+{"clOrderId":"ORD000113","event":"ORDER_NEW","market":"XSHG","price":1811.85,"qty":1000,"securityId":"600519","shareholderId":"SH001","side":"B","timestamp":1772378718265}
+{"clOrderId":"ORD000113","event":"ORDER_REJECT","rejectCode":1,"rejectText":"Cross trade detected","timestamp":1772378718265}
+{"clOrderId":"ORD000114","event":"ORDER_NEW","market":"XSHG","price":1782.76,"qty":300,"securityId":"600519","shareholderId":"SH001","side":"S","timestamp":1772378718265}
+{"clOrderId":"ORD000114","event":"ORDER_CONFIRM","timestamp":1772378718265}
+{"clOrderId":"ORD000080","event":"EXECUTION","execId":"EXEC0000000000000036","execPrice":1792.15,"execQty":200,"isMaker":true,"securityId":"600519","side":"B","timestamp":1772378718265}
+{"clOrderId":"ORD000114","event":"EXECUTION","execId":"EXEC0000000000000036","execPrice":1792.15,"execQty":200,"isMaker":false,"securityId":"600519","side":"S","timestamp":1772378718265}
+{"clOrderId":"ORD000029","event":"EXECUTION","execId":"EXEC0000000000000037","execPrice":1790.6,"execQty":100,"isMaker":true,"securityId":"600519","side":"B","timestamp":1772378718265}
+{"clOrderId":"ORD000114","event":"EXECUTION","execId":"EXEC0000000000000037","execPrice":1790.6,"execQty":100,"isMaker":false,"securityId":"600519","side":"S","timestamp":1772378718265}
+{"clOrderId":"ORD000115","event":"ORDER_NEW","market":"XSHG","price":1797.34,"qty":300,"securityId":"600519","shareholderId":"SH008","side":"B","timestamp":1772378718265}
+{"clOrderId":"ORD000115","event":"ORDER_CONFIRM","timestamp":1772378718265}
+{"clOrderId":"ORD000105","event":"EXECUTION","execId":"EXEC0000000000000038","execPrice":1793.5,"execQty":300,"isMaker":true,"securityId":"600519","side":"S","timestamp":1772378718265}
+{"clOrderId":"ORD000115","event":"EXECUTION","execId":"EXEC0000000000000038","execPrice":1793.5,"execQty":300,"isMaker":false,"securityId":"600519","side":"B","timestamp":1772378718265}
+{"clOrderId":"ORD000116","event":"ORDER_NEW","market":"XSHG","price":1809.35,"qty":300,"securityId":"600519","shareholderId":"SH010","side":"B","timestamp":1772378718265}
+{"clOrderId":"ORD000116","event":"ORDER_REJECT","rejectCode":1,"rejectText":"Cross trade detected","timestamp":1772378718265}
+{"clOrderId":"ORD000117","event":"ORDER_NEW","market":"XSHE","price":14.89,"qty":1000,"securityId":"000001","shareholderId":"SH005","side":"S","timestamp":1772378718265}
+{"clOrderId":"ORD000117","event":"ORDER_CONFIRM","timestamp":1772378718265}
+{"clOrderId":"ORD000004","event":"EXECUTION","execId":"EXEC0000000000000039","execPrice":15.65,"execQty":400,"isMaker":true,"securityId":"000001","side":"B","timestamp":1772378718265}
+{"clOrderId":"ORD000117","event":"EXECUTION","execId":"EXEC0000000000000039","execPrice":15.65,"execQty":400,"isMaker":false,"securityId":"000001","side":"S","timestamp":1772378718265}
+{"clOrderId":"ORD000002","event":"EXECUTION","execId":"EXEC0000000000000040","execPrice":15.53,"execQty":600,"isMaker":true,"securityId":"000001","side":"B","timestamp":1772378718265}
+{"clOrderId":"ORD000117","event":"EXECUTION","execId":"EXEC0000000000000040","execPrice":15.53,"execQty":600,"isMaker":false,"securityId":"000001","side":"S","timestamp":1772378718265}
+{"clOrderId":"ORD000118","event":"ORDER_NEW","market":"XSHG","price":29.12,"qty":500,"securityId":"600030","shareholderId":"SH004","side":"B","timestamp":1772378718265}
+{"clOrderId":"ORD000118","event":"ORDER_CONFIRM","timestamp":1772378718265}
+{"clOrderId":"ORD000119","event":"ORDER_NEW","market":"XSHE","price":14.51,"qty":500,"securityId":"000001","shareholderId":"SH006","side":"S","timestamp":1772378718265}
+{"clOrderId":"ORD000119","event":"ORDER_REJECT","rejectCode":1,"rejectText":"Cross trade detected","timestamp":1772378718265}
+{"clOrderId":"ORD000120","event":"ORDER_NEW","market":"XSHG","price":31.19,"qty":300,"securityId":"600030","shareholderId":"SH005","side":"S","timestamp":1772378718265}
+{"clOrderId":"ORD000120","event":"ORDER_CONFIRM","timestamp":1772378718265}
+{"clOrderId":"ORD000111","event":"EXECUTION","execId":"EXEC0000000000000041","execPrice":31.72,"execQty":300,"isMaker":true,"securityId":"600030","side":"B","timestamp":1772378718265}
+{"clOrderId":"ORD000120","event":"EXECUTION","execId":"EXEC0000000000000041","execPrice":31.72,"execQty":300,"isMaker":false,"securityId":"600030","side":"S","timestamp":1772378718265}
+{"clOrderId":"ORD000121","event":"ORDER_NEW","market":"XSHE","price":15.17,"qty":1000,"securityId":"000001","shareholderId":"SH004","side":"S","timestamp":1772378718265}
+{"clOrderId":"ORD000121","event":"ORDER_REJECT","rejectCode":1,"rejectText":"Cross trade detected","timestamp":1772378718265}
+{"clOrderId":"ORD000122","event":"ORDER_NEW","market":"XSHE","price":14.97,"qty":200,"securityId":"000001","shareholderId":"SH008","side":"S","timestamp":1772378718265}
+{"clOrderId":"ORD000122","event":"ORDER_CONFIRM","timestamp":1772378718265}
+{"clOrderId":"ORD000002","event":"EXECUTION","execId":"EXEC0000000000000042","execPrice":15.53,"execQty":200,"isMaker":true,"securityId":"000001","side":"B","timestamp":1772378718265}
+{"clOrderId":"ORD000122","event":"EXECUTION","execId":"EXEC0000000000000042","execPrice":15.53,"execQty":200,"isMaker":false,"securityId":"000001","side":"S","timestamp":1772378718265}
+{"clOrderId":"ORD000123","event":"ORDER_NEW","market":"XSHG","price":1811.72,"qty":100,"securityId":"600519","shareholderId":"SH005","side":"S","timestamp":1772378718265}
+{"clOrderId":"ORD000123","event":"ORDER_CONFIRM","timestamp":1772378718265}
+{"clOrderId":"ORD000124","event":"ORDER_NEW","market":"XSHE","price":14.42,"qty":1000,"securityId":"000001","shareholderId":"SH006","side":"B","timestamp":1772378718265}
+{"clOrderId":"ORD000124","event":"ORDER_CONFIRM","timestamp":1772378718265}
+{"clOrderId":"ORD000125","event":"ORDER_NEW","market":"XSHE","price":14.78,"qty":1000,"securityId":"000001","shareholderId":"SH006","side":"S","timestamp":1772378718265}
+{"clOrderId":"ORD000125","event":"ORDER_REJECT","rejectCode":1,"rejectText":"Cross trade detected","timestamp":1772378718265}
+{"clOrderId":"ORD000126","event":"ORDER_NEW","market":"XSHG","price":1792.26,"qty":200,"securityId":"600519","shareholderId":"SH002","side":"S","timestamp":1772378718266}
+{"clOrderId":"ORD000126","event":"ORDER_CONFIRM","timestamp":1772378718266}
+{"clOrderId":"ORD000127","event":"ORDER_NEW","market":"XSHG","price":1809.72,"qty":200,"securityId":"600519","shareholderId":"SH004","side":"B","timestamp":1772378718266}
+{"clOrderId":"ORD000127","event":"ORDER_CONFIRM","timestamp":1772378718266}
+{"clOrderId":"ORD000126","event":"EXECUTION","execId":"EXEC0000000000000043","execPrice":1792.26,"execQty":200,"isMaker":true,"securityId":"600519","side":"S","timestamp":1772378718266}
+{"clOrderId":"ORD000127","event":"EXECUTION","execId":"EXEC0000000000000043","execPrice":1792.26,"execQty":200,"isMaker":false,"securityId":"600519","side":"B","timestamp":1772378718266}
+{"clOrderId":"ORD000128","event":"ORDER_NEW","market":"XSHG","price":1808.98,"qty":1000,"securityId":"600519","shareholderId":"SH010","side":"S","timestamp":1772378718266}
+{"clOrderId":"ORD000128","event":"ORDER_CONFIRM","timestamp":1772378718266}
+{"clOrderId":"ORD000129","event":"ORDER_NEW","market":"XSHG","price":29.18,"qty":300,"securityId":"600030","shareholderId":"SH003","side":"B","timestamp":1772378718266}
+{"clOrderId":"ORD000129","event":"ORDER_CONFIRM","timestamp":1772378718266}
+{"clOrderId":"ORD000130","event":"ORDER_NEW","market":"XSHE","price":14.32,"qty":100,"securityId":"000001","shareholderId":"SH009","side":"B","timestamp":1772378718266}
+{"clOrderId":"ORD000130","event":"ORDER_CONFIRM","timestamp":1772378718266}
+{"clOrderId":"ORD000131","event":"ORDER_NEW","market":"XSHG","price":28.41,"qty":100,"securityId":"600030","shareholderId":"SH010","side":"S","timestamp":1772378718266}
+{"clOrderId":"ORD000131","event":"ORDER_CONFIRM","timestamp":1772378718266}
+{"clOrderId":"ORD000111","event":"EXECUTION","execId":"EXEC0000000000000044","execPrice":31.72,"execQty":100,"isMaker":true,"securityId":"600030","side":"B","timestamp":1772378718266}
+{"clOrderId":"ORD000131","event":"EXECUTION","execId":"EXEC0000000000000044","execPrice":31.72,"execQty":100,"isMaker":false,"securityId":"600030","side":"S","timestamp":1772378718266}
+{"clOrderId":"ORD000132","event":"ORDER_NEW","market":"XSHG","price":1793.63,"qty":100,"securityId":"600519","shareholderId":"SH005","side":"S","timestamp":1772378718266}
+{"clOrderId":"ORD000132","event":"ORDER_CONFIRM","timestamp":1772378718266}
+{"clOrderId":"ORD000133","event":"ORDER_NEW","market":"XSHG","price":1812.88,"qty":500,"securityId":"600519","shareholderId":"SH008","side":"B","timestamp":1772378718266}
+{"clOrderId":"ORD000133","event":"ORDER_CONFIRM","timestamp":1772378718266}
+{"clOrderId":"ORD000132","event":"EXECUTION","execId":"EXEC0000000000000045","execPrice":1793.63,"execQty":100,"isMaker":true,"securityId":"600519","side":"S","timestamp":1772378718266}
+{"clOrderId":"ORD000133","event":"EXECUTION","execId":"EXEC0000000000000045","execPrice":1793.63,"execQty":100,"isMaker":false,"securityId":"600519","side":"B","timestamp":1772378718266}
+{"clOrderId":"ORD000086","event":"EXECUTION","execId":"EXEC0000000000000046","execPrice":1795.99,"execQty":100,"isMaker":true,"securityId":"600519","side":"S","timestamp":1772378718266}
+{"clOrderId":"ORD000133","event":"EXECUTION","execId":"EXEC0000000000000046","execPrice":1795.99,"execQty":100,"isMaker":false,"securityId":"600519","side":"B","timestamp":1772378718266}
+{"clOrderId":"ORD000074","event":"EXECUTION","execId":"EXEC0000000000000047","execPrice":1804.25,"execQty":300,"isMaker":true,"securityId":"600519","side":"S","timestamp":1772378718266}
+{"clOrderId":"ORD000133","event":"EXECUTION","execId":"EXEC0000000000000047","execPrice":1804.25,"execQty":300,"isMaker":false,"securityId":"600519","side":"B","timestamp":1772378718266}
+{"canceledQty":300,"cumQty":0,"event":"CANCEL_CONFIRM","origClOrderId":"ORD000100","timestamp":1772378718266}
+{"clOrderId":"ORD000135","event":"ORDER_NEW","market":"XSHG","price":31.24,"qty":300,"securityId":"600030","shareholderId":"SH002","side":"B","timestamp":1772378718266}
+{"clOrderId":"ORD000135","event":"ORDER_CONFIRM","timestamp":1772378718266}
+{"clOrderId":"ORD000136","event":"ORDER_NEW","market":"XSHG","price":30.43,"qty":1000,"securityId":"600030","shareholderId":"SH004","side":"S","timestamp":1772378718266}
+{"clOrderId":"ORD000136","event":"ORDER_REJECT","rejectCode":1,"rejectText":"Cross trade detected","timestamp":1772378718266}
+{"clOrderId":"ORD000137","event":"ORDER_NEW","market":"XSHG","price":1816.34,"qty":300,"securityId":"600519","shareholderId":"SH010","side":"S","timestamp":1772378718266}
+{"clOrderId":"ORD000137","event":"ORDER_CONFIRM","timestamp":1772378718266}
+{"clOrderId":"ORD000138","event":"ORDER_NEW","market":"XSHG","price":1804.39,"qty":100,"securityId":"600519","shareholderId":"SH004","side":"B","timestamp":1772378718266}
+{"clOrderId":"ORD000138","event":"ORDER_CONFIRM","timestamp":1772378718266}
+{"clOrderId":"ORD000074","event":"EXECUTION","execId":"EXEC0000000000000048","execPrice":1804.25,"execQty":100,"isMaker":true,"securityId":"600519","side":"S","timestamp":1772378718266}
+{"clOrderId":"ORD000138","event":"EXECUTION","execId":"EXEC0000000000000048","execPrice":1804.25,"execQty":100,"isMaker":false,"securityId":"600519","side":"B","timestamp":1772378718266}
+{"clOrderId":"ORD000139","event":"ORDER_NEW","market":"XSHG","price":1786.28,"qty":200,"securityId":"600519","shareholderId":"SH009","side":"B","timestamp":1772378718266}
+{"clOrderId":"ORD000139","event":"ORDER_REJECT","rejectCode":1,"rejectText":"Cross trade detected","timestamp":1772378718266}
+{"canceledQty":300,"cumQty":0,"event":"CANCEL_CONFIRM","origClOrderId":"ORD000001","timestamp":1772378718266}
+{"clOrderId":"ORD000141","event":"ORDER_NEW","market":"XSHE","price":14.37,"qty":200,"securityId":"000001","shareholderId":"SH005","side":"S","timestamp":1772378718266}
+{"clOrderId":"ORD000141","event":"ORDER_CONFIRM","timestamp":1772378718266}
+{"clOrderId":"ORD000002","event":"EXECUTION","execId":"EXEC0000000000000049","execPrice":15.53,"execQty":200,"isMaker":true,"securityId":"000001","side":"B","timestamp":1772378718266}
+{"clOrderId":"ORD000141","event":"EXECUTION","execId":"EXEC0000000000000049","execPrice":15.53,"execQty":200,"isMaker":false,"securityId":"000001","side":"S","timestamp":1772378718266}
+{"clOrderId":"ORD000142","event":"ORDER_NEW","market":"XSHE","price":13.71,"qty":200,"securityId":"000001","shareholderId":"SH005","side":"S","timestamp":1772378718267}
+{"clOrderId":"ORD000142","event":"ORDER_CONFIRM","timestamp":1772378718267}
+{"clOrderId":"ORD000082","event":"EXECUTION","execId":"EXEC0000000000000050","execPrice":15.48,"execQty":200,"isMaker":true,"securityId":"000001","side":"B","timestamp":1772378718267}
+{"clOrderId":"ORD000142","event":"EXECUTION","execId":"EXEC0000000000000050","execPrice":15.48,"execQty":200,"isMaker":false,"securityId":"000001","side":"S","timestamp":1772378718267}
+{"clOrderId":"ORD000143","event":"ORDER_NEW","market":"XSHE","price":14.78,"qty":1000,"securityId":"000001","shareholderId":"SH004","side":"B","timestamp":1772378718267}
+{"clOrderId":"ORD000143","event":"ORDER_CONFIRM","timestamp":1772378718267}
+{"clOrderId":"ORD000144","event":"ORDER_NEW","market":"XSHG","price":1782.86,"qty":200,"securityId":"600519","shareholderId":"SH005","side":"B","timestamp":1772378718267}
+{"clOrderId":"ORD000144","event":"ORDER_REJECT","rejectCode":1,"rejectText":"Cross trade detected","timestamp":1772378718267}
+{"clOrderId":"ORD000145","event":"ORDER_NEW","market":"XSHE","price":14.82,"qty":500,"securityId":"000001","shareholderId":"SH005","side":"S","timestamp":1772378718267}
+{"clOrderId":"ORD000145","event":"ORDER_CONFIRM","timestamp":1772378718267}
+{"clOrderId":"ORD000082","event":"EXECUTION","execId":"EXEC0000000000000051","execPrice":15.48,"execQty":100,"isMaker":true,"securityId":"000001","side":"B","timestamp":1772378718267}
+{"clOrderId":"ORD000145","event":"EXECUTION","execId":"EXEC0000000000000051","execPrice":15.48,"execQty":100,"isMaker":false,"securityId":"000001","side":"S","timestamp":1772378718267}
+{"clOrderId":"ORD000012","event":"EXECUTION","execId":"EXEC0000000000000052","execPrice":15.33,"execQty":200,"isMaker":true,"securityId":"000001","side":"B","timestamp":1772378718267}
+{"clOrderId":"ORD000145","event":"EXECUTION","execId":"EXEC0000000000000052","execPrice":15.33,"execQty":200,"isMaker":false,"securityId":"000001","side":"S","timestamp":1772378718267}
+{"clOrderId":"ORD000032","event":"EXECUTION","execId":"EXEC0000000000000053","execPrice":15.27,"execQty":100,"isMaker":true,"securityId":"000001","side":"B","timestamp":1772378718267}
+{"clOrderId":"ORD000145","event":"EXECUTION","execId":"EXEC0000000000000053","execPrice":15.27,"execQty":100,"isMaker":false,"securityId":"000001","side":"S","timestamp":1772378718267}
+{"clOrderId":"ORD000146","event":"ORDER_NEW","market":"XSHG","price":1797.51,"qty":1000,"securityId":"600519","shareholderId":"SH001","side":"S","timestamp":1772378718267}
+{"clOrderId":"ORD000146","event":"ORDER_CONFIRM","timestamp":1772378718267}
+{"clOrderId":"ORD000147","event":"ORDER_NEW","market":"XSHE","price":15.31,"qty":100,"securityId":"000001","shareholderId":"SH002","side":"S","timestamp":1772378718267}
+{"clOrderId":"ORD000147","event":"ORDER_REJECT","rejectCode":1,"rejectText":"Cross trade detected","timestamp":1772378718267}
+{"clOrderId":"ORD000148","event":"ORDER_NEW","market":"XSHE","price":16.5,"qty":300,"securityId":"000001","shareholderId":"SH010","side":"B","timestamp":1772378718267}
+{"clOrderId":"ORD000148","event":"ORDER_REJECT","rejectCode":1,"rejectText":"Cross trade detected","timestamp":1772378718267}
+{"event":"CANCEL_REJECT","origClOrderId":"ORD000119","rejectCode":1,"rejectText":"Order not found in book","timestamp":1772378718267}
+{"clOrderId":"ORD000150","event":"ORDER_NEW","market":"XSHE","price":16.25,"qty":200,"securityId":"000001","shareholderId":"SH010","side":"S","timestamp":1772378718267}
+{"clOrderId":"ORD000150","event":"ORDER_CONFIRM","timestamp":1772378718267}
+{"clOrderId":"ORD000151","event":"ORDER_NEW","market":"XSHG","price":1798.8,"qty":500,"securityId":"600519","shareholderId":"SH006","side":"B","timestamp":1772378718267}
+{"clOrderId":"ORD000151","event":"ORDER_CONFIRM","timestamp":1772378718267}
+{"clOrderId":"ORD000146","event":"EXECUTION","execId":"EXEC0000000000000054","execPrice":1797.51,"execQty":500,"isMaker":true,"securityId":"600519","side":"S","timestamp":1772378718267}
+{"clOrderId":"ORD000151","event":"EXECUTION","execId":"EXEC0000000000000054","execPrice":1797.51,"execQty":500,"isMaker":false,"securityId":"600519","side":"B","timestamp":1772378718267}
+{"clOrderId":"ORD000152","event":"ORDER_NEW","market":"XSHG","price":29.32,"qty":500,"securityId":"600030","shareholderId":"SH005","side":"B","timestamp":1772378718267}
+{"clOrderId":"ORD000152","event":"ORDER_CONFIRM","timestamp":1772378718267}
+{"clOrderId":"ORD000153","event":"ORDER_NEW","market":"XSHG","price":1798.19,"qty":300,"securityId":"600519","shareholderId":"SH005","side":"B","timestamp":1772378718267}
+{"clOrderId":"ORD000153","event":"ORDER_REJECT","rejectCode":1,"rejectText":"Cross trade detected","timestamp":1772378718267}
+{"clOrderId":"ORD000154","event":"ORDER_NEW","market":"XSHG","price":1806.31,"qty":1000,"securityId":"600519","shareholderId":"SH008","side":"B","timestamp":1772378718267}
+{"clOrderId":"ORD000154","event":"ORDER_CONFIRM","timestamp":1772378718267}
+{"clOrderId":"ORD000146","event":"EXECUTION","execId":"EXEC0000000000000055","execPrice":1797.51,"execQty":500,"isMaker":true,"securityId":"600519","side":"S","timestamp":1772378718267}
+{"clOrderId":"ORD000154","event":"EXECUTION","execId":"EXEC0000000000000055","execPrice":1797.51,"execQty":500,"isMaker":false,"securityId":"600519","side":"B","timestamp":1772378718267}
+{"clOrderId":"ORD000074","event":"EXECUTION","execId":"EXEC0000000000000056","execPrice":1804.25,"execQty":300,"isMaker":true,"securityId":"600519","side":"S","timestamp":1772378718267}
+{"clOrderId":"ORD000154","event":"EXECUTION","execId":"EXEC0000000000000056","execPrice":1804.25,"execQty":300,"isMaker":false,"securityId":"600519","side":"B","timestamp":1772378718267}
+{"clOrderId":"ORD000155","event":"ORDER_NEW","market":"XSHG","price":30.49,"qty":500,"securityId":"600030","shareholderId":"SH008","side":"S","timestamp":1772378718267}
+{"clOrderId":"ORD000155","event":"ORDER_REJECT","rejectCode":1,"rejectText":"Cross trade detected","timestamp":1772378718267}
+{"clOrderId":"ORD000156","event":"ORDER_NEW","market":"XSHG","price":30.2,"qty":300,"securityId":"600030","shareholderId":"SH008","side":"S","timestamp":1772378718267}
+{"clOrderId":"ORD000156","event":"ORDER_REJECT","rejectCode":1,"rejectText":"Cross trade detected","timestamp":1772378718267}
+{"clOrderId":"ORD000157","event":"ORDER_NEW","market":"XSHG","price":1781.15,"qty":1000,"securityId":"600519","shareholderId":"SH004","side":"B","timestamp":1772378718267}
+{"clOrderId":"ORD000157","event":"ORDER_CONFIRM","timestamp":1772378718267}
+{"clOrderId":"ORD000158","event":"ORDER_NEW","market":"XSHG","price":1802.09,"qty":100,"securityId":"600519","shareholderId":"SH004","side":"B","timestamp":1772378718267}
+{"clOrderId":"ORD000158","event":"ORDER_CONFIRM","timestamp":1772378718267}
+{"clOrderId":"ORD000159","event":"ORDER_NEW","market":"XSHG","price":31.79,"qty":200,"securityId":"600030","shareholderId":"SH008","side":"S","timestamp":1772378718267}
+{"clOrderId":"ORD000159","event":"ORDER_REJECT","rejectCode":1,"rejectText":"Cross trade detected","timestamp":1772378718268}
+{"clOrderId":"ORD000160","event":"ORDER_NEW","market":"XSHG","price":1796.62,"qty":500,"securityId":"600519","shareholderId":"SH008","side":"S","timestamp":1772378718268}
+{"clOrderId":"ORD000160","event":"ORDER_REJECT","rejectCode":1,"rejectText":"Cross trade detected","timestamp":1772378718268}
+{"clOrderId":"ORD000161","event":"ORDER_NEW","market":"XSHE","price":14.65,"qty":1000,"securityId":"000001","shareholderId":"SH009","side":"B","timestamp":1772378718268}
+{"clOrderId":"ORD000161","event":"ORDER_CONFIRM","timestamp":1772378718268}
+{"clOrderId":"ORD000162","event":"ORDER_NEW","market":"XSHG","price":29.1,"qty":500,"securityId":"600030","shareholderId":"SH006","side":"B","timestamp":1772378718268}
+{"clOrderId":"ORD000162","event":"ORDER_CONFIRM","timestamp":1772378718268}
+{"clOrderId":"ORD000163","event":"ORDER_NEW","market":"XSHE","price":15.96,"qty":300,"securityId":"000001","shareholderId":"SH005","side":"S","timestamp":1772378718268}
+{"clOrderId":"ORD000163","event":"ORDER_CONFIRM","timestamp":1772378718268}
+{"clOrderId":"ORD000164","event":"ORDER_NEW","market":"XSHE","price":16.1,"qty":500,"securityId":"000001","shareholderId":"SH009","side":"S","timestamp":1772378718268}
+{"clOrderId":"ORD000164","event":"ORDER_REJECT","rejectCode":1,"rejectText":"Cross trade detected","timestamp":1772378718268}
+{"clOrderId":"ORD000165","event":"ORDER_NEW","market":"XSHG","price":1798.21,"qty":300,"securityId":"600519","shareholderId":"SH004","side":"S","timestamp":1772378718268}
+{"clOrderId":"ORD000165","event":"ORDER_REJECT","rejectCode":1,"rejectText":"Cross trade detected","timestamp":1772378718268}
+{"clOrderId":"ORD000166","event":"ORDER_NEW","market":"XSHG","price":28.93,"qty":500,"securityId":"600030","shareholderId":"SH001","side":"S","timestamp":1772378718268}
+{"clOrderId":"ORD000166","event":"ORDER_CONFIRM","timestamp":1772378718268}
+{"clOrderId":"ORD000111","event":"EXECUTION","execId":"EXEC0000000000000057","execPrice":31.72,"execQty":500,"isMaker":true,"securityId":"600030","side":"B","timestamp":1772378718268}
+{"clOrderId":"ORD000166","event":"EXECUTION","execId":"EXEC0000000000000057","execPrice":31.72,"execQty":500,"isMaker":false,"securityId":"600030","side":"S","timestamp":1772378718268}
+{"clOrderId":"ORD000167","event":"ORDER_NEW","market":"XSHG","price":1795.44,"qty":200,"securityId":"600519","shareholderId":"SH008","side":"S","timestamp":1772378718268}
+{"clOrderId":"ORD000167","event":"ORDER_REJECT","rejectCode":1,"rejectText":"Cross trade detected","timestamp":1772378718268}
+{"clOrderId":"ORD000168","event":"ORDER_NEW","market":"XSHG","price":31.48,"qty":500,"securityId":"600030","shareholderId":"SH002","side":"S","timestamp":1772378718268}
+{"clOrderId":"ORD000168","event":"ORDER_REJECT","rejectCode":1,"rejectText":"Cross trade detected","timestamp":1772378718268}
+{"clOrderId":"ORD000169","event":"ORDER_NEW","market":"XSHG","price":1808.9,"qty":500,"securityId":"600519","shareholderId":"SH003","side":"B","timestamp":1772378718268}
+{"clOrderId":"ORD000169","event":"ORDER_REJECT","rejectCode":1,"rejectText":"Cross trade detected","timestamp":1772378718268}
+{"event":"CANCEL_REJECT","origClOrderId":"ORD000086","rejectCode":1,"rejectText":"Order not found in book","timestamp":1772378718268}
+{"clOrderId":"ORD000171","event":"ORDER_NEW","market":"XSHE","price":15.45,"qty":300,"securityId":"000001","shareholderId":"SH009","side":"S","timestamp":1772378718268}
+{"clOrderId":"ORD000171","event":"ORDER_REJECT","rejectCode":1,"rejectText":"Cross trade detected","timestamp":1772378718268}
+{"clOrderId":"ORD000172","event":"ORDER_NEW","market":"XSHG","price":1814.9,"qty":100,"securityId":"600519","shareholderId":"SH010","side":"S","timestamp":1772378718268}
+{"clOrderId":"ORD000172","event":"ORDER_CONFIRM","timestamp":1772378718268}
+{"canceledQty":100,"cumQty":0,"event":"CANCEL_CONFIRM","origClOrderId":"ORD000095","timestamp":1772378718268}
+{"clOrderId":"ORD000174","event":"ORDER_NEW","market":"XSHE","price":14.8,"qty":100,"securityId":"000001","shareholderId":"SH002","side":"B","timestamp":1772378718268}
+{"clOrderId":"ORD000174","event":"ORDER_CONFIRM","timestamp":1772378718268}
+{"clOrderId":"ORD000175","event":"ORDER_NEW","market":"XSHE","price":16.21,"qty":100,"securityId":"000001","shareholderId":"SH006","side":"S","timestamp":1772378718268}
+{"clOrderId":"ORD000175","event":"ORDER_REJECT","rejectCode":1,"rejectText":"Cross trade detected","timestamp":1772378718268}
+{"clOrderId":"ORD000176","event":"ORDER_NEW","market":"XSHG","price":1794.99,"qty":200,"securityId":"600519","shareholderId":"SH004","side":"S","timestamp":1772378718268}
+{"clOrderId":"ORD000176","event":"ORDER_REJECT","rejectCode":1,"rejectText":"Cross trade detected","timestamp":1772378718268}
+{"clOrderId":"ORD000177","event":"ORDER_NEW","market":"XSHE","price":14.01,"qty":100,"securityId":"000001","shareholderId":"SH010","side":"B","timestamp":1772378718268}
+{"clOrderId":"ORD000177","event":"ORDER_REJECT","rejectCode":1,"rejectText":"Cross trade detected","timestamp":1772378718268}
+{"clOrderId":"ORD000178","event":"ORDER_NEW","market":"XSHE","price":14.99,"qty":1000,"securityId":"000001","shareholderId":"SH003","side":"B","timestamp":1772378718268}
+{"clOrderId":"ORD000178","event":"ORDER_REJECT","rejectCode":1,"rejectText":"Cross trade detected","timestamp":1772378718268}
+{"clOrderId":"ORD000179","event":"ORDER_NEW","market":"XSHE","price":14.88,"qty":100,"securityId":"000001","shareholderId":"SH008","side":"S","timestamp":1772378718268}
+{"clOrderId":"ORD000179","event":"ORDER_CONFIRM","timestamp":1772378718268}
+{"clOrderId":"ORD000180","event":"ORDER_NEW","market":"XSHE","price":13.72,"qty":300,"securityId":"000001","shareholderId":"SH010","side":"B","timestamp":1772378718268}
+{"clOrderId":"ORD000180","event":"ORDER_REJECT","rejectCode":1,"rejectText":"Cross trade detected","timestamp":1772378718268}
+{"clOrderId":"ORD000181","event":"ORDER_NEW","market":"XSHG","price":1798.27,"qty":300,"securityId":"600519","shareholderId":"SH004","side":"S","timestamp":1772378718268}
+{"clOrderId":"ORD000181","event":"ORDER_REJECT","rejectCode":1,"rejectText":"Cross trade detected","timestamp":1772378718268}
+{"clOrderId":"ORD000182","event":"ORDER_NEW","market":"XSHG","price":1789.49,"qty":1000,"securityId":"600519","shareholderId":"SH006","side":"B","timestamp":1772378718269}
+{"clOrderId":"ORD000182","event":"ORDER_CONFIRM","timestamp":1772378718269}
+{"clOrderId":"ORD000183","event":"ORDER_NEW","market":"XSHE","price":13.57,"qty":500,"securityId":"000001","shareholderId":"SH005","side":"S","timestamp":1772378718269}
+{"clOrderId":"ORD000183","event":"ORDER_CONFIRM","timestamp":1772378718269}
+{"clOrderId":"ORD000174","event":"EXECUTION","execId":"EXEC0000000000000058","execPrice":14.8,"execQty":100,"isMaker":true,"securityId":"000001","side":"B","timestamp":1772378718269}
+{"clOrderId":"ORD000183","event":"EXECUTION","execId":"EXEC0000000000000058","execPrice":14.8,"execQty":100,"isMaker":false,"securityId":"000001","side":"S","timestamp":1772378718269}
+{"clOrderId":"ORD000143","event":"EXECUTION","execId":"EXEC0000000000000059","execPrice":14.78,"execQty":400,"isMaker":true,"securityId":"000001","side":"B","timestamp":1772378718269}
+{"clOrderId":"ORD000183","event":"EXECUTION","execId":"EXEC0000000000000059","execPrice":14.78,"execQty":400,"isMaker":false,"securityId":"000001","side":"S","timestamp":1772378718269}
+{"event":"CANCEL_REJECT","origClOrderId":"ORD000017","rejectCode":1,"rejectText":"Order not found in book","timestamp":1772378718269}
+{"clOrderId":"ORD000185","event":"ORDER_NEW","market":"XSHE","price":16.0,"qty":300,"securityId":"000001","shareholderId":"SH004","side":"S","timestamp":1772378718269}
+{"clOrderId":"ORD000185","event":"ORDER_REJECT","rejectCode":1,"rejectText":"Cross trade detected","timestamp":1772378718269}
+{"clOrderId":"ORD000186","event":"ORDER_NEW","market":"XSHG","price":1805.46,"qty":1000,"securityId":"600519","shareholderId":"SH005","side":"B","timestamp":1772378718269}
+{"clOrderId":"ORD000186","event":"ORDER_REJECT","rejectCode":1,"rejectText":"Cross trade detected","timestamp":1772378718269}
+{"clOrderId":"ORD000187","event":"ORDER_NEW","market":"XSHE","price":15.38,"qty":100,"securityId":"000001","shareholderId":"SH005","side":"B","timestamp":1772378718269}
+{"clOrderId":"ORD000187","event":"ORDER_REJECT","rejectCode":1,"rejectText":"Cross trade detected","timestamp":1772378718269}
+{"clOrderId":"ORD000188","event":"ORDER_NEW","market":"XSHG","price":30.93,"qty":100,"securityId":"600030","shareholderId":"SH005","side":"S","timestamp":1772378718269}
+{"clOrderId":"ORD000188","event":"ORDER_REJECT","rejectCode":1,"rejectText":"Cross trade detected","timestamp":1772378718269}
+{"clOrderId":"ORD000189","event":"ORDER_NEW","market":"XSHG","price":1788.03,"qty":1000,"securityId":"600519","shareholderId":"SH006","side":"B","timestamp":1772378718269}
+{"clOrderId":"ORD000189","event":"ORDER_CONFIRM","timestamp":1772378718269}
+{"clOrderId":"ORD000190","event":"ORDER_NEW","market":"XSHG","price":1790.28,"qty":500,"securityId":"600519","shareholderId":"SH005","side":"B","timestamp":1772378718269}
+{"clOrderId":"ORD000190","event":"ORDER_REJECT","rejectCode":1,"rejectText":"Cross trade detected","timestamp":1772378718269}
+{"clOrderId":"ORD000191","event":"ORDER_NEW","market":"XSHG","price":1798.73,"qty":100,"securityId":"600519","shareholderId":"SH003","side":"B","timestamp":1772378718269}
+{"clOrderId":"ORD000191","event":"ORDER_REJECT","rejectCode":1,"rejectText":"Cross trade detected","timestamp":1772378718269}
+{"clOrderId":"ORD000192","event":"ORDER_NEW","market":"XSHG","price":31.87,"qty":1000,"securityId":"600030","shareholderId":"SH006","side":"S","timestamp":1772378718269}
+{"clOrderId":"ORD000192","event":"ORDER_REJECT","rejectCode":1,"rejectText":"Cross trade detected","timestamp":1772378718269}
+{"clOrderId":"ORD000193","event":"ORDER_NEW","market":"XSHG","price":1790.58,"qty":100,"securityId":"600519","shareholderId":"SH008","side":"B","timestamp":1772378718269}
+{"clOrderId":"ORD000193","event":"ORDER_CONFIRM","timestamp":1772378718269}
+{"clOrderId":"ORD000194","event":"ORDER_NEW","market":"XSHE","price":15.25,"qty":300,"securityId":"000001","shareholderId":"SH002","side":"S","timestamp":1772378718269}
+{"clOrderId":"ORD000194","event":"ORDER_REJECT","rejectCode":1,"rejectText":"Cross trade detected","timestamp":1772378718269}
+{"clOrderId":"ORD000195","event":"ORDER_NEW","market":"XSHG","price":1804.78,"qty":1000,"securityId":"600519","shareholderId":"SH006","side":"B","timestamp":1772378718269}
+{"clOrderId":"ORD000195","event":"ORDER_CONFIRM","timestamp":1772378718269}
+{"clOrderId":"ORD000196","event":"ORDER_NEW","market":"XSHG","price":30.54,"qty":500,"securityId":"600030","shareholderId":"SH005","side":"B","timestamp":1772378718269}
+{"clOrderId":"ORD000196","event":"ORDER_CONFIRM","timestamp":1772378718269}
+{"clOrderId":"ORD000197","event":"ORDER_NEW","market":"XSHG","price":28.18,"qty":100,"securityId":"600030","shareholderId":"SH005","side":"B","timestamp":1772378718269}
+{"clOrderId":"ORD000197","event":"ORDER_CONFIRM","timestamp":1772378718269}
+{"clOrderId":"ORD000198","event":"ORDER_NEW","market":"XSHG","price":28.94,"qty":1000,"securityId":"600030","shareholderId":"SH003","side":"B","timestamp":1772378718269}
+{"clOrderId":"ORD000198","event":"ORDER_CONFIRM","timestamp":1772378718269}
+{"clOrderId":"ORD000199","event":"ORDER_NEW","market":"XSHG","price":1803.49,"qty":200,"securityId":"600519","shareholderId":"SH007","side":"S","timestamp":1772378718269}
+{"clOrderId":"ORD000199","event":"ORDER_REJECT","rejectCode":1,"rejectText":"Cross trade detected","timestamp":1772378718269}
+{"clOrderId":"ORD000200","event":"ORDER_NEW","market":"XSHG","price":1817.56,"qty":300,"securityId":"600519","shareholderId":"SH001","side":"S","timestamp":1772378718269}
+{"clOrderId":"ORD000200","event":"ORDER_CONFIRM","timestamp":1772378718269}
+{"clOrderId":"ORD000201","event":"ORDER_NEW","market":"XSHG","price":29.78,"qty":200,"securityId":"600030","shareholderId":"SH006","side":"S","timestamp":1772378718269}
+{"clOrderId":"ORD000201","event":"ORDER_REJECT","rejectCode":1,"rejectText":"Cross trade detected","timestamp":1772378718269}
+{"clOrderId":"ORD000202","event":"ORDER_NEW","market":"XSHE","price":15.13,"qty":300,"securityId":"000001","shareholderId":"SH001","side":"S","timestamp":1772378718269}
+{"clOrderId":"ORD000202","event":"ORDER_REJECT","rejectCode":1,"rejectText":"Cross trade detected","timestamp":1772378718269}
+{"clOrderId":"ORD000203","event":"ORDER_NEW","market":"XSHG","price":31.8,"qty":500,"securityId":"600030","shareholderId":"SH002","side":"B","timestamp":1772378718269}
+{"clOrderId":"ORD000203","event":"ORDER_CONFIRM","timestamp":1772378718269}
+{"clOrderId":"ORD000204","event":"ORDER_NEW","market":"XSHE","price":13.65,"qty":300,"securityId":"000001","shareholderId":"SH004","side":"B","timestamp":1772378718270}
+{"clOrderId":"ORD000204","event":"ORDER_CONFIRM","timestamp":1772378718270}
+{"clOrderId":"ORD000205","event":"ORDER_NEW","market":"XSHE","price":13.71,"qty":1000,"securityId":"000001","shareholderId":"SH004","side":"B","timestamp":1772378718270}
+{"clOrderId":"ORD000205","event":"ORDER_CONFIRM","timestamp":1772378718270}
+{"clOrderId":"ORD000206","event":"ORDER_NEW","market":"XSHG","price":31.1,"qty":1000,"securityId":"600030","shareholderId":"SH001","side":"S","timestamp":1772378718270}
+{"clOrderId":"ORD000206","event":"ORDER_CONFIRM","timestamp":1772378718270}
+{"clOrderId":"ORD000203","event":"EXECUTION","execId":"EXEC0000000000000060","execPrice":31.8,"execQty":500,"isMaker":true,"securityId":"600030","side":"B","timestamp":1772378718270}
+{"clOrderId":"ORD000206","event":"EXECUTION","execId":"EXEC0000000000000060","execPrice":31.8,"execQty":500,"isMaker":false,"securityId":"600030","side":"S","timestamp":1772378718270}
+{"clOrderId":"ORD000111","event":"EXECUTION","execId":"EXEC0000000000000061","execPrice":31.72,"execQty":100,"isMaker":true,"securityId":"600030","side":"B","timestamp":1772378718270}
+{"clOrderId":"ORD000206","event":"EXECUTION","execId":"EXEC0000000000000061","execPrice":31.72,"execQty":100,"isMaker":false,"securityId":"600030","side":"S","timestamp":1772378718270}
+{"clOrderId":"ORD000108","event":"EXECUTION","execId":"EXEC0000000000000062","execPrice":31.36,"execQty":400,"isMaker":true,"securityId":"600030","side":"B","timestamp":1772378718270}
+{"clOrderId":"ORD000206","event":"EXECUTION","execId":"EXEC0000000000000062","execPrice":31.36,"execQty":400,"isMaker":false,"securityId":"600030","side":"S","timestamp":1772378718270}
+{"clOrderId":"ORD000207","event":"ORDER_NEW","market":"XSHG","price":30.16,"qty":200,"securityId":"600030","shareholderId":"SH002","side":"B","timestamp":1772378718270}
+{"clOrderId":"ORD000207","event":"ORDER_CONFIRM","timestamp":1772378718270}
+{"clOrderId":"ORD000208","event":"ORDER_NEW","market":"XSHG","price":28.06,"qty":200,"securityId":"600030","shareholderId":"SH010","side":"B","timestamp":1772378718270}
+{"clOrderId":"ORD000208","event":"ORDER_CONFIRM","timestamp":1772378718270}
+{"clOrderId":"ORD000209","event":"ORDER_NEW","market":"XSHG","price":28.21,"qty":500,"securityId":"600030","shareholderId":"SH009","side":"S","timestamp":1772378718270}
+{"clOrderId":"ORD000209","event":"ORDER_REJECT","rejectCode":1,"rejectText":"Cross trade detected","timestamp":1772378718270}
+{"clOrderId":"ORD000210","event":"ORDER_NEW","market":"XSHG","price":29.79,"qty":300,"securityId":"600030","shareholderId":"SH009","side":"S","timestamp":1772378718270}
+{"clOrderId":"ORD000210","event":"ORDER_REJECT","rejectCode":1,"rejectText":"Cross trade detected","timestamp":1772378718270}
+{"clOrderId":"ORD000211","event":"ORDER_NEW","market":"XSHG","price":1817.82,"qty":100,"securityId":"600519","shareholderId":"SH009","side":"B","timestamp":1772378718270}
+{"clOrderId":"ORD000211","event":"ORDER_REJECT","rejectCode":1,"rejectText":"Cross trade detected","timestamp":1772378718270}
+{"clOrderId":"ORD000212","event":"ORDER_NEW","market":"XSHE","price":13.68,"qty":500,"securityId":"000001","shareholderId":"SH007","side":"B","timestamp":1772378718270}
+{"clOrderId":"ORD000212","event":"ORDER_CONFIRM","timestamp":1772378718270}
+{"clOrderId":"ORD000213","event":"ORDER_NEW","market":"XSHG","price":30.85,"qty":500,"securityId":"600030","shareholderId":"SH002","side":"S","timestamp":1772378718270}
+{"clOrderId":"ORD000213","event":"ORDER_REJECT","rejectCode":1,"rejectText":"Cross trade detected","timestamp":1772378718270}
+{"clOrderId":"ORD000214","event":"ORDER_NEW","market":"XSHG","price":1782.63,"qty":300,"securityId":"600519","shareholderId":"SH010","side":"B","timestamp":1772378718270}
+{"clOrderId":"ORD000214","event":"ORDER_REJECT","rejectCode":1,"rejectText":"Cross trade detected","timestamp":1772378718270}
+{"clOrderId":"ORD000215","event":"ORDER_NEW","market":"XSHE","price":14.64,"qty":1000,"securityId":"000001","shareholderId":"SH009","side":"S","timestamp":1772378718270}
+{"clOrderId":"ORD000215","event":"ORDER_REJECT","rejectCode":1,"rejectText":"Cross trade detected","timestamp":1772378718270}
+{"clOrderId":"ORD000216","event":"ORDER_NEW","market":"XSHE","price":13.8,"qty":100,"securityId":"000001","shareholderId":"SH009","side":"S","timestamp":1772378718270}
+{"clOrderId":"ORD000216","event":"ORDER_REJECT","rejectCode":1,"rejectText":"Cross trade detected","timestamp":1772378718270}
+{"clOrderId":"ORD000217","event":"ORDER_NEW","market":"XSHG","price":29.81,"qty":200,"securityId":"600030","shareholderId":"SH007","side":"S","timestamp":1772378718270}
+{"clOrderId":"ORD000217","event":"ORDER_REJECT","rejectCode":1,"rejectText":"Cross trade detected","timestamp":1772378718270}
+{"clOrderId":"ORD000218","event":"ORDER_NEW","market":"XSHG","price":1796.64,"qty":100,"securityId":"600519","shareholderId":"SH006","side":"S","timestamp":1772378718270}
+{"clOrderId":"ORD000218","event":"ORDER_REJECT","rejectCode":1,"rejectText":"Cross trade detected","timestamp":1772378718270}
+{"clOrderId":"ORD000219","event":"ORDER_NEW","market":"XSHE","price":14.62,"qty":200,"securityId":"000001","shareholderId":"SH008","side":"S","timestamp":1772378718270}
+{"clOrderId":"ORD000219","event":"ORDER_CONFIRM","timestamp":1772378718270}
+{"clOrderId":"ORD000143","event":"EXECUTION","execId":"EXEC0000000000000063","execPrice":14.78,"execQty":200,"isMaker":true,"securityId":"000001","side":"B","timestamp":1772378718270}
+{"clOrderId":"ORD000219","event":"EXECUTION","execId":"EXEC0000000000000063","execPrice":14.78,"execQty":200,"isMaker":false,"securityId":"000001","side":"S","timestamp":1772378718270}
+{"event":"CANCEL_REJECT","origClOrderId":"ORD000031","rejectCode":1,"rejectText":"Order not found in book","timestamp":1772378718270}
+{"clOrderId":"ORD000221","event":"ORDER_NEW","market":"XSHG","price":31.25,"qty":1000,"securityId":"600030","shareholderId":"SH001","side":"S","timestamp":1772378718270}
+{"clOrderId":"ORD000221","event":"ORDER_CONFIRM","timestamp":1772378718270}
+{"clOrderId":"ORD000108","event":"EXECUTION","execId":"EXEC0000000000000064","execPrice":31.36,"execQty":600,"isMaker":true,"securityId":"600030","side":"B","timestamp":1772378718270}
+{"clOrderId":"ORD000221","event":"EXECUTION","execId":"EXEC0000000000000064","execPrice":31.36,"execQty":600,"isMaker":false,"securityId":"600030","side":"S","timestamp":1772378718270}
+{"clOrderId":"ORD000222","event":"ORDER_NEW","market":"XSHE","price":15.51,"qty":500,"securityId":"000001","shareholderId":"SH006","side":"S","timestamp":1772378718270}
+{"clOrderId":"ORD000222","event":"ORDER_REJECT","rejectCode":1,"rejectText":"Cross trade detected","timestamp":1772378718270}
+{"clOrderId":"ORD000223","event":"ORDER_NEW","market":"XSHG","price":1818.74,"qty":1000,"securityId":"600519","shareholderId":"SH005","side":"B","timestamp":1772378718270}
+{"clOrderId":"ORD000223","event":"ORDER_REJECT","rejectCode":1,"rejectText":"Cross trade detected","timestamp":1772378718270}
+{"clOrderId":"ORD000224","event":"ORDER_NEW","market":"XSHE","price":13.96,"qty":500,"securityId":"000001","shareholderId":"SH004","side":"B","timestamp":1772378718271}
+{"clOrderId":"ORD000224","event":"ORDER_CONFIRM","timestamp":1772378718271}
+{"clOrderId":"ORD000225","event":"ORDER_NEW","market":"XSHG","price":1784.6,"qty":300,"securityId":"600519","shareholderId":"SH010","side":"S","timestamp":1772378718271}
+{"clOrderId":"ORD000225","event":"ORDER_CONFIRM","timestamp":1772378718271}
+{"clOrderId":"ORD000154","event":"EXECUTION","execId":"EXEC0000000000000065","execPrice":1806.31,"execQty":200,"isMaker":true,"securityId":"600519","side":"B","timestamp":1772378718271}
+{"clOrderId":"ORD000225","event":"EXECUTION","execId":"EXEC0000000000000065","execPrice":1806.31,"execQty":200,"isMaker":false,"securityId":"600519","side":"S","timestamp":1772378718271}
+{"clOrderId":"ORD000195","event":"EXECUTION","execId":"EXEC0000000000000066","execPrice":1804.78,"execQty":100,"isMaker":true,"securityId":"600519","side":"B","timestamp":1772378718271}
+{"clOrderId":"ORD000225","event":"EXECUTION","execId":"EXEC0000000000000066","execPrice":1804.78,"execQty":100,"isMaker":false,"securityId":"600519","side":"S","timestamp":1772378718271}
+{"clOrderId":"ORD000226","event":"ORDER_NEW","market":"XSHG","price":1804.36,"qty":300,"securityId":"600519","shareholderId":"SH001","side":"B","timestamp":1772378718271}
+{"clOrderId":"ORD000226","event":"ORDER_REJECT","rejectCode":1,"rejectText":"Cross trade detected","timestamp":1772378718271}
+{"clOrderId":"ORD000227","event":"ORDER_NEW","market":"XSHE","price":16.26,"qty":300,"securityId":"000001","shareholderId":"SH001","side":"S","timestamp":1772378718271}
+{"clOrderId":"ORD000227","event":"ORDER_REJECT","rejectCode":1,"rejectText":"Cross trade detected","timestamp":1772378718271}
+{"clOrderId":"ORD000228","event":"ORDER_NEW","market":"XSHG","price":28.28,"qty":100,"securityId":"600030","shareholderId":"SH002","side":"S","timestamp":1772378718271}
+{"clOrderId":"ORD000228","event":"ORDER_REJECT","rejectCode":1,"rejectText":"Cross trade detected","timestamp":1772378718271}
+{"clOrderId":"ORD000229","event":"ORDER_NEW","market":"XSHG","price":29.68,"qty":300,"securityId":"600030","shareholderId":"SH003","side":"S","timestamp":1772378718271}
+{"clOrderId":"ORD000229","event":"ORDER_REJECT","rejectCode":1,"rejectText":"Cross trade detected","timestamp":1772378718271}
+{"clOrderId":"ORD000230","event":"ORDER_NEW","market":"XSHE","price":15.83,"qty":1000,"securityId":"000001","shareholderId":"SH010","side":"S","timestamp":1772378718271}
+{"clOrderId":"ORD000230","event":"ORDER_CONFIRM","timestamp":1772378718271}
+{"clOrderId":"ORD000231","event":"ORDER_NEW","market":"XSHG","price":28.63,"qty":1000,"securityId":"600030","shareholderId":"SH001","side":"B","timestamp":1772378718271}
+{"clOrderId":"ORD000231","event":"ORDER_REJECT","rejectCode":1,"rejectText":"Cross trade detected","timestamp":1772378718271}
+{"clOrderId":"ORD000232","event":"ORDER_NEW","market":"XSHG","price":1806.48,"qty":500,"securityId":"600519","shareholderId":"SH010","side":"S","timestamp":1772378718271}
+{"clOrderId":"ORD000232","event":"ORDER_CONFIRM","timestamp":1772378718271}
+{"clOrderId":"ORD000233","event":"ORDER_NEW","market":"XSHG","price":1810.2,"qty":100,"securityId":"600519","shareholderId":"SH006","side":"B","timestamp":1772378718271}
+{"clOrderId":"ORD000233","event":"ORDER_CONFIRM","timestamp":1772378718271}
+{"clOrderId":"ORD000232","event":"EXECUTION","execId":"EXEC0000000000000067","execPrice":1806.48,"execQty":100,"isMaker":true,"securityId":"600519","side":"S","timestamp":1772378718271}
+{"clOrderId":"ORD000233","event":"EXECUTION","execId":"EXEC0000000000000067","execPrice":1806.48,"execQty":100,"isMaker":false,"securityId":"600519","side":"B","timestamp":1772378718271}
+{"clOrderId":"ORD000234","event":"ORDER_NEW","market":"XSHG","price":1801.08,"qty":300,"securityId":"600519","shareholderId":"SH001","side":"S","timestamp":1772378718271}
+{"clOrderId":"ORD000234","event":"ORDER_CONFIRM","timestamp":1772378718271}
+{"clOrderId":"ORD000195","event":"EXECUTION","execId":"EXEC0000000000000068","execPrice":1804.78,"execQty":300,"isMaker":true,"securityId":"600519","side":"B","timestamp":1772378718271}
+{"clOrderId":"ORD000234","event":"EXECUTION","execId":"EXEC0000000000000068","execPrice":1804.78,"execQty":300,"isMaker":false,"securityId":"600519","side":"S","timestamp":1772378718271}
+{"clOrderId":"ORD000235","event":"ORDER_NEW","market":"XSHE","price":13.52,"qty":300,"securityId":"000001","shareholderId":"SH004","side":"B","timestamp":1772378718271}
+{"clOrderId":"ORD000235","event":"ORDER_CONFIRM","timestamp":1772378718271}
+{"clOrderId":"ORD000236","event":"ORDER_NEW","market":"XSHG","price":1793.12,"qty":100,"securityId":"600519","shareholderId":"SH008","side":"S","timestamp":1772378718271}
+{"clOrderId":"ORD000236","event":"ORDER_REJECT","rejectCode":1,"rejectText":"Cross trade detected","timestamp":1772378718271}
+{"clOrderId":"ORD000237","event":"ORDER_NEW","market":"XSHG","price":29.52,"qty":200,"securityId":"600030","shareholderId":"SH009","side":"B","timestamp":1772378718271}
+{"clOrderId":"ORD000237","event":"ORDER_CONFIRM","timestamp":1772378718271}
+{"clOrderId":"ORD000238","event":"ORDER_NEW","market":"XSHE","price":13.72,"qty":100,"securityId":"000001","shareholderId":"SH007","side":"S","timestamp":1772378718271}
+{"clOrderId":"ORD000238","event":"ORDER_REJECT","rejectCode":1,"rejectText":"Cross trade detected","timestamp":1772378718271}
+{"event":"CANCEL_REJECT","origClOrderId":"ORD000028","rejectCode":1,"rejectText":"Order not found in book","timestamp":1772378718271}
+{"clOrderId":"ORD000240","event":"ORDER_NEW","market":"XSHE","price":15.22,"qty":500,"securityId":"000001","shareholderId":"SH005","side":"S","timestamp":1772378718271}
+{"clOrderId":"ORD000240","event":"ORDER_CONFIRM","timestamp":1772378718271}
+{"clOrderId":"ORD000241","event":"ORDER_NEW","market":"XSHG","price":28.69,"qty":1000,"securityId":"600030","shareholderId":"SH008","side":"S","timestamp":1772378718271}
+{"clOrderId":"ORD000241","event":"ORDER_REJECT","rejectCode":1,"rejectText":"Cross trade detected","timestamp":1772378718271}
+{"clOrderId":"ORD000242","event":"ORDER_NEW","market":"XSHG","price":1797.47,"qty":100,"securityId":"600519","shareholderId":"SH004","side":"B","timestamp":1772378718271}
+{"clOrderId":"ORD000242","event":"ORDER_CONFIRM","timestamp":1772378718271}
+{"clOrderId":"ORD000243","event":"ORDER_NEW","market":"XSHG","price":1795.83,"qty":300,"securityId":"600519","shareholderId":"SH006","side":"B","timestamp":1772378718271}
+{"clOrderId":"ORD000243","event":"ORDER_CONFIRM","timestamp":1772378718271}
+{"clOrderId":"ORD000244","event":"ORDER_NEW","market":"XSHG","price":30.04,"qty":100,"securityId":"600030","shareholderId":"SH009","side":"B","timestamp":1772378718272}
+{"clOrderId":"ORD000244","event":"ORDER_CONFIRM","timestamp":1772378718272}
+{"clOrderId":"ORD000245","event":"ORDER_NEW","market":"XSHG","price":1809.1,"qty":200,"securityId":"600519","shareholderId":"SH004","side":"S","timestamp":1772378718272}
+{"clOrderId":"ORD000245","event":"ORDER_REJECT","rejectCode":1,"rejectText":"Cross trade detected","timestamp":1772378718272}
+{"clOrderId":"ORD000246","event":"ORDER_NEW","market":"XSHG","price":1786.94,"qty":200,"securityId":"600519","shareholderId":"SH002","side":"B","timestamp":1772378718272}
+{"clOrderId":"ORD000246","event":"ORDER_CONFIRM","timestamp":1772378718272}
+{"clOrderId":"ORD000247","event":"ORDER_NEW","market":"XSHE","price":14.89,"qty":1000,"securityId":"000001","shareholderId":"SH010","side":"S","timestamp":1772378718272}
+{"clOrderId":"ORD000247","event":"ORDER_CONFIRM","timestamp":1772378718272}
+{"clOrderId":"ORD000248","event":"ORDER_NEW","market":"XSHE","price":16.09,"qty":300,"securityId":"000001","shareholderId":"SH003","side":"S","timestamp":1772378718272}
+{"clOrderId":"ORD000248","event":"ORDER_CONFIRM","timestamp":1772378718272}
+{"clOrderId":"ORD000249","event":"ORDER_NEW","market":"XSHG","price":1805.26,"qty":300,"securityId":"600519","shareholderId":"SH010","side":"S","timestamp":1772378718272}
+{"clOrderId":"ORD000249","event":"ORDER_CONFIRM","timestamp":1772378718272}
+{"canceledQty":1000,"cumQty":0,"event":"CANCEL_CONFIRM","origClOrderId":"ORD000161","timestamp":1772378718272}
+{"canceledQty":200,"cumQty":0,"event":"CANCEL_CONFIRM","origClOrderId":"ORD000150","timestamp":1772378718272}
+{"clOrderId":"ORD000252","event":"ORDER_NEW","market":"XSHG","price":31.33,"qty":100,"securityId":"600030","shareholderId":"SH002","side":"S","timestamp":1772378718272}
+{"clOrderId":"ORD000252","event":"ORDER_REJECT","rejectCode":1,"rejectText":"Cross trade detected","timestamp":1772378718272}
+{"clOrderId":"ORD000253","event":"ORDER_NEW","market":"XSHE","price":14.89,"qty":1000,"securityId":"000001","shareholderId":"SH001","side":"S","timestamp":1772378718272}
+{"clOrderId":"ORD000253","event":"ORDER_REJECT","rejectCode":1,"rejectText":"Cross trade detected","timestamp":1772378718272}
+{"clOrderId":"ORD000254","event":"ORDER_NEW","market":"XSHE","price":14.46,"qty":500,"securityId":"000001","shareholderId":"SH009","side":"B","timestamp":1772378718272}
+{"clOrderId":"ORD000254","event":"ORDER_CONFIRM","timestamp":1772378718272}
+{"clOrderId":"ORD000255","event":"ORDER_NEW","market":"XSHG","price":28.41,"qty":300,"securityId":"600030","shareholderId":"SH002","side":"S","timestamp":1772378718272}
+{"clOrderId":"ORD000255","event":"ORDER_REJECT","rejectCode":1,"rejectText":"Cross trade detected","timestamp":1772378718272}
+{"clOrderId":"ORD000256","event":"ORDER_NEW","market":"XSHG","price":28.99,"qty":500,"securityId":"600030","shareholderId":"SH008","side":"B","timestamp":1772378718272}
+{"clOrderId":"ORD000256","event":"ORDER_CONFIRM","timestamp":1772378718272}
+{"clOrderId":"ORD000257","event":"ORDER_NEW","market":"XSHE","price":14.59,"qty":300,"securityId":"000001","shareholderId":"SH007","side":"B","timestamp":1772378718272}
+{"clOrderId":"ORD000257","event":"ORDER_CONFIRM","timestamp":1772378718272}
+{"clOrderId":"ORD000258","event":"ORDER_NEW","market":"XSHG","price":1811.57,"qty":300,"securityId":"600519","shareholderId":"SH002","side":"B","timestamp":1772378718272}
+{"clOrderId":"ORD000258","event":"ORDER_CONFIRM","timestamp":1772378718272}
+{"clOrderId":"ORD000249","event":"EXECUTION","execId":"EXEC0000000000000069","execPrice":1805.26,"execQty":300,"isMaker":true,"securityId":"600519","side":"S","timestamp":1772378718272}
+{"clOrderId":"ORD000258","event":"EXECUTION","execId":"EXEC0000000000000069","execPrice":1805.26,"execQty":300,"isMaker":false,"securityId":"600519","side":"B","timestamp":1772378718272}
+{"clOrderId":"ORD000259","event":"ORDER_NEW","market":"XSHE","price":14.35,"qty":1000,"securityId":"000001","shareholderId":"SH003","side":"S","timestamp":1772378718272}
+{"clOrderId":"ORD000259","event":"ORDER_CONFIRM","timestamp":1772378718272}
+{"clOrderId":"ORD000143","event":"EXECUTION","execId":"EXEC0000000000000070","execPrice":14.78,"execQty":400,"isMaker":true,"securityId":"000001","side":"B","timestamp":1772378718272}
+{"clOrderId":"ORD000259","event":"EXECUTION","execId":"EXEC0000000000000070","execPrice":14.78,"execQty":400,"isMaker":false,"securityId":"000001","side":"S","timestamp":1772378718272}
+{"clOrderId":"ORD000076","event":"EXECUTION","execId":"EXEC0000000000000071","execPrice":14.59,"execQty":100,"isMaker":true,"securityId":"000001","side":"B","timestamp":1772378718272}
+{"clOrderId":"ORD000259","event":"EXECUTION","execId":"EXEC0000000000000071","execPrice":14.59,"execQty":100,"isMaker":false,"securityId":"000001","side":"S","timestamp":1772378718272}
+{"clOrderId":"ORD000257","event":"EXECUTION","execId":"EXEC0000000000000072","execPrice":14.59,"execQty":300,"isMaker":true,"securityId":"000001","side":"B","timestamp":1772378718272}
+{"clOrderId":"ORD000259","event":"EXECUTION","execId":"EXEC0000000000000072","execPrice":14.59,"execQty":300,"isMaker":false,"securityId":"000001","side":"S","timestamp":1772378718272}
+{"clOrderId":"ORD000254","event":"EXECUTION","execId":"EXEC0000000000000073","execPrice":14.46,"execQty":200,"isMaker":true,"securityId":"000001","side":"B","timestamp":1772378718272}
+{"clOrderId":"ORD000259","event":"EXECUTION","execId":"EXEC0000000000000073","execPrice":14.46,"execQty":200,"isMaker":false,"securityId":"000001","side":"S","timestamp":1772378718272}
+{"clOrderId":"ORD000260","event":"ORDER_NEW","market":"XSHE","price":16.25,"qty":300,"securityId":"000001","shareholderId":"SH007","side":"B","timestamp":1772378718272}
+{"clOrderId":"ORD000260","event":"ORDER_CONFIRM","timestamp":1772378718272}
+{"clOrderId":"ORD000145","event":"EXECUTION","execId":"EXEC0000000000000074","execPrice":14.82,"execQty":100,"isMaker":true,"securityId":"000001","side":"S","timestamp":1772378718272}
+{"clOrderId":"ORD000260","event":"EXECUTION","execId":"EXEC0000000000000074","execPrice":14.82,"execQty":100,"isMaker":false,"securityId":"000001","side":"B","timestamp":1772378718272}
+{"clOrderId":"ORD000179","event":"EXECUTION","execId":"EXEC0000000000000075","execPrice":14.88,"execQty":100,"isMaker":true,"securityId":"000001","side":"S","timestamp":1772378718272}
+{"clOrderId":"ORD000260","event":"EXECUTION","execId":"EXEC0000000000000075","execPrice":14.88,"execQty":100,"isMaker":false,"securityId":"000001","side":"B","timestamp":1772378718272}
+{"clOrderId":"ORD000247","event":"EXECUTION","execId":"EXEC0000000000000076","execPrice":14.89,"execQty":100,"isMaker":true,"securityId":"000001","side":"S","timestamp":1772378718272}
+{"clOrderId":"ORD000260","event":"EXECUTION","execId":"EXEC0000000000000076","execPrice":14.89,"execQty":100,"isMaker":false,"securityId":"000001","side":"B","timestamp":1772378718272}
+{"clOrderId":"ORD000261","event":"ORDER_NEW","market":"XSHE","price":14.43,"qty":500,"securityId":"000001","shareholderId":"SH006","side":"B","timestamp":1772378718273}
+{"clOrderId":"ORD000261","event":"ORDER_CONFIRM","timestamp":1772378718273}
+{"clOrderId":"ORD000262","event":"ORDER_NEW","market":"XSHE","price":15.44,"qty":500,"securityId":"000001","shareholderId":"SH009","side":"B","timestamp":1772378718273}
+{"clOrderId":"ORD000262","event":"ORDER_CONFIRM","timestamp":1772378718273}
+{"clOrderId":"ORD000247","event":"EXECUTION","execId":"EXEC0000000000000077","execPrice":14.89,"execQty":500,"isMaker":true,"securityId":"000001","side":"S","timestamp":1772378718273}
+{"clOrderId":"ORD000262","event":"EXECUTION","execId":"EXEC0000000000000077","execPrice":14.89,"execQty":500,"isMaker":false,"securityId":"000001","side":"B","timestamp":1772378718273}
+{"clOrderId":"ORD000263","event":"ORDER_NEW","market":"XSHG","price":1787.21,"qty":200,"securityId":"600519","shareholderId":"SH006","side":"S","timestamp":1772378718273}
+{"clOrderId":"ORD000263","event":"ORDER_REJECT","rejectCode":1,"rejectText":"Cross trade detected","timestamp":1772378718273}
+{"clOrderId":"ORD000264","event":"ORDER_NEW","market":"XSHG","price":1789.06,"qty":200,"securityId":"600519","shareholderId":"SH003","side":"B","timestamp":1772378718273}
+{"clOrderId":"ORD000264","event":"ORDER_REJECT","rejectCode":1,"rejectText":"Cross trade detected","timestamp":1772378718273}
+{"event":"CANCEL_REJECT","origClOrderId":"ORD000257","rejectCode":1,"rejectText":"Order not found in book","timestamp":1772378718273}
+{"clOrderId":"ORD000266","event":"ORDER_NEW","market":"XSHE","price":15.49,"qty":1000,"securityId":"000001","shareholderId":"SH003","side":"B","timestamp":1772378718273}
+{"clOrderId":"ORD000266","event":"ORDER_REJECT","rejectCode":1,"rejectText":"Cross trade detected","timestamp":1772378718273}
+{"clOrderId":"ORD000267","event":"ORDER_NEW","market":"XSHG","price":28.72,"qty":1000,"securityId":"600030","shareholderId":"SH003","side":"B","timestamp":1772378718273}
+{"clOrderId":"ORD000267","event":"ORDER_CONFIRM","timestamp":1772378718273}
+{"clOrderId":"ORD000268","event":"ORDER_NEW","market":"XSHG","price":29.46,"qty":200,"securityId":"600030","shareholderId":"SH008","side":"S","timestamp":1772378718273}
+{"clOrderId":"ORD000268","event":"ORDER_REJECT","rejectCode":1,"rejectText":"Cross trade detected","timestamp":1772378718273}
+{"clOrderId":"ORD000269","event":"ORDER_NEW","market":"XSHE","price":14.2,"qty":200,"securityId":"000001","shareholderId":"SH005","side":"S","timestamp":1772378718273}
+{"clOrderId":"ORD000269","event":"ORDER_CONFIRM","timestamp":1772378718273}
+{"clOrderId":"ORD000254","event":"EXECUTION","execId":"EXEC0000000000000078","execPrice":14.46,"execQty":200,"isMaker":true,"securityId":"000001","side":"B","timestamp":1772378718273}
+{"clOrderId":"ORD000269","event":"EXECUTION","execId":"EXEC0000000000000078","execPrice":14.46,"execQty":200,"isMaker":false,"securityId":"000001","side":"S","timestamp":1772378718273}
+{"clOrderId":"ORD000270","event":"ORDER_NEW","market":"XSHG","price":1794.71,"qty":1000,"securityId":"600519","shareholderId":"SH008","side":"B","timestamp":1772378718273}
+{"clOrderId":"ORD000270","event":"ORDER_CONFIRM","timestamp":1772378718273}
+{"clOrderId":"ORD000271","event":"ORDER_NEW","market":"XSHG","price":1800.12,"qty":500,"securityId":"600519","shareholderId":"SH003","side":"S","timestamp":1772378718273}
+{"clOrderId":"ORD000271","event":"ORDER_CONFIRM","timestamp":1772378718273}
+{"clOrderId":"ORD000195","event":"EXECUTION","execId":"EXEC0000000000000079","execPrice":1804.78,"execQty":500,"isMaker":true,"securityId":"600519","side":"B","timestamp":1772378718273}
+{"clOrderId":"ORD000271","event":"EXECUTION","execId":"EXEC0000000000000079","execPrice":1804.78,"execQty":500,"isMaker":false,"securityId":"600519","side":"S","timestamp":1772378718273}
+{"clOrderId":"ORD000272","event":"ORDER_NEW","market":"XSHE","price":16.12,"qty":100,"securityId":"000001","shareholderId":"SH008","side":"B","timestamp":1772378718273}
+{"clOrderId":"ORD000272","event":"ORDER_REJECT","rejectCode":1,"rejectText":"Cross trade detected","timestamp":1772378718273}
+{"clOrderId":"ORD000273","event":"ORDER_NEW","market":"XSHE","price":15.63,"qty":1000,"securityId":"000001","shareholderId":"SH002","side":"B","timestamp":1772378718273}
+{"clOrderId":"ORD000273","event":"ORDER_CONFIRM","timestamp":1772378718273}
+{"clOrderId":"ORD000247","event":"EXECUTION","execId":"EXEC0000000000000080","execPrice":14.89,"execQty":400,"isMaker":true,"securityId":"000001","side":"S","timestamp":1772378718273}
+{"clOrderId":"ORD000273","event":"EXECUTION","execId":"EXEC0000000000000080","execPrice":14.89,"execQty":400,"isMaker":false,"securityId":"000001","side":"B","timestamp":1772378718273}
+{"clOrderId":"ORD000240","event":"EXECUTION","execId":"EXEC0000000000000081","execPrice":15.22,"execQty":500,"isMaker":true,"securityId":"000001","side":"S","timestamp":1772378718273}
+{"clOrderId":"ORD000273","event":"EXECUTION","execId":"EXEC0000000000000081","execPrice":15.22,"execQty":500,"isMaker":false,"securityId":"000001","side":"B","timestamp":1772378718273}
+{"clOrderId":"ORD000274","event":"ORDER_NEW","market":"XSHG","price":29.8,"qty":1000,"securityId":"600030","shareholderId":"SH003","side":"S","timestamp":1772378718273}
+{"clOrderId":"ORD000274","event":"ORDER_REJECT","rejectCode":1,"rejectText":"Cross trade detected","timestamp":1772378718273}
+{"clOrderId":"ORD000275","event":"ORDER_NEW","market":"XSHG","price":31.27,"qty":300,"securityId":"600030","shareholderId":"SH001","side":"B","timestamp":1772378718273}
+{"clOrderId":"ORD000275","event":"ORDER_REJECT","rejectCode":1,"rejectText":"Cross trade detected","timestamp":1772378718273}
+{"clOrderId":"ORD000276","event":"ORDER_NEW","market":"XSHG","price":1789.43,"qty":100,"securityId":"600519","shareholderId":"SH006","side":"S","timestamp":1772378718273}
+{"clOrderId":"ORD000276","event":"ORDER_REJECT","rejectCode":1,"rejectText":"Cross trade detected","timestamp":1772378718273}
+{"clOrderId":"ORD000277","event":"ORDER_NEW","market":"XSHG","price":1813.57,"qty":300,"securityId":"600519","shareholderId":"SH003","side":"B","timestamp":1772378718273}
+{"clOrderId":"ORD000277","event":"ORDER_REJECT","rejectCode":1,"rejectText":"Cross trade detected","timestamp":1772378718273}
+{"clOrderId":"ORD000278","event":"ORDER_NEW","market":"XSHG","price":1807.84,"qty":200,"securityId":"600519","shareholderId":"SH008","side":"S","timestamp":1772378718273}
+{"clOrderId":"ORD000278","event":"ORDER_REJECT","rejectCode":1,"rejectText":"Cross trade detected","timestamp":1772378718274}
+{"clOrderId":"ORD000279","event":"ORDER_NEW","market":"XSHG","price":28.08,"qty":200,"securityId":"600030","shareholderId":"SH003","side":"B","timestamp":1772378718274}
+{"clOrderId":"ORD000279","event":"ORDER_CONFIRM","timestamp":1772378718274}
+{"clOrderId":"ORD000280","event":"ORDER_NEW","market":"XSHE","price":13.83,"qty":300,"securityId":"000001","shareholderId":"SH004","side":"S","timestamp":1772378718274}
+{"clOrderId":"ORD000280","event":"ORDER_REJECT","rejectCode":1,"rejectText":"Cross trade detected","timestamp":1772378718274}
+{"clOrderId":"ORD000281","event":"ORDER_NEW","market":"XSHG","price":29.68,"qty":1000,"securityId":"600030","shareholderId":"SH008","side":"B","timestamp":1772378718274}
+{"clOrderId":"ORD000281","event":"ORDER_CONFIRM","timestamp":1772378718274}
+{"event":"CANCEL_REJECT","origClOrderId":"ORD000255","rejectCode":1,"rejectText":"Order not found in book","timestamp":1772378718274}
+{"clOrderId":"ORD000283","event":"ORDER_NEW","market":"XSHE","price":15.4,"qty":1000,"securityId":"000001","shareholderId":"SH004","side":"B","timestamp":1772378718274}
+{"clOrderId":"ORD000283","event":"ORDER_CONFIRM","timestamp":1772378718274}
+{"clOrderId":"ORD000284","event":"ORDER_NEW","market":"XSHG","price":1780.06,"qty":300,"securityId":"600519","shareholderId":"SH004","side":"S","timestamp":1772378718274}
+{"clOrderId":"ORD000284","event":"ORDER_REJECT","rejectCode":1,"rejectText":"Cross trade detected","timestamp":1772378718274}
+{"clOrderId":"ORD000285","event":"ORDER_NEW","market":"XSHG","price":30.09,"qty":300,"securityId":"600030","shareholderId":"SH002","side":"B","timestamp":1772378718274}
+{"clOrderId":"ORD000285","event":"ORDER_CONFIRM","timestamp":1772378718274}
+{"clOrderId":"ORD000286","event":"ORDER_NEW","market":"XSHE","price":14.67,"qty":500,"securityId":"000001","shareholderId":"SH001","side":"B","timestamp":1772378718274}
+{"clOrderId":"ORD000286","event":"ORDER_CONFIRM","timestamp":1772378718274}
+{"clOrderId":"ORD000287","event":"ORDER_NEW","market":"XSHG","price":1809.89,"qty":300,"securityId":"600519","shareholderId":"SH002","side":"S","timestamp":1772378718274}
+{"clOrderId":"ORD000287","event":"ORDER_REJECT","rejectCode":1,"rejectText":"Cross trade detected","timestamp":1772378718274}
+{"clOrderId":"ORD000288","event":"ORDER_NEW","market":"XSHE","price":15.81,"qty":300,"securityId":"000001","shareholderId":"SH003","side":"B","timestamp":1772378718274}
+{"clOrderId":"ORD000288","event":"ORDER_REJECT","rejectCode":1,"rejectText":"Cross trade detected","timestamp":1772378718274}
+{"event":"CANCEL_REJECT","origClOrderId":"ORD000175","rejectCode":1,"rejectText":"Order not found in book","timestamp":1772378718274}
+{"clOrderId":"ORD000290","event":"ORDER_NEW","market":"XSHE","price":15.99,"qty":500,"securityId":"000001","shareholderId":"SH008","side":"B","timestamp":1772378718274}
+{"clOrderId":"ORD000290","event":"ORDER_REJECT","rejectCode":1,"rejectText":"Cross trade detected","timestamp":1772378718274}
+{"clOrderId":"ORD000291","event":"ORDER_NEW","market":"XSHG","price":30.86,"qty":500,"securityId":"600030","shareholderId":"SH001","side":"B","timestamp":1772378718274}
+{"clOrderId":"ORD000291","event":"ORDER_REJECT","rejectCode":1,"rejectText":"Cross trade detected","timestamp":1772378718274}
+{"clOrderId":"ORD000292","event":"ORDER_NEW","market":"XSHG","price":31.54,"qty":300,"securityId":"600030","shareholderId":"SH005","side":"B","timestamp":1772378718274}
+{"clOrderId":"ORD000292","event":"ORDER_CONFIRM","timestamp":1772378718274}
+{"clOrderId":"ORD000221","event":"EXECUTION","execId":"EXEC0000000000000082","execPrice":31.25,"execQty":300,"isMaker":true,"securityId":"600030","side":"S","timestamp":1772378718274}
+{"clOrderId":"ORD000292","event":"EXECUTION","execId":"EXEC0000000000000082","execPrice":31.25,"execQty":300,"isMaker":false,"securityId":"600030","side":"B","timestamp":1772378718274}
+{"clOrderId":"ORD000293","event":"ORDER_NEW","market":"XSHE","price":14.26,"qty":200,"securityId":"000001","shareholderId":"SH005","side":"S","timestamp":1772378718274}
+{"clOrderId":"ORD000293","event":"ORDER_CONFIRM","timestamp":1772378718274}
+{"clOrderId":"ORD000273","event":"EXECUTION","execId":"EXEC0000000000000083","execPrice":15.63,"execQty":100,"isMaker":true,"securityId":"000001","side":"B","timestamp":1772378718274}
+{"clOrderId":"ORD000293","event":"EXECUTION","execId":"EXEC0000000000000083","execPrice":15.63,"execQty":100,"isMaker":false,"securityId":"000001","side":"S","timestamp":1772378718274}
+{"clOrderId":"ORD000283","event":"EXECUTION","execId":"EXEC0000000000000084","execPrice":15.4,"execQty":100,"isMaker":true,"securityId":"000001","side":"B","timestamp":1772378718274}
+{"clOrderId":"ORD000293","event":"EXECUTION","execId":"EXEC0000000000000084","execPrice":15.4,"execQty":100,"isMaker":false,"securityId":"000001","side":"S","timestamp":1772378718274}
+{"clOrderId":"ORD000294","event":"ORDER_NEW","market":"XSHG","price":29.09,"qty":300,"securityId":"600030","shareholderId":"SH007","side":"S","timestamp":1772378718274}
+{"clOrderId":"ORD000294","event":"ORDER_REJECT","rejectCode":1,"rejectText":"Cross trade detected","timestamp":1772378718274}
+{"clOrderId":"ORD000295","event":"ORDER_NEW","market":"XSHE","price":16.18,"qty":500,"securityId":"000001","shareholderId":"SH006","side":"S","timestamp":1772378718274}
+{"clOrderId":"ORD000295","event":"ORDER_REJECT","rejectCode":1,"rejectText":"Cross trade detected","timestamp":1772378718274}
+{"clOrderId":"ORD000296","event":"ORDER_NEW","market":"XSHG","price":1794.69,"qty":1000,"securityId":"600519","shareholderId":"SH005","side":"S","timestamp":1772378718274}
+{"clOrderId":"ORD000296","event":"ORDER_CONFIRM","timestamp":1772378718274}
+{"clOrderId":"ORD000195","event":"EXECUTION","execId":"EXEC0000000000000085","execPrice":1804.78,"execQty":100,"isMaker":true,"securityId":"600519","side":"B","timestamp":1772378718274}
+{"clOrderId":"ORD000296","event":"EXECUTION","execId":"EXEC0000000000000085","execPrice":1804.78,"execQty":100,"isMaker":false,"securityId":"600519","side":"S","timestamp":1772378718274}
+{"clOrderId":"ORD000158","event":"EXECUTION","execId":"EXEC0000000000000086","execPrice":1802.09,"execQty":100,"isMaker":true,"securityId":"600519","side":"B","timestamp":1772378718274}
+{"clOrderId":"ORD000296","event":"EXECUTION","execId":"EXEC0000000000000086","execPrice":1802.09,"execQty":100,"isMaker":false,"securityId":"600519","side":"S","timestamp":1772378718274}
+{"clOrderId":"ORD000242","event":"EXECUTION","execId":"EXEC0000000000000087","execPrice":1797.47,"execQty":100,"isMaker":true,"securityId":"600519","side":"B","timestamp":1772378718274}
+{"clOrderId":"ORD000296","event":"EXECUTION","execId":"EXEC0000000000000087","execPrice":1797.47,"execQty":100,"isMaker":false,"securityId":"600519","side":"S","timestamp":1772378718274}
+{"clOrderId":"ORD000243","event":"EXECUTION","execId":"EXEC0000000000000088","execPrice":1795.83,"execQty":300,"isMaker":true,"securityId":"600519","side":"B","timestamp":1772378718274}
+{"clOrderId":"ORD000296","event":"EXECUTION","execId":"EXEC0000000000000088","execPrice":1795.83,"execQty":300,"isMaker":false,"securityId":"600519","side":"S","timestamp":1772378718274}
+{"clOrderId":"ORD000270","event":"EXECUTION","execId":"EXEC0000000000000089","execPrice":1794.71,"execQty":400,"isMaker":true,"securityId":"600519","side":"B","timestamp":1772378718275}
+{"clOrderId":"ORD000296","event":"EXECUTION","execId":"EXEC0000000000000089","execPrice":1794.71,"execQty":400,"isMaker":false,"securityId":"600519","side":"S","timestamp":1772378718275}
+{"clOrderId":"ORD000297","event":"ORDER_NEW","market":"XSHE","price":13.74,"qty":1000,"securityId":"000001","shareholderId":"SH003","side":"S","timestamp":1772378718275}
+{"clOrderId":"ORD000297","event":"ORDER_CONFIRM","timestamp":1772378718275}
+{"clOrderId":"ORD000283","event":"EXECUTION","execId":"EXEC0000000000000090","execPrice":15.4,"execQty":900,"isMaker":true,"securityId":"000001","side":"B","timestamp":1772378718275}
+{"clOrderId":"ORD000297","event":"EXECUTION","execId":"EXEC0000000000000090","execPrice":15.4,"execQty":900,"isMaker":false,"securityId":"000001","side":"S","timestamp":1772378718275}
+{"clOrderId":"ORD000286","event":"EXECUTION","execId":"EXEC0000000000000091","execPrice":14.67,"execQty":100,"isMaker":true,"securityId":"000001","side":"B","timestamp":1772378718275}
+{"clOrderId":"ORD000297","event":"EXECUTION","execId":"EXEC0000000000000091","execPrice":14.67,"execQty":100,"isMaker":false,"securityId":"000001","side":"S","timestamp":1772378718275}
+{"clOrderId":"ORD000298","event":"ORDER_NEW","market":"XSHG","price":1783.2,"qty":300,"securityId":"600519","shareholderId":"SH005","side":"B","timestamp":1772378718275}
+{"clOrderId":"ORD000298","event":"ORDER_REJECT","rejectCode":1,"rejectText":"Cross trade detected","timestamp":1772378718275}
+{"clOrderId":"ORD000299","event":"ORDER_NEW","market":"XSHE","price":14.0,"qty":500,"securityId":"000001","shareholderId":"SH006","side":"S","timestamp":1772378718275}
+{"clOrderId":"ORD000299","event":"ORDER_REJECT","rejectCode":1,"rejectText":"Cross trade detected","timestamp":1772378718275}
+{"clOrderId":"ORD000300","event":"ORDER_NEW","market":"XSHE","price":15.34,"qty":500,"securityId":"000001","shareholderId":"SH005","side":"S","timestamp":1772378718275}
+{"clOrderId":"ORD000300","event":"ORDER_CONFIRM","timestamp":1772378718275}
+{"clOrderId":"ORD000301","event":"ORDER_NEW","market":"XSHG","price":30.68,"qty":500,"securityId":"600030","shareholderId":"SH006","side":"B","timestamp":1772378718275}
+{"clOrderId":"ORD000301","event":"ORDER_CONFIRM","timestamp":1772378718275}
+{"clOrderId":"ORD000302","event":"ORDER_NEW","market":"XSHE","price":16.36,"qty":200,"securityId":"000001","shareholderId":"SH010","side":"B","timestamp":1772378718275}
+{"clOrderId":"ORD000302","event":"ORDER_REJECT","rejectCode":1,"rejectText":"Cross trade detected","timestamp":1772378718275}
+{"clOrderId":"ORD000303","event":"ORDER_NEW","market":"XSHG","price":1785.05,"qty":200,"securityId":"600519","shareholderId":"SH006","side":"B","timestamp":1772378718275}
+{"clOrderId":"ORD000303","event":"ORDER_CONFIRM","timestamp":1772378718275}
+{"clOrderId":"ORD000304","event":"ORDER_NEW","market":"XSHE","price":15.32,"qty":500,"securityId":"000001","shareholderId":"SH006","side":"B","timestamp":1772378718275}
+{"clOrderId":"ORD000304","event":"ORDER_CONFIRM","timestamp":1772378718275}
+{"clOrderId":"ORD000305","event":"ORDER_NEW","market":"XSHG","price":30.12,"qty":500,"securityId":"600030","shareholderId":"SH006","side":"B","timestamp":1772378718275}
+{"clOrderId":"ORD000305","event":"ORDER_CONFIRM","timestamp":1772378718275}
+{"clOrderId":"ORD000306","event":"ORDER_NEW","market":"XSHG","price":28.1,"qty":200,"securityId":"600030","shareholderId":"SH008","side":"B","timestamp":1772378718275}
+{"clOrderId":"ORD000306","event":"ORDER_CONFIRM","timestamp":1772378718275}
+{"clOrderId":"ORD000307","event":"ORDER_NEW","market":"XSHE","price":14.29,"qty":300,"securityId":"000001","shareholderId":"SH008","side":"B","timestamp":1772378718275}
+{"clOrderId":"ORD000307","event":"ORDER_REJECT","rejectCode":1,"rejectText":"Cross trade detected","timestamp":1772378718275}
+{"clOrderId":"ORD000308","event":"ORDER_NEW","market":"XSHE","price":15.58,"qty":500,"securityId":"000001","shareholderId":"SH004","side":"S","timestamp":1772378718275}
+{"clOrderId":"ORD000308","event":"ORDER_REJECT","rejectCode":1,"rejectText":"Cross trade detected","timestamp":1772378718275}
+{"clOrderId":"ORD000309","event":"ORDER_NEW","market":"XSHG","price":28.69,"qty":500,"securityId":"600030","shareholderId":"SH002","side":"S","timestamp":1772378718275}
+{"clOrderId":"ORD000309","event":"ORDER_REJECT","rejectCode":1,"rejectText":"Cross trade detected","timestamp":1772378718275}
+{"clOrderId":"ORD000310","event":"ORDER_NEW","market":"XSHG","price":1808.38,"qty":1000,"securityId":"600519","shareholderId":"SH009","side":"S","timestamp":1772378718275}
+{"clOrderId":"ORD000310","event":"ORDER_CONFIRM","timestamp":1772378718275}
+{"clOrderId":"ORD000311","event":"ORDER_NEW","market":"XSHG","price":1808.47,"qty":200,"securityId":"600519","shareholderId":"SH006","side":"B","timestamp":1772378718275}
+{"clOrderId":"ORD000311","event":"ORDER_CONFIRM","timestamp":1772378718275}
+{"clOrderId":"ORD000232","event":"EXECUTION","execId":"EXEC0000000000000092","execPrice":1806.48,"execQty":200,"isMaker":true,"securityId":"600519","side":"S","timestamp":1772378718275}
+{"clOrderId":"ORD000311","event":"EXECUTION","execId":"EXEC0000000000000092","execPrice":1806.48,"execQty":200,"isMaker":false,"securityId":"600519","side":"B","timestamp":1772378718275}
+{"clOrderId":"ORD000312","event":"ORDER_NEW","market":"XSHG","price":31.17,"qty":200,"securityId":"600030","shareholderId":"SH008","side":"B","timestamp":1772378718275}
+{"clOrderId":"ORD000312","event":"ORDER_CONFIRM","timestamp":1772378718275}
+{"event":"CANCEL_REJECT","origClOrderId":"ORD000227","rejectCode":1,"rejectText":"Order not found in book","timestamp":1772378718275}
+{"clOrderId":"ORD000314","event":"ORDER_NEW","market":"XSHE","price":15.34,"qty":100,"securityId":"000001","shareholderId":"SH002","side":"B","timestamp":1772378718275}
+{"clOrderId":"ORD000314","event":"ORDER_CONFIRM","timestamp":1772378718275}
+{"clOrderId":"ORD000300","event":"EXECUTION","execId":"EXEC0000000000000093","execPrice":15.34,"execQty":100,"isMaker":true,"securityId":"000001","side":"S","timestamp":1772378718275}
+{"clOrderId":"ORD000314","event":"EXECUTION","execId":"EXEC0000000000000093","execPrice":15.34,"execQty":100,"isMaker":false,"securityId":"000001","side":"B","timestamp":1772378718275}
+{"clOrderId":"ORD000315","event":"ORDER_NEW","market":"XSHE","price":15.08,"qty":500,"securityId":"000001","shareholderId":"SH010","side":"S","timestamp":1772378718275}
+{"clOrderId":"ORD000315","event":"ORDER_CONFIRM","timestamp":1772378718275}
+{"clOrderId":"ORD000304","event":"EXECUTION","execId":"EXEC0000000000000094","execPrice":15.32,"execQty":500,"isMaker":true,"securityId":"000001","side":"B","timestamp":1772378718275}
+{"clOrderId":"ORD000315","event":"EXECUTION","execId":"EXEC0000000000000094","execPrice":15.32,"execQty":500,"isMaker":false,"securityId":"000001","side":"S","timestamp":1772378718276}
+{"canceledQty":300,"cumQty":0,"event":"CANCEL_CONFIRM","origClOrderId":"ORD000200","timestamp":1772378718276}
+{"clOrderId":"ORD000317","event":"ORDER_NEW","market":"XSHG","price":1807.2,"qty":300,"securityId":"600519","shareholderId":"SH003","side":"S","timestamp":1772378718276}
+{"clOrderId":"ORD000317","event":"ORDER_CONFIRM","timestamp":1772378718276}
+{"clOrderId":"ORD000318","event":"ORDER_NEW","market":"XSHE","price":15.8,"qty":200,"securityId":"000001","shareholderId":"SH007","side":"B","timestamp":1772378718276}
+{"clOrderId":"ORD000318","event":"ORDER_CONFIRM","timestamp":1772378718276}
+{"clOrderId":"ORD000300","event":"EXECUTION","execId":"EXEC0000000000000095","execPrice":15.34,"execQty":200,"isMaker":true,"securityId":"000001","side":"S","timestamp":1772378718276}
+{"clOrderId":"ORD000318","event":"EXECUTION","execId":"EXEC0000000000000095","execPrice":15.34,"execQty":200,"isMaker":false,"securityId":"000001","side":"B","timestamp":1772378718276}
+{"clOrderId":"ORD000319","event":"ORDER_NEW","market":"XSHG","price":30.07,"qty":300,"securityId":"600030","shareholderId":"SH003","side":"B","timestamp":1772378718276}
+{"clOrderId":"ORD000319","event":"ORDER_CONFIRM","timestamp":1772378718276}
+{"clOrderId":"ORD000320","event":"ORDER_NEW","market":"XSHE","price":14.54,"qty":1000,"securityId":"000001","shareholderId":"SH005","side":"B","timestamp":1772378718276}
+{"clOrderId":"ORD000320","event":"ORDER_REJECT","rejectCode":1,"rejectText":"Cross trade detected","timestamp":1772378718276}
+{"clOrderId":"ORD000321","event":"ORDER_NEW","market":"XSHG","price":1805.4,"qty":1000,"securityId":"600519","shareholderId":"SH005","side":"B","timestamp":1772378718276}
+{"clOrderId":"ORD000321","event":"ORDER_REJECT","rejectCode":1,"rejectText":"Cross trade detected","timestamp":1772378718276}
+{"clOrderId":"ORD000322","event":"ORDER_NEW","market":"XSHG","price":1800.1,"qty":200,"securityId":"600519","shareholderId":"SH010","side":"B","timestamp":1772378718276}
+{"clOrderId":"ORD000322","event":"ORDER_REJECT","rejectCode":1,"rejectText":"Cross trade detected","timestamp":1772378718276}
+{"clOrderId":"ORD000323","event":"ORDER_NEW","market":"XSHG","price":30.63,"qty":1000,"securityId":"600030","shareholderId":"SH006","side":"B","timestamp":1772378718276}
+{"clOrderId":"ORD000323","event":"ORDER_CONFIRM","timestamp":1772378718276}
+{"clOrderId":"ORD000324","event":"ORDER_NEW","market":"XSHE","price":15.98,"qty":100,"securityId":"000001","shareholderId":"SH002","side":"B","timestamp":1772378718276}
+{"clOrderId":"ORD000324","event":"ORDER_CONFIRM","timestamp":1772378718276}
+{"clOrderId":"ORD000300","event":"EXECUTION","execId":"EXEC0000000000000096","execPrice":15.34,"execQty":100,"isMaker":true,"securityId":"000001","side":"S","timestamp":1772378718276}
+{"clOrderId":"ORD000324","event":"EXECUTION","execId":"EXEC0000000000000096","execPrice":15.34,"execQty":100,"isMaker":false,"securityId":"000001","side":"B","timestamp":1772378718276}
+{"event":"CANCEL_REJECT","origClOrderId":"ORD000169","rejectCode":1,"rejectText":"Order not found in book","timestamp":1772378718276}
+{"clOrderId":"ORD000326","event":"ORDER_NEW","market":"XSHE","price":15.35,"qty":100,"securityId":"000001","shareholderId":"SH008","side":"S","timestamp":1772378718276}
+{"clOrderId":"ORD000326","event":"ORDER_CONFIRM","timestamp":1772378718276}
+{"clOrderId":"ORD000327","event":"ORDER_NEW","market":"XSHE","price":15.43,"qty":300,"securityId":"000001","shareholderId":"SH008","side":"S","timestamp":1772378718276}
+{"clOrderId":"ORD000327","event":"ORDER_CONFIRM","timestamp":1772378718276}
+{"clOrderId":"ORD000328","event":"ORDER_NEW","market":"XSHE","price":14.39,"qty":100,"securityId":"000001","shareholderId":"SH001","side":"S","timestamp":1772378718276}
+{"clOrderId":"ORD000328","event":"ORDER_REJECT","rejectCode":1,"rejectText":"Cross trade detected","timestamp":1772378718276}
+{"clOrderId":"ORD000329","event":"ORDER_NEW","market":"XSHG","price":1798.58,"qty":300,"securityId":"600519","shareholderId":"SH010","side":"S","timestamp":1772378718276}
+{"clOrderId":"ORD000329","event":"ORDER_CONFIRM","timestamp":1772378718276}
+{"clOrderId":"ORD000330","event":"ORDER_NEW","market":"XSHE","price":15.7,"qty":300,"securityId":"000001","shareholderId":"SH007","side":"S","timestamp":1772378718276}
+{"clOrderId":"ORD000330","event":"ORDER_REJECT","rejectCode":1,"rejectText":"Cross trade detected","timestamp":1772378718276}
+{"clOrderId":"ORD000331","event":"ORDER_NEW","market":"XSHG","price":1792.76,"qty":500,"securityId":"600519","shareholderId":"SH002","side":"B","timestamp":1772378718276}
+{"clOrderId":"ORD000331","event":"ORDER_CONFIRM","timestamp":1772378718276}
+{"clOrderId":"ORD000332","event":"ORDER_NEW","market":"XSHG","price":28.39,"qty":300,"securityId":"600030","shareholderId":"SH007","side":"B","timestamp":1772378718276}
+{"clOrderId":"ORD000332","event":"ORDER_CONFIRM","timestamp":1772378718276}
+{"clOrderId":"ORD000333","event":"ORDER_NEW","market":"XSHG","price":1818.51,"qty":200,"securityId":"600519","shareholderId":"SH006","side":"B","timestamp":1772378718276}
+{"clOrderId":"ORD000333","event":"ORDER_CONFIRM","timestamp":1772378718276}
+{"clOrderId":"ORD000329","event":"EXECUTION","execId":"EXEC0000000000000097","execPrice":1798.58,"execQty":200,"isMaker":true,"securityId":"600519","side":"S","timestamp":1772378718276}
+{"clOrderId":"ORD000333","event":"EXECUTION","execId":"EXEC0000000000000097","execPrice":1798.58,"execQty":200,"isMaker":false,"securityId":"600519","side":"B","timestamp":1772378718276}
+{"clOrderId":"ORD000334","event":"ORDER_NEW","market":"XSHE","price":14.07,"qty":200,"securityId":"000001","shareholderId":"SH008","side":"S","timestamp":1772378718276}
+{"clOrderId":"ORD000334","event":"ORDER_CONFIRM","timestamp":1772378718276}
+{"clOrderId":"ORD000286","event":"EXECUTION","execId":"EXEC0000000000000098","execPrice":14.67,"execQty":200,"isMaker":true,"securityId":"000001","side":"B","timestamp":1772378718276}
+{"clOrderId":"ORD000334","event":"EXECUTION","execId":"EXEC0000000000000098","execPrice":14.67,"execQty":200,"isMaker":false,"securityId":"000001","side":"S","timestamp":1772378718276}
+{"clOrderId":"ORD000335","event":"ORDER_NEW","market":"XSHG","price":1815.16,"qty":500,"securityId":"600519","shareholderId":"SH001","side":"S","timestamp":1772378718276}
+{"clOrderId":"ORD000335","event":"ORDER_CONFIRM","timestamp":1772378718276}
+{"clOrderId":"ORD000336","event":"ORDER_NEW","market":"XSHG","price":1818.67,"qty":200,"securityId":"600519","shareholderId":"SH010","side":"S","timestamp":1772378718276}
+{"clOrderId":"ORD000336","event":"ORDER_CONFIRM","timestamp":1772378718276}
+{"clOrderId":"ORD000337","event":"ORDER_NEW","market":"XSHG","price":29.98,"qty":500,"securityId":"600030","shareholderId":"SH005","side":"S","timestamp":1772378718277}
+{"clOrderId":"ORD000337","event":"ORDER_REJECT","rejectCode":1,"rejectText":"Cross trade detected","timestamp":1772378718277}
+{"clOrderId":"ORD000338","event":"ORDER_NEW","market":"XSHG","price":28.54,"qty":300,"securityId":"600030","shareholderId":"SH006","side":"S","timestamp":1772378718277}
+{"clOrderId":"ORD000338","event":"ORDER_REJECT","rejectCode":1,"rejectText":"Cross trade detected","timestamp":1772378718277}
+{"clOrderId":"ORD000339","event":"ORDER_NEW","market":"XSHG","price":1796.02,"qty":1000,"securityId":"600519","shareholderId":"SH009","side":"B","timestamp":1772378718277}
+{"clOrderId":"ORD000339","event":"ORDER_REJECT","rejectCode":1,"rejectText":"Cross trade detected","timestamp":1772378718277}
+{"clOrderId":"ORD000340","event":"ORDER_NEW","market":"XSHE","price":13.72,"qty":1000,"securityId":"000001","shareholderId":"SH008","side":"S","timestamp":1772378718277}
+{"clOrderId":"ORD000340","event":"ORDER_CONFIRM","timestamp":1772378718277}
+{"clOrderId":"ORD000286","event":"EXECUTION","execId":"EXEC0000000000000099","execPrice":14.67,"execQty":200,"isMaker":true,"securityId":"000001","side":"B","timestamp":1772378718277}
+{"clOrderId":"ORD000340","event":"EXECUTION","execId":"EXEC0000000000000099","execPrice":14.67,"execQty":200,"isMaker":false,"securityId":"000001","side":"S","timestamp":1772378718277}
+{"clOrderId":"ORD000254","event":"EXECUTION","execId":"EXEC0000000000000100","execPrice":14.46,"execQty":100,"isMaker":true,"securityId":"000001","side":"B","timestamp":1772378718277}
+{"clOrderId":"ORD000340","event":"EXECUTION","execId":"EXEC0000000000000100","execPrice":14.46,"execQty":100,"isMaker":false,"securityId":"000001","side":"S","timestamp":1772378718277}
+{"clOrderId":"ORD000261","event":"EXECUTION","execId":"EXEC0000000000000101","execPrice":14.43,"execQty":500,"isMaker":true,"securityId":"000001","side":"B","timestamp":1772378718277}
+{"clOrderId":"ORD000340","event":"EXECUTION","execId":"EXEC0000000000000101","execPrice":14.43,"execQty":500,"isMaker":false,"securityId":"000001","side":"S","timestamp":1772378718277}
+{"clOrderId":"ORD000124","event":"EXECUTION","execId":"EXEC0000000000000102","execPrice":14.42,"execQty":200,"isMaker":true,"securityId":"000001","side":"B","timestamp":1772378718277}
+{"clOrderId":"ORD000340","event":"EXECUTION","execId":"EXEC0000000000000102","execPrice":14.42,"execQty":200,"isMaker":false,"securityId":"000001","side":"S","timestamp":1772378718277}
+{"clOrderId":"ORD000341","event":"ORDER_NEW","market":"XSHG","price":1785.15,"qty":100,"securityId":"600519","shareholderId":"SH007","side":"B","timestamp":1772378718277}
+{"clOrderId":"ORD000341","event":"ORDER_CONFIRM","timestamp":1772378718277}
+{"clOrderId":"ORD000342","event":"ORDER_NEW","market":"XSHG","price":1810.2,"qty":200,"securityId":"600519","shareholderId":"SH010","side":"S","timestamp":1772378718277}
+{"clOrderId":"ORD000342","event":"ORDER_CONFIRM","timestamp":1772378718277}
+{"clOrderId":"ORD000343","event":"ORDER_NEW","market":"XSHE","price":13.64,"qty":200,"securityId":"000001","shareholderId":"SH006","side":"B","timestamp":1772378718277}
+{"clOrderId":"ORD000343","event":"ORDER_CONFIRM","timestamp":1772378718277}
+{"clOrderId":"ORD000344","event":"ORDER_NEW","market":"XSHE","price":13.95,"qty":1000,"securityId":"000001","shareholderId":"SH003","side":"S","timestamp":1772378718277}
+{"clOrderId":"ORD000344","event":"ORDER_CONFIRM","timestamp":1772378718277}
+{"clOrderId":"ORD000124","event":"EXECUTION","execId":"EXEC0000000000000103","execPrice":14.42,"execQty":800,"isMaker":true,"securityId":"000001","side":"B","timestamp":1772378718277}
+{"clOrderId":"ORD000344","event":"EXECUTION","execId":"EXEC0000000000000103","execPrice":14.42,"execQty":800,"isMaker":false,"securityId":"000001","side":"S","timestamp":1772378718277}
+{"clOrderId":"ORD000130","event":"EXECUTION","execId":"EXEC0000000000000104","execPrice":14.32,"execQty":100,"isMaker":true,"securityId":"000001","side":"B","timestamp":1772378718277}
+{"clOrderId":"ORD000344","event":"EXECUTION","execId":"EXEC0000000000000104","execPrice":14.32,"execQty":100,"isMaker":false,"securityId":"000001","side":"S","timestamp":1772378718277}
+{"clOrderId":"ORD000068","event":"EXECUTION","execId":"EXEC0000000000000105","execPrice":14.3,"execQty":100,"isMaker":true,"securityId":"000001","side":"B","timestamp":1772378718277}
+{"clOrderId":"ORD000344","event":"EXECUTION","execId":"EXEC0000000000000105","execPrice":14.3,"execQty":100,"isMaker":false,"securityId":"000001","side":"S","timestamp":1772378718277}
+{"clOrderId":"ORD000345","event":"ORDER_NEW","market":"XSHE","price":13.99,"qty":1000,"securityId":"000001","shareholderId":"SH005","side":"S","timestamp":1772378718277}
+{"clOrderId":"ORD000345","event":"ORDER_CONFIRM","timestamp":1772378718277}
+{"clOrderId":"ORD000075","event":"EXECUTION","execId":"EXEC0000000000000106","execPrice":14.26,"execQty":500,"isMaker":true,"securityId":"000001","side":"B","timestamp":1772378718277}
+{"clOrderId":"ORD000345","event":"EXECUTION","execId":"EXEC0000000000000106","execPrice":14.26,"execQty":500,"isMaker":false,"securityId":"000001","side":"S","timestamp":1772378718277}
+{"clOrderId":"ORD000346","event":"ORDER_NEW","market":"XSHE","price":15.63,"qty":300,"securityId":"000001","shareholderId":"SH008","side":"S","timestamp":1772378718277}
+{"clOrderId":"ORD000346","event":"ORDER_CONFIRM","timestamp":1772378718277}
+{"clOrderId":"ORD000347","event":"ORDER_NEW","market":"XSHG","price":1806.95,"qty":500,"securityId":"600519","shareholderId":"SH010","side":"S","timestamp":1772378718277}
+{"clOrderId":"ORD000347","event":"ORDER_CONFIRM","timestamp":1772378718277}
+{"clOrderId":"ORD000348","event":"ORDER_NEW","market":"XSHE","price":15.29,"qty":300,"securityId":"000001","shareholderId":"SH010","side":"B","timestamp":1772378718277}
+{"clOrderId":"ORD000348","event":"ORDER_REJECT","rejectCode":1,"rejectText":"Cross trade detected","timestamp":1772378718277}
+{"clOrderId":"ORD000349","event":"ORDER_NEW","market":"XSHE","price":15.25,"qty":200,"securityId":"000001","shareholderId":"SH009","side":"B","timestamp":1772378718277}
+{"clOrderId":"ORD000349","event":"ORDER_CONFIRM","timestamp":1772378718277}
+{"clOrderId":"ORD000345","event":"EXECUTION","execId":"EXEC0000000000000107","execPrice":13.99,"execQty":200,"isMaker":true,"securityId":"000001","side":"S","timestamp":1772378718277}
+{"clOrderId":"ORD000349","event":"EXECUTION","execId":"EXEC0000000000000107","execPrice":13.99,"execQty":200,"isMaker":false,"securityId":"000001","side":"B","timestamp":1772378718277}
+{"clOrderId":"ORD000350","event":"ORDER_NEW","market":"XSHE","price":13.94,"qty":200,"securityId":"000001","shareholderId":"SH001","side":"S","timestamp":1772378718277}
+{"clOrderId":"ORD000350","event":"ORDER_CONFIRM","timestamp":1772378718277}
+{"clOrderId":"ORD000224","event":"EXECUTION","execId":"EXEC0000000000000108","execPrice":13.96,"execQty":200,"isMaker":true,"securityId":"000001","side":"B","timestamp":1772378718277}
+{"clOrderId":"ORD000350","event":"EXECUTION","execId":"EXEC0000000000000108","execPrice":13.96,"execQty":200,"isMaker":false,"securityId":"000001","side":"S","timestamp":1772378718277}
+{"clOrderId":"ORD000351","event":"ORDER_NEW","market":"XSHE","price":14.07,"qty":500,"securityId":"000001","shareholderId":"SH006","side":"B","timestamp":1772378718277}
+{"clOrderId":"ORD000351","event":"ORDER_CONFIRM","timestamp":1772378718277}
+{"clOrderId":"ORD000345","event":"EXECUTION","execId":"EXEC0000000000000109","execPrice":13.99,"execQty":300,"isMaker":true,"securityId":"000001","side":"S","timestamp":1772378718277}
+{"clOrderId":"ORD000351","event":"EXECUTION","execId":"EXEC0000000000000109","execPrice":13.99,"execQty":300,"isMaker":false,"securityId":"000001","side":"B","timestamp":1772378718278}
+{"clOrderId":"ORD000352","event":"ORDER_NEW","market":"XSHG","price":1796.42,"qty":1000,"securityId":"600519","shareholderId":"SH008","side":"B","timestamp":1772378718278}
+{"clOrderId":"ORD000352","event":"ORDER_CONFIRM","timestamp":1772378718278}
+{"clOrderId":"ORD000353","event":"ORDER_NEW","market":"XSHE","price":15.62,"qty":1000,"securityId":"000001","shareholderId":"SH004","side":"B","timestamp":1772378718278}
+{"clOrderId":"ORD000353","event":"ORDER_CONFIRM","timestamp":1772378718278}
+{"clOrderId":"ORD000300","event":"EXECUTION","execId":"EXEC0000000000000110","execPrice":15.34,"execQty":100,"isMaker":true,"securityId":"000001","side":"S","timestamp":1772378718278}
+{"clOrderId":"ORD000353","event":"EXECUTION","execId":"EXEC0000000000000110","execPrice":15.34,"execQty":100,"isMaker":false,"securityId":"000001","side":"B","timestamp":1772378718278}
+{"clOrderId":"ORD000326","event":"EXECUTION","execId":"EXEC0000000000000111","execPrice":15.35,"execQty":100,"isMaker":true,"securityId":"000001","side":"S","timestamp":1772378718278}
+{"clOrderId":"ORD000353","event":"EXECUTION","execId":"EXEC0000000000000111","execPrice":15.35,"execQty":100,"isMaker":false,"securityId":"000001","side":"B","timestamp":1772378718278}
+{"clOrderId":"ORD000327","event":"EXECUTION","execId":"EXEC0000000000000112","execPrice":15.43,"execQty":300,"isMaker":true,"securityId":"000001","side":"S","timestamp":1772378718278}
+{"clOrderId":"ORD000353","event":"EXECUTION","execId":"EXEC0000000000000112","execPrice":15.43,"execQty":300,"isMaker":false,"securityId":"000001","side":"B","timestamp":1772378718278}
+{"clOrderId":"ORD000354","event":"ORDER_NEW","market":"XSHE","price":15.08,"qty":300,"securityId":"000001","shareholderId":"SH003","side":"S","timestamp":1772378718278}
+{"clOrderId":"ORD000354","event":"ORDER_CONFIRM","timestamp":1772378718278}
+{"clOrderId":"ORD000353","event":"EXECUTION","execId":"EXEC0000000000000113","execPrice":15.62,"execQty":300,"isMaker":true,"securityId":"000001","side":"B","timestamp":1772378718278}
+{"clOrderId":"ORD000354","event":"EXECUTION","execId":"EXEC0000000000000113","execPrice":15.62,"execQty":300,"isMaker":false,"securityId":"000001","side":"S","timestamp":1772378718278}
+{"clOrderId":"ORD000355","event":"ORDER_NEW","market":"XSHE","price":15.14,"qty":300,"securityId":"000001","shareholderId":"SH010","side":"S","timestamp":1772378718278}
+{"clOrderId":"ORD000355","event":"ORDER_CONFIRM","timestamp":1772378718278}
+{"clOrderId":"ORD000353","event":"EXECUTION","execId":"EXEC0000000000000114","execPrice":15.62,"execQty":200,"isMaker":true,"securityId":"000001","side":"B","timestamp":1772378718278}
+{"clOrderId":"ORD000355","event":"EXECUTION","execId":"EXEC0000000000000114","execPrice":15.62,"execQty":200,"isMaker":false,"securityId":"000001","side":"S","timestamp":1772378718278}
+{"clOrderId":"ORD000356","event":"ORDER_NEW","market":"XSHG","price":30.23,"qty":200,"securityId":"600030","shareholderId":"SH005","side":"S","timestamp":1772378718278}
+{"clOrderId":"ORD000356","event":"ORDER_REJECT","rejectCode":1,"rejectText":"Cross trade detected","timestamp":1772378718278}
+{"clOrderId":"ORD000357","event":"ORDER_NEW","market":"XSHE","price":15.57,"qty":500,"securityId":"000001","shareholderId":"SH006","side":"B","timestamp":1772378718278}
+{"clOrderId":"ORD000357","event":"ORDER_CONFIRM","timestamp":1772378718278}
+{"clOrderId":"ORD000355","event":"EXECUTION","execId":"EXEC0000000000000115","execPrice":15.14,"execQty":100,"isMaker":true,"securityId":"000001","side":"S","timestamp":1772378718278}
+{"clOrderId":"ORD000357","event":"EXECUTION","execId":"EXEC0000000000000115","execPrice":15.14,"execQty":100,"isMaker":false,"securityId":"000001","side":"B","timestamp":1772378718278}
+{"clOrderId":"ORD000358","event":"ORDER_NEW","market":"XSHE","price":14.36,"qty":1000,"securityId":"000001","shareholderId":"SH009","side":"S","timestamp":1772378718278}
+{"clOrderId":"ORD000358","event":"ORDER_CONFIRM","timestamp":1772378718278}
+{"clOrderId":"ORD000357","event":"EXECUTION","execId":"EXEC0000000000000116","execPrice":15.57,"execQty":400,"isMaker":true,"securityId":"000001","side":"B","timestamp":1772378718278}
+{"clOrderId":"ORD000358","event":"EXECUTION","execId":"EXEC0000000000000116","execPrice":15.57,"execQty":400,"isMaker":false,"securityId":"000001","side":"S","timestamp":1772378718278}
+{"clOrderId":"ORD000359","event":"ORDER_NEW","market":"XSHG","price":1818.18,"qty":200,"securityId":"600519","shareholderId":"SH005","side":"S","timestamp":1772378718278}
+{"clOrderId":"ORD000359","event":"ORDER_CONFIRM","timestamp":1772378718278}
+{"event":"CANCEL_REJECT","origClOrderId":"ORD000060","rejectCode":1,"rejectText":"Order not found in book","timestamp":1772378718278}
+{"clOrderId":"ORD000361","event":"ORDER_NEW","market":"XSHG","price":1809.89,"qty":200,"securityId":"600519","shareholderId":"SH004","side":"S","timestamp":1772378718278}
+{"clOrderId":"ORD000361","event":"ORDER_REJECT","rejectCode":1,"rejectText":"Cross trade detected","timestamp":1772378718278}
+{"clOrderId":"ORD000362","event":"ORDER_NEW","market":"XSHG","price":1785.49,"qty":1000,"securityId":"600519","shareholderId":"SH010","side":"S","timestamp":1772378718278}
+{"clOrderId":"ORD000362","event":"ORDER_CONFIRM","timestamp":1772378718278}
+{"clOrderId":"ORD000352","event":"EXECUTION","execId":"EXEC0000000000000117","execPrice":1796.42,"execQty":1000,"isMaker":true,"securityId":"600519","side":"B","timestamp":1772378718278}
+{"clOrderId":"ORD000362","event":"EXECUTION","execId":"EXEC0000000000000117","execPrice":1796.42,"execQty":1000,"isMaker":false,"securityId":"600519","side":"S","timestamp":1772378718278}
+{"clOrderId":"ORD000363","event":"ORDER_NEW","market":"XSHG","price":30.55,"qty":100,"securityId":"600030","shareholderId":"SH002","side":"B","timestamp":1772378718278}
+{"clOrderId":"ORD000363","event":"ORDER_CONFIRM","timestamp":1772378718278}
+{"clOrderId":"ORD000364","event":"ORDER_NEW","market":"XSHE","price":13.8,"qty":200,"securityId":"000001","shareholderId":"SH001","side":"S","timestamp":1772378718278}
+{"clOrderId":"ORD000364","event":"ORDER_CONFIRM","timestamp":1772378718278}
+{"clOrderId":"ORD000351","event":"EXECUTION","execId":"EXEC0000000000000118","execPrice":14.07,"execQty":200,"isMaker":true,"securityId":"000001","side":"B","timestamp":1772378718278}
+{"clOrderId":"ORD000364","event":"EXECUTION","execId":"EXEC0000000000000118","execPrice":14.07,"execQty":200,"isMaker":false,"securityId":"000001","side":"S","timestamp":1772378718278}
+{"clOrderId":"ORD000365","event":"ORDER_NEW","market":"XSHG","price":30.61,"qty":500,"securityId":"600030","shareholderId":"SH008","side":"S","timestamp":1772378718278}
+{"clOrderId":"ORD000365","event":"ORDER_REJECT","rejectCode":1,"rejectText":"Cross trade detected","timestamp":1772378718278}
+{"clOrderId":"ORD000366","event":"ORDER_NEW","market":"XSHG","price":1791.42,"qty":100,"securityId":"600519","shareholderId":"SH002","side":"S","timestamp":1772378718278}
+{"clOrderId":"ORD000366","event":"ORDER_REJECT","rejectCode":1,"rejectText":"Cross trade detected","timestamp":1772378718278}
+{"clOrderId":"ORD000367","event":"ORDER_NEW","market":"XSHG","price":31.65,"qty":200,"securityId":"600030","shareholderId":"SH007","side":"B","timestamp":1772378718278}
+{"clOrderId":"ORD000367","event":"ORDER_CONFIRM","timestamp":1772378718278}
+{"clOrderId":"ORD000221","event":"EXECUTION","execId":"EXEC0000000000000119","execPrice":31.25,"execQty":100,"isMaker":true,"securityId":"600030","side":"S","timestamp":1772378718278}
+{"clOrderId":"ORD000367","event":"EXECUTION","execId":"EXEC0000000000000119","execPrice":31.25,"execQty":100,"isMaker":false,"securityId":"600030","side":"B","timestamp":1772378718279}
+{"clOrderId":"ORD000368","event":"ORDER_NEW","market":"XSHG","price":31.99,"qty":500,"securityId":"600030","shareholderId":"SH008","side":"B","timestamp":1772378718279}
+{"clOrderId":"ORD000368","event":"ORDER_CONFIRM","timestamp":1772378718279}
+{"clOrderId":"ORD000369","event":"ORDER_NEW","market":"XSHE","price":16.13,"qty":100,"securityId":"000001","shareholderId":"SH005","side":"S","timestamp":1772378718279}
+{"clOrderId":"ORD000369","event":"ORDER_CONFIRM","timestamp":1772378718279}
+{"clOrderId":"ORD000370","event":"ORDER_NEW","market":"XSHG","price":29.14,"qty":1000,"securityId":"600030","shareholderId":"SH009","side":"S","timestamp":1772378718279}
+{"clOrderId":"ORD000370","event":"ORDER_REJECT","rejectCode":1,"rejectText":"Cross trade detected","timestamp":1772378718279}
+{"clOrderId":"ORD000371","event":"ORDER_NEW","market":"XSHG","price":29.09,"qty":100,"securityId":"600030","shareholderId":"SH006","side":"S","timestamp":1772378718279}
+{"clOrderId":"ORD000371","event":"ORDER_REJECT","rejectCode":1,"rejectText":"Cross trade detected","timestamp":1772378718279}
+{"clOrderId":"ORD000372","event":"ORDER_NEW","market":"XSHG","price":1808.74,"qty":100,"securityId":"600519","shareholderId":"SH006","side":"S","timestamp":1772378718279}
+{"clOrderId":"ORD000372","event":"ORDER_REJECT","rejectCode":1,"rejectText":"Cross trade detected","timestamp":1772378718279}
+{"clOrderId":"ORD000373","event":"ORDER_NEW","market":"XSHE","price":14.03,"qty":500,"securityId":"000001","shareholderId":"SH007","side":"B","timestamp":1772378718279}
+{"clOrderId":"ORD000373","event":"ORDER_CONFIRM","timestamp":1772378718279}
+{"clOrderId":"ORD000374","event":"ORDER_NEW","market":"XSHG","price":30.68,"qty":200,"securityId":"600030","shareholderId":"SH003","side":"S","timestamp":1772378718279}
+{"clOrderId":"ORD000374","event":"ORDER_REJECT","rejectCode":1,"rejectText":"Cross trade detected","timestamp":1772378718279}
+{"clOrderId":"ORD000375","event":"ORDER_NEW","market":"XSHG","price":29.04,"qty":200,"securityId":"600030","shareholderId":"SH008","side":"B","timestamp":1772378718279}
+{"clOrderId":"ORD000375","event":"ORDER_CONFIRM","timestamp":1772378718279}
+{"clOrderId":"ORD000376","event":"ORDER_NEW","market":"XSHG","price":1803.3,"qty":1000,"securityId":"600519","shareholderId":"SH001","side":"S","timestamp":1772378718279}
+{"clOrderId":"ORD000376","event":"ORDER_CONFIRM","timestamp":1772378718279}
+{"clOrderId":"ORD000377","event":"ORDER_NEW","market":"XSHG","price":1782.48,"qty":100,"securityId":"600519","shareholderId":"SH008","side":"B","timestamp":1772378718279}
+{"clOrderId":"ORD000377","event":"ORDER_CONFIRM","timestamp":1772378718279}
+{"clOrderId":"ORD000378","event":"ORDER_NEW","market":"XSHG","price":1807.61,"qty":300,"securityId":"600519","shareholderId":"SH006","side":"S","timestamp":1772378718279}
+{"clOrderId":"ORD000378","event":"ORDER_REJECT","rejectCode":1,"rejectText":"Cross trade detected","timestamp":1772378718279}
+{"clOrderId":"ORD000379","event":"ORDER_NEW","market":"XSHG","price":29.91,"qty":500,"securityId":"600030","shareholderId":"SH010","side":"B","timestamp":1772378718279}
+{"clOrderId":"ORD000379","event":"ORDER_CONFIRM","timestamp":1772378718279}
+{"clOrderId":"ORD000380","event":"ORDER_NEW","market":"XSHE","price":15.77,"qty":200,"securityId":"000001","shareholderId":"SH004","side":"S","timestamp":1772378718279}
+{"clOrderId":"ORD000380","event":"ORDER_REJECT","rejectCode":1,"rejectText":"Cross trade detected","timestamp":1772378718279}
+{"clOrderId":"ORD000381","event":"ORDER_NEW","market":"XSHE","price":15.08,"qty":1000,"securityId":"000001","shareholderId":"SH006","side":"B","timestamp":1772378718279}
+{"clOrderId":"ORD000381","event":"ORDER_CONFIRM","timestamp":1772378718279}
+{"clOrderId":"ORD000358","event":"EXECUTION","execId":"EXEC0000000000000120","execPrice":14.36,"execQty":600,"isMaker":true,"securityId":"000001","side":"S","timestamp":1772378718279}
+{"clOrderId":"ORD000381","event":"EXECUTION","execId":"EXEC0000000000000120","execPrice":14.36,"execQty":600,"isMaker":false,"securityId":"000001","side":"B","timestamp":1772378718279}
+{"canceledQty":200,"cumQty":0,"event":"CANCEL_CONFIRM","origClOrderId":"ORD000342","timestamp":1772378718279}
+{"clOrderId":"ORD000383","event":"ORDER_NEW","market":"XSHE","price":15.22,"qty":200,"securityId":"000001","shareholderId":"SH003","side":"B","timestamp":1772378718279}
+{"clOrderId":"ORD000383","event":"ORDER_REJECT","rejectCode":1,"rejectText":"Cross trade detected","timestamp":1772378718279}
+{"clOrderId":"ORD000384","event":"ORDER_NEW","market":"XSHE","price":13.85,"qty":200,"securityId":"000001","shareholderId":"SH010","side":"S","timestamp":1772378718279}
+{"clOrderId":"ORD000384","event":"ORDER_CONFIRM","timestamp":1772378718279}
+{"clOrderId":"ORD000381","event":"EXECUTION","execId":"EXEC0000000000000121","execPrice":15.08,"execQty":200,"isMaker":true,"securityId":"000001","side":"B","timestamp":1772378718279}
+{"clOrderId":"ORD000384","event":"EXECUTION","execId":"EXEC0000000000000121","execPrice":15.08,"execQty":200,"isMaker":false,"securityId":"000001","side":"S","timestamp":1772378718279}
+{"clOrderId":"ORD000385","event":"ORDER_NEW","market":"XSHE","price":15.93,"qty":500,"securityId":"000001","shareholderId":"SH003","side":"S","timestamp":1772378718279}
+{"clOrderId":"ORD000385","event":"ORDER_CONFIRM","timestamp":1772378718279}
+{"clOrderId":"ORD000386","event":"ORDER_NEW","market":"XSHG","price":1802.35,"qty":300,"securityId":"600519","shareholderId":"SH001","side":"B","timestamp":1772378718279}
+{"clOrderId":"ORD000386","event":"ORDER_REJECT","rejectCode":1,"rejectText":"Cross trade detected","timestamp":1772378718279}
+{"clOrderId":"ORD000387","event":"ORDER_NEW","market":"XSHG","price":30.31,"qty":100,"securityId":"600030","shareholderId":"SH007","side":"B","timestamp":1772378718279}
+{"clOrderId":"ORD000387","event":"ORDER_CONFIRM","timestamp":1772378718279}
+{"clOrderId":"ORD000388","event":"ORDER_NEW","market":"XSHG","price":31.74,"qty":100,"securityId":"600030","shareholderId":"SH008","side":"B","timestamp":1772378718279}
+{"clOrderId":"ORD000388","event":"ORDER_CONFIRM","timestamp":1772378718280}
+{"canceledQty":500,"cumQty":0,"event":"CANCEL_CONFIRM","origClOrderId":"ORD000256","timestamp":1772378718280}
+{"clOrderId":"ORD000390","event":"ORDER_NEW","market":"XSHG","price":29.5,"qty":500,"securityId":"600030","shareholderId":"SH008","side":"S","timestamp":1772378718280}
+{"clOrderId":"ORD000390","event":"ORDER_REJECT","rejectCode":1,"rejectText":"Cross trade detected","timestamp":1772378718280}
+{"clOrderId":"ORD000391","event":"ORDER_NEW","market":"XSHG","price":1783.21,"qty":1000,"securityId":"600519","shareholderId":"SH003","side":"S","timestamp":1772378718280}
+{"clOrderId":"ORD000391","event":"ORDER_CONFIRM","timestamp":1772378718280}
+{"clOrderId":"ORD000270","event":"EXECUTION","execId":"EXEC0000000000000122","execPrice":1794.71,"execQty":600,"isMaker":true,"securityId":"600519","side":"B","timestamp":1772378718280}
+{"clOrderId":"ORD000391","event":"EXECUTION","execId":"EXEC0000000000000122","execPrice":1794.71,"execQty":600,"isMaker":false,"securityId":"600519","side":"S","timestamp":1772378718280}
+{"clOrderId":"ORD000331","event":"EXECUTION","execId":"EXEC0000000000000123","execPrice":1792.76,"execQty":400,"isMaker":true,"securityId":"600519","side":"B","timestamp":1772378718280}
+{"clOrderId":"ORD000391","event":"EXECUTION","execId":"EXEC0000000000000123","execPrice":1792.76,"execQty":400,"isMaker":false,"securityId":"600519","side":"S","timestamp":1772378718280}
+{"clOrderId":"ORD000392","event":"ORDER_NEW","market":"XSHG","price":1787.14,"qty":1000,"securityId":"600519","shareholderId":"SH007","side":"B","timestamp":1772378718280}
+{"clOrderId":"ORD000392","event":"ORDER_CONFIRM","timestamp":1772378718280}
+{"clOrderId":"ORD000393","event":"ORDER_NEW","market":"XSHE","price":16.0,"qty":100,"securityId":"000001","shareholderId":"SH005","side":"B","timestamp":1772378718280}
+{"clOrderId":"ORD000393","event":"ORDER_REJECT","rejectCode":1,"rejectText":"Cross trade detected","timestamp":1772378718280}
+{"clOrderId":"ORD000394","event":"ORDER_NEW","market":"XSHE","price":15.1,"qty":200,"securityId":"000001","shareholderId":"SH004","side":"S","timestamp":1772378718280}
+{"clOrderId":"ORD000394","event":"ORDER_REJECT","rejectCode":1,"rejectText":"Cross trade detected","timestamp":1772378718280}
+{"clOrderId":"ORD000395","event":"ORDER_NEW","market":"XSHG","price":28.75,"qty":100,"securityId":"600030","shareholderId":"SH001","side":"S","timestamp":1772378718280}
+{"clOrderId":"ORD000395","event":"ORDER_CONFIRM","timestamp":1772378718280}
+{"clOrderId":"ORD000368","event":"EXECUTION","execId":"EXEC0000000000000124","execPrice":31.99,"execQty":100,"isMaker":true,"securityId":"600030","side":"B","timestamp":1772378718280}
+{"clOrderId":"ORD000395","event":"EXECUTION","execId":"EXEC0000000000000124","execPrice":31.99,"execQty":100,"isMaker":false,"securityId":"600030","side":"S","timestamp":1772378718280}
+{"clOrderId":"ORD000396","event":"ORDER_NEW","market":"XSHG","price":1789.63,"qty":100,"securityId":"600519","shareholderId":"SH002","side":"B","timestamp":1772378718280}
+{"clOrderId":"ORD000396","event":"ORDER_CONFIRM","timestamp":1772378718280}
+{"clOrderId":"ORD000397","event":"ORDER_NEW","market":"XSHG","price":1789.79,"qty":100,"securityId":"600519","shareholderId":"SH007","side":"B","timestamp":1772378718280}
+{"clOrderId":"ORD000397","event":"ORDER_CONFIRM","timestamp":1772378718280}
+{"clOrderId":"ORD000398","event":"ORDER_NEW","market":"XSHE","price":15.76,"qty":100,"securityId":"000001","shareholderId":"SH003","side":"B","timestamp":1772378718280}
+{"clOrderId":"ORD000398","event":"ORDER_REJECT","rejectCode":1,"rejectText":"Cross trade detected","timestamp":1772378718280}
+{"clOrderId":"ORD000399","event":"ORDER_NEW","market":"XSHG","price":1812.63,"qty":1000,"securityId":"600519","shareholderId":"SH006","side":"B","timestamp":1772378718280}
+{"clOrderId":"ORD000399","event":"ORDER_CONFIRM","timestamp":1772378718280}
+{"clOrderId":"ORD000329","event":"EXECUTION","execId":"EXEC0000000000000125","execPrice":1798.58,"execQty":100,"isMaker":true,"securityId":"600519","side":"S","timestamp":1772378718280}
+{"clOrderId":"ORD000399","event":"EXECUTION","execId":"EXEC0000000000000125","execPrice":1798.58,"execQty":100,"isMaker":false,"securityId":"600519","side":"B","timestamp":1772378718280}
+{"clOrderId":"ORD000376","event":"EXECUTION","execId":"EXEC0000000000000126","execPrice":1803.3,"execQty":900,"isMaker":true,"securityId":"600519","side":"S","timestamp":1772378718280}
+{"clOrderId":"ORD000399","event":"EXECUTION","execId":"EXEC0000000000000126","execPrice":1803.3,"execQty":900,"isMaker":false,"securityId":"600519","side":"B","timestamp":1772378718280}
+{"clOrderId":"ORD000400","event":"ORDER_NEW","market":"XSHE","price":14.21,"qty":200,"securityId":"000001","shareholderId":"SH009","side":"S","timestamp":1772378718280}
+{"clOrderId":"ORD000400","event":"ORDER_CONFIRM","timestamp":1772378718280}
+{"clOrderId":"ORD000381","event":"EXECUTION","execId":"EXEC0000000000000127","execPrice":15.08,"execQty":200,"isMaker":true,"securityId":"000001","side":"B","timestamp":1772378718280}
+{"clOrderId":"ORD000400","event":"EXECUTION","execId":"EXEC0000000000000127","execPrice":15.08,"execQty":200,"isMaker":false,"securityId":"000001","side":"S","timestamp":1772378718280}
+{"clOrderId":"ORD000401","event":"ORDER_NEW","market":"XSHG","price":1782.44,"qty":1000,"securityId":"600519","shareholderId":"SH003","side":"S","timestamp":1772378718280}
+{"clOrderId":"ORD000401","event":"ORDER_CONFIRM","timestamp":1772378718280}
+{"clOrderId":"ORD000331","event":"EXECUTION","execId":"EXEC0000000000000128","execPrice":1792.76,"execQty":100,"isMaker":true,"securityId":"600519","side":"B","timestamp":1772378718280}
+{"clOrderId":"ORD000401","event":"EXECUTION","execId":"EXEC0000000000000128","execPrice":1792.76,"execQty":100,"isMaker":false,"securityId":"600519","side":"S","timestamp":1772378718280}
+{"clOrderId":"ORD000029","event":"EXECUTION","execId":"EXEC0000000000000129","execPrice":1790.6,"execQty":900,"isMaker":true,"securityId":"600519","side":"B","timestamp":1772378718280}
+{"clOrderId":"ORD000401","event":"EXECUTION","execId":"EXEC0000000000000129","execPrice":1790.6,"execQty":900,"isMaker":false,"securityId":"600519","side":"S","timestamp":1772378718280}
+{"clOrderId":"ORD000402","event":"ORDER_NEW","market":"XSHG","price":1781.88,"qty":300,"securityId":"600519","shareholderId":"SH007","side":"S","timestamp":1772378718280}
+{"clOrderId":"ORD000402","event":"ORDER_REJECT","rejectCode":1,"rejectText":"Cross trade detected","timestamp":1772378718280}
+{"clOrderId":"ORD000403","event":"ORDER_NEW","market":"XSHG","price":1796.33,"qty":300,"securityId":"600519","shareholderId":"SH007","side":"S","timestamp":1772378718280}
+{"clOrderId":"ORD000403","event":"ORDER_REJECT","rejectCode":1,"rejectText":"Cross trade detected","timestamp":1772378718280}
+{"clOrderId":"ORD000404","event":"ORDER_NEW","market":"XSHE","price":14.22,"qty":200,"securityId":"000001","shareholderId":"SH005","side":"S","timestamp":1772378718280}
+{"clOrderId":"ORD000404","event":"ORDER_CONFIRM","timestamp":1772378718280}
+{"clOrderId":"ORD000405","event":"ORDER_NEW","market":"XSHG","price":31.66,"qty":1000,"securityId":"600030","shareholderId":"SH007","side":"S","timestamp":1772378718280}
+{"clOrderId":"ORD000405","event":"ORDER_REJECT","rejectCode":1,"rejectText":"Cross trade detected","timestamp":1772378718280}
+{"clOrderId":"ORD000406","event":"ORDER_NEW","market":"XSHE","price":14.67,"qty":300,"securityId":"000001","shareholderId":"SH004","side":"B","timestamp":1772378718281}
+{"clOrderId":"ORD000406","event":"ORDER_CONFIRM","timestamp":1772378718281}
+{"clOrderId":"ORD000404","event":"EXECUTION","execId":"EXEC0000000000000130","execPrice":14.22,"execQty":200,"isMaker":true,"securityId":"000001","side":"S","timestamp":1772378718281}
+{"clOrderId":"ORD000406","event":"EXECUTION","execId":"EXEC0000000000000130","execPrice":14.22,"execQty":200,"isMaker":false,"securityId":"000001","side":"B","timestamp":1772378718281}
+{"clOrderId":"ORD000407","event":"ORDER_NEW","market":"XSHG","price":31.39,"qty":100,"securityId":"600030","shareholderId":"SH009","side":"S","timestamp":1772378718281}
+{"clOrderId":"ORD000407","event":"ORDER_REJECT","rejectCode":1,"rejectText":"Cross trade detected","timestamp":1772378718281}
+{"clOrderId":"ORD000408","event":"ORDER_NEW","market":"XSHG","price":29.07,"qty":1000,"securityId":"600030","shareholderId":"SH010","side":"B","timestamp":1772378718281}
+{"clOrderId":"ORD000408","event":"ORDER_CONFIRM","timestamp":1772378718281}
+{"canceledQty":100,"cumQty":0,"event":"CANCEL_CONFIRM","origClOrderId":"ORD000057","timestamp":1772378718281}
+{"clOrderId":"ORD000410","event":"ORDER_NEW","market":"XSHE","price":14.94,"qty":300,"securityId":"000001","shareholderId":"SH005","side":"B","timestamp":1772378718281}
+{"clOrderId":"ORD000410","event":"ORDER_REJECT","rejectCode":1,"rejectText":"Cross trade detected","timestamp":1772378718281}
+{"clOrderId":"ORD000411","event":"ORDER_NEW","market":"XSHG","price":31.75,"qty":100,"securityId":"600030","shareholderId":"SH008","side":"B","timestamp":1772378718281}
+{"clOrderId":"ORD000411","event":"ORDER_CONFIRM","timestamp":1772378718281}
+{"clOrderId":"ORD000412","event":"ORDER_NEW","market":"XSHE","price":14.69,"qty":200,"securityId":"000001","shareholderId":"SH009","side":"B","timestamp":1772378718281}
+{"clOrderId":"ORD000412","event":"ORDER_CONFIRM","timestamp":1772378718281}
+{"clOrderId":"ORD000413","event":"ORDER_NEW","market":"XSHG","price":1798.65,"qty":300,"securityId":"600519","shareholderId":"SH005","side":"S","timestamp":1772378718281}
+{"clOrderId":"ORD000413","event":"ORDER_CONFIRM","timestamp":1772378718281}
+{"clOrderId":"ORD000414","event":"ORDER_NEW","market":"XSHE","price":14.9,"qty":500,"securityId":"000001","shareholderId":"SH006","side":"S","timestamp":1772378718281}
+{"clOrderId":"ORD000414","event":"ORDER_REJECT","rejectCode":1,"rejectText":"Cross trade detected","timestamp":1772378718281}
+{"clOrderId":"ORD000415","event":"ORDER_NEW","market":"XSHG","price":1796.56,"qty":1000,"securityId":"600519","shareholderId":"SH004","side":"S","timestamp":1772378718281}
+{"clOrderId":"ORD000415","event":"ORDER_REJECT","rejectCode":1,"rejectText":"Cross trade detected","timestamp":1772378718281}
+{"clOrderId":"ORD000416","event":"ORDER_NEW","market":"XSHG","price":30.21,"qty":1000,"securityId":"600030","shareholderId":"SH010","side":"S","timestamp":1772378718281}
+{"clOrderId":"ORD000416","event":"ORDER_REJECT","rejectCode":1,"rejectText":"Cross trade detected","timestamp":1772378718281}
+{"clOrderId":"ORD000417","event":"ORDER_NEW","market":"XSHG","price":1787.85,"qty":200,"securityId":"600519","shareholderId":"SH007","side":"B","timestamp":1772378718281}
+{"clOrderId":"ORD000417","event":"ORDER_CONFIRM","timestamp":1772378718281}
+{"clOrderId":"ORD000418","event":"ORDER_NEW","market":"XSHG","price":30.2,"qty":300,"securityId":"600030","shareholderId":"SH005","side":"S","timestamp":1772378718281}
+{"clOrderId":"ORD000418","event":"ORDER_REJECT","rejectCode":1,"rejectText":"Cross trade detected","timestamp":1772378718281}
+{"clOrderId":"ORD000419","event":"ORDER_NEW","market":"XSHG","price":1798.43,"qty":300,"securityId":"600519","shareholderId":"SH003","side":"S","timestamp":1772378718281}
+{"clOrderId":"ORD000419","event":"ORDER_CONFIRM","timestamp":1772378718281}
+{"clOrderId":"ORD000420","event":"ORDER_NEW","market":"XSHE","price":14.05,"qty":1000,"securityId":"000001","shareholderId":"SH001","side":"S","timestamp":1772378718281}
+{"clOrderId":"ORD000420","event":"ORDER_CONFIRM","timestamp":1772378718281}
+{"clOrderId":"ORD000412","event":"EXECUTION","execId":"EXEC0000000000000131","execPrice":14.69,"execQty":200,"isMaker":true,"securityId":"000001","side":"B","timestamp":1772378718281}
+{"clOrderId":"ORD000420","event":"EXECUTION","execId":"EXEC0000000000000131","execPrice":14.69,"execQty":200,"isMaker":false,"securityId":"000001","side":"S","timestamp":1772378718281}
+{"clOrderId":"ORD000406","event":"EXECUTION","execId":"EXEC0000000000000132","execPrice":14.67,"execQty":100,"isMaker":true,"securityId":"000001","side":"B","timestamp":1772378718281}
+{"clOrderId":"ORD000420","event":"EXECUTION","execId":"EXEC0000000000000132","execPrice":14.67,"execQty":100,"isMaker":false,"securityId":"000001","side":"S","timestamp":1772378718281}
+{"clOrderId":"ORD000421","event":"ORDER_NEW","market":"XSHG","price":31.06,"qty":500,"securityId":"600030","shareholderId":"SH003","side":"B","timestamp":1772378718281}
+{"clOrderId":"ORD000421","event":"ORDER_CONFIRM","timestamp":1772378718281}
+{"clOrderId":"ORD000422","event":"ORDER_NEW","market":"XSHG","price":30.83,"qty":100,"securityId":"600030","shareholderId":"SH004","side":"B","timestamp":1772378718281}
+{"clOrderId":"ORD000422","event":"ORDER_CONFIRM","timestamp":1772378718281}
+{"clOrderId":"ORD000423","event":"ORDER_NEW","market":"XSHG","price":1804.71,"qty":1000,"securityId":"600519","shareholderId":"SH008","side":"B","timestamp":1772378718281}
+{"clOrderId":"ORD000423","event":"ORDER_CONFIRM","timestamp":1772378718281}
+{"clOrderId":"ORD000419","event":"EXECUTION","execId":"EXEC0000000000000133","execPrice":1798.43,"execQty":300,"isMaker":true,"securityId":"600519","side":"S","timestamp":1772378718281}
+{"clOrderId":"ORD000423","event":"EXECUTION","execId":"EXEC0000000000000133","execPrice":1798.43,"execQty":300,"isMaker":false,"securityId":"600519","side":"B","timestamp":1772378718281}
+{"clOrderId":"ORD000413","event":"EXECUTION","execId":"EXEC0000000000000134","execPrice":1798.65,"execQty":300,"isMaker":true,"securityId":"600519","side":"S","timestamp":1772378718281}
+{"clOrderId":"ORD000423","event":"EXECUTION","execId":"EXEC0000000000000134","execPrice":1798.65,"execQty":300,"isMaker":false,"securityId":"600519","side":"B","timestamp":1772378718281}
+{"clOrderId":"ORD000376","event":"EXECUTION","execId":"EXEC0000000000000135","execPrice":1803.3,"execQty":100,"isMaker":true,"securityId":"600519","side":"S","timestamp":1772378718281}
+{"clOrderId":"ORD000423","event":"EXECUTION","execId":"EXEC0000000000000135","execPrice":1803.3,"execQty":100,"isMaker":false,"securityId":"600519","side":"B","timestamp":1772378718281}
+{"clOrderId":"ORD000424","event":"ORDER_NEW","market":"XSHG","price":30.13,"qty":500,"securityId":"600030","shareholderId":"SH001","side":"B","timestamp":1772378718281}
+{"clOrderId":"ORD000424","event":"ORDER_CONFIRM","timestamp":1772378718281}
+{"event":"CANCEL_REJECT","origClOrderId":"ORD000180","rejectCode":1,"rejectText":"Order not found in book","timestamp":1772378718282}
+{"clOrderId":"ORD000426","event":"ORDER_NEW","market":"XSHG","price":1800.09,"qty":500,"securityId":"600519","shareholderId":"SH003","side":"B","timestamp":1772378718282}
+{"clOrderId":"ORD000426","event":"ORDER_REJECT","rejectCode":1,"rejectText":"Cross trade detected","timestamp":1772378718282}
+{"clOrderId":"ORD000427","event":"ORDER_NEW","market":"XSHG","price":28.96,"qty":1000,"securityId":"600030","shareholderId":"SH009","side":"B","timestamp":1772378718282}
+{"clOrderId":"ORD000427","event":"ORDER_CONFIRM","timestamp":1772378718282}
+{"clOrderId":"ORD000428","event":"ORDER_NEW","market":"XSHG","price":1811.8,"qty":100,"securityId":"600519","shareholderId":"SH006","side":"S","timestamp":1772378718282}
+{"clOrderId":"ORD000428","event":"ORDER_REJECT","rejectCode":1,"rejectText":"Cross trade detected","timestamp":1772378718282}
+{"clOrderId":"ORD000429","event":"ORDER_NEW","market":"XSHG","price":1819.61,"qty":200,"securityId":"600519","shareholderId":"SH005","side":"B","timestamp":1772378718282}
+{"clOrderId":"ORD000429","event":"ORDER_REJECT","rejectCode":1,"rejectText":"Cross trade detected","timestamp":1772378718282}
+{"clOrderId":"ORD000430","event":"ORDER_NEW","market":"XSHG","price":28.37,"qty":500,"securityId":"600030","shareholderId":"SH007","side":"B","timestamp":1772378718282}
+{"clOrderId":"ORD000430","event":"ORDER_CONFIRM","timestamp":1772378718282}
+{"clOrderId":"ORD000431","event":"ORDER_NEW","market":"XSHG","price":30.81,"qty":100,"securityId":"600030","shareholderId":"SH008","side":"B","timestamp":1772378718282}
+{"clOrderId":"ORD000431","event":"ORDER_CONFIRM","timestamp":1772378718282}
+{"clOrderId":"ORD000432","event":"ORDER_NEW","market":"XSHE","price":15.2,"qty":100,"securityId":"000001","shareholderId":"SH009","side":"S","timestamp":1772378718282}
+{"clOrderId":"ORD000432","event":"ORDER_CONFIRM","timestamp":1772378718282}
+{"clOrderId":"ORD000433","event":"ORDER_NEW","market":"XSHG","price":31.61,"qty":1000,"securityId":"600030","shareholderId":"SH008","side":"B","timestamp":1772378718282}
+{"clOrderId":"ORD000433","event":"ORDER_CONFIRM","timestamp":1772378718282}
+{"clOrderId":"ORD000434","event":"ORDER_NEW","market":"XSHG","price":31.6,"qty":1000,"securityId":"600030","shareholderId":"SH001","side":"S","timestamp":1772378718282}
+{"clOrderId":"ORD000434","event":"ORDER_REJECT","rejectCode":1,"rejectText":"Cross trade detected","timestamp":1772378718282}
+{"clOrderId":"ORD000435","event":"ORDER_NEW","market":"XSHG","price":1818.46,"qty":1000,"securityId":"600519","shareholderId":"SH003","side":"B","timestamp":1772378718282}
+{"clOrderId":"ORD000435","event":"ORDER_REJECT","rejectCode":1,"rejectText":"Cross trade detected","timestamp":1772378718282}
+{"clOrderId":"ORD000436","event":"ORDER_NEW","market":"XSHE","price":16.29,"qty":300,"securityId":"000001","shareholderId":"SH003","side":"S","timestamp":1772378718282}
+{"clOrderId":"ORD000436","event":"ORDER_CONFIRM","timestamp":1772378718282}
+{"clOrderId":"ORD000437","event":"ORDER_NEW","market":"XSHE","price":15.53,"qty":1000,"securityId":"000001","shareholderId":"SH006","side":"S","timestamp":1772378718282}
+{"clOrderId":"ORD000437","event":"ORDER_REJECT","rejectCode":1,"rejectText":"Cross trade detected","timestamp":1772378718282}
+{"clOrderId":"ORD000438","event":"ORDER_NEW","market":"XSHE","price":15.87,"qty":100,"securityId":"000001","shareholderId":"SH009","side":"B","timestamp":1772378718282}
+{"clOrderId":"ORD000438","event":"ORDER_REJECT","rejectCode":1,"rejectText":"Cross trade detected","timestamp":1772378718282}
+{"clOrderId":"ORD000439","event":"ORDER_NEW","market":"XSHG","price":1783.91,"qty":200,"securityId":"600519","shareholderId":"SH002","side":"B","timestamp":1772378718282}
+{"clOrderId":"ORD000439","event":"ORDER_CONFIRM","timestamp":1772378718282}
+{"clOrderId":"ORD000440","event":"ORDER_NEW","market":"XSHE","price":16.41,"qty":300,"securityId":"000001","shareholderId":"SH001","side":"S","timestamp":1772378718282}
+{"clOrderId":"ORD000440","event":"ORDER_CONFIRM","timestamp":1772378718282}
+{"clOrderId":"ORD000441","event":"ORDER_NEW","market":"XSHG","price":1789.13,"qty":1000,"securityId":"600519","shareholderId":"SH007","side":"S","timestamp":1772378718282}
+{"clOrderId":"ORD000441","event":"ORDER_REJECT","rejectCode":1,"rejectText":"Cross trade detected","timestamp":1772378718282}
+{"clOrderId":"ORD000442","event":"ORDER_NEW","market":"XSHE","price":13.76,"qty":1000,"securityId":"000001","shareholderId":"SH005","side":"S","timestamp":1772378718282}
+{"clOrderId":"ORD000442","event":"ORDER_CONFIRM","timestamp":1772378718282}
+{"clOrderId":"ORD000373","event":"EXECUTION","execId":"EXEC0000000000000136","execPrice":14.03,"execQty":500,"isMaker":true,"securityId":"000001","side":"B","timestamp":1772378718282}
+{"clOrderId":"ORD000442","event":"EXECUTION","execId":"EXEC0000000000000136","execPrice":14.03,"execQty":500,"isMaker":false,"securityId":"000001","side":"S","timestamp":1772378718282}
+{"clOrderId":"ORD000224","event":"EXECUTION","execId":"EXEC0000000000000137","execPrice":13.96,"execQty":300,"isMaker":true,"securityId":"000001","side":"B","timestamp":1772378718282}
+{"clOrderId":"ORD000442","event":"EXECUTION","execId":"EXEC0000000000000137","execPrice":13.96,"execQty":300,"isMaker":false,"securityId":"000001","side":"S","timestamp":1772378718282}
+{"clOrderId":"ORD000443","event":"ORDER_NEW","market":"XSHE","price":13.75,"qty":200,"securityId":"000001","shareholderId":"SH007","side":"B","timestamp":1772378718282}
+{"clOrderId":"ORD000443","event":"ORDER_CONFIRM","timestamp":1772378718282}
+{"clOrderId":"ORD000444","event":"ORDER_NEW","market":"XSHE","price":15.72,"qty":300,"securityId":"000001","shareholderId":"SH006","side":"B","timestamp":1772378718282}
+{"clOrderId":"ORD000444","event":"ORDER_CONFIRM","timestamp":1772378718282}
+{"clOrderId":"ORD000442","event":"EXECUTION","execId":"EXEC0000000000000138","execPrice":13.76,"execQty":200,"isMaker":true,"securityId":"000001","side":"S","timestamp":1772378718282}
+{"clOrderId":"ORD000444","event":"EXECUTION","execId":"EXEC0000000000000138","execPrice":13.76,"execQty":200,"isMaker":false,"securityId":"000001","side":"B","timestamp":1772378718282}
+{"clOrderId":"ORD000420","event":"EXECUTION","execId":"EXEC0000000000000139","execPrice":14.05,"execQty":100,"isMaker":true,"securityId":"000001","side":"S","timestamp":1772378718282}
+{"clOrderId":"ORD000444","event":"EXECUTION","execId":"EXEC0000000000000139","execPrice":14.05,"execQty":100,"isMaker":false,"securityId":"000001","side":"B","timestamp":1772378718282}
+{"clOrderId":"ORD000445","event":"ORDER_NEW","market":"XSHG","price":29.78,"qty":300,"securityId":"600030","shareholderId":"SH002","side":"S","timestamp":1772378718282}
+{"clOrderId":"ORD000445","event":"ORDER_REJECT","rejectCode":1,"rejectText":"Cross trade detected","timestamp":1772378718282}
+{"clOrderId":"ORD000446","event":"ORDER_NEW","market":"XSHG","price":29.8,"qty":1000,"securityId":"600030","shareholderId":"SH009","side":"S","timestamp":1772378718282}
+{"clOrderId":"ORD000446","event":"ORDER_REJECT","rejectCode":1,"rejectText":"Cross trade detected","timestamp":1772378718282}
+{"clOrderId":"ORD000447","event":"ORDER_NEW","market":"XSHG","price":29.42,"qty":100,"securityId":"600030","shareholderId":"SH010","side":"B","timestamp":1772378718282}
+{"clOrderId":"ORD000447","event":"ORDER_CONFIRM","timestamp":1772378718282}
+{"clOrderId":"ORD000448","event":"ORDER_NEW","market":"XSHG","price":1780.49,"qty":500,"securityId":"600519","shareholderId":"SH007","side":"S","timestamp":1772378718282}
+{"clOrderId":"ORD000448","event":"ORDER_REJECT","rejectCode":1,"rejectText":"Cross trade detected","timestamp":1772378718282}
+{"clOrderId":"ORD000449","event":"ORDER_NEW","market":"XSHE","price":15.22,"qty":200,"securityId":"000001","shareholderId":"SH007","side":"B","timestamp":1772378718282}
+{"clOrderId":"ORD000449","event":"ORDER_CONFIRM","timestamp":1772378718283}
+{"clOrderId":"ORD000420","event":"EXECUTION","execId":"EXEC0000000000000140","execPrice":14.05,"execQty":200,"isMaker":true,"securityId":"000001","side":"S","timestamp":1772378718283}
+{"clOrderId":"ORD000449","event":"EXECUTION","execId":"EXEC0000000000000140","execPrice":14.05,"execQty":200,"isMaker":false,"securityId":"000001","side":"B","timestamp":1772378718283}
+{"clOrderId":"ORD000450","event":"ORDER_NEW","market":"XSHG","price":1790.74,"qty":200,"securityId":"600519","shareholderId":"SH002","side":"S","timestamp":1772378718283}
+{"clOrderId":"ORD000450","event":"ORDER_REJECT","rejectCode":1,"rejectText":"Cross trade detected","timestamp":1772378718283}
+{"clOrderId":"ORD000451","event":"ORDER_NEW","market":"XSHG","price":1791.99,"qty":100,"securityId":"600519","shareholderId":"SH006","side":"S","timestamp":1772378718283}
+{"clOrderId":"ORD000451","event":"ORDER_REJECT","rejectCode":1,"rejectText":"Cross trade detected","timestamp":1772378718283}
+{"clOrderId":"ORD000452","event":"ORDER_NEW","market":"XSHG","price":30.38,"qty":200,"securityId":"600030","shareholderId":"SH008","side":"S","timestamp":1772378718283}
+{"clOrderId":"ORD000452","event":"ORDER_REJECT","rejectCode":1,"rejectText":"Cross trade detected","timestamp":1772378718283}
+{"clOrderId":"ORD000453","event":"ORDER_NEW","market":"XSHG","price":1817.95,"qty":300,"securityId":"600519","shareholderId":"SH010","side":"B","timestamp":1772378718283}
+{"clOrderId":"ORD000453","event":"ORDER_REJECT","rejectCode":1,"rejectText":"Cross trade detected","timestamp":1772378718283}
+{"clOrderId":"ORD000454","event":"ORDER_NEW","market":"XSHG","price":1793.39,"qty":1000,"securityId":"600519","shareholderId":"SH003","side":"S","timestamp":1772378718283}
+{"clOrderId":"ORD000454","event":"ORDER_CONFIRM","timestamp":1772378718283}
+{"clOrderId":"ORD000423","event":"EXECUTION","execId":"EXEC0000000000000141","execPrice":1804.71,"execQty":300,"isMaker":true,"securityId":"600519","side":"B","timestamp":1772378718283}
+{"clOrderId":"ORD000454","event":"EXECUTION","execId":"EXEC0000000000000141","execPrice":1804.71,"execQty":300,"isMaker":false,"securityId":"600519","side":"S","timestamp":1772378718283}
+{"clOrderId":"ORD000455","event":"ORDER_NEW","market":"XSHE","price":14.94,"qty":200,"securityId":"000001","shareholderId":"SH007","side":"B","timestamp":1772378718283}
+{"clOrderId":"ORD000455","event":"ORDER_CONFIRM","timestamp":1772378718283}
+{"clOrderId":"ORD000420","event":"EXECUTION","execId":"EXEC0000000000000142","execPrice":14.05,"execQty":200,"isMaker":true,"securityId":"000001","side":"S","timestamp":1772378718283}
+{"clOrderId":"ORD000455","event":"EXECUTION","execId":"EXEC0000000000000142","execPrice":14.05,"execQty":200,"isMaker":false,"securityId":"000001","side":"B","timestamp":1772378718283}
+{"clOrderId":"ORD000456","event":"ORDER_NEW","market":"XSHG","price":1818.71,"qty":200,"securityId":"600519","shareholderId":"SH006","side":"S","timestamp":1772378718283}
+{"clOrderId":"ORD000456","event":"ORDER_REJECT","rejectCode":1,"rejectText":"Cross trade detected","timestamp":1772378718283}
+{"clOrderId":"ORD000457","event":"ORDER_NEW","market":"XSHG","price":1784.56,"qty":1000,"securityId":"600519","shareholderId":"SH004","side":"S","timestamp":1772378718283}
+{"clOrderId":"ORD000457","event":"ORDER_REJECT","rejectCode":1,"rejectText":"Cross trade detected","timestamp":1772378718283}
+{"clOrderId":"ORD000458","event":"ORDER_NEW","market":"XSHE","price":15.55,"qty":1000,"securityId":"000001","shareholderId":"SH001","side":"B","timestamp":1772378718283}
+{"clOrderId":"ORD000458","event":"ORDER_REJECT","rejectCode":1,"rejectText":"Cross trade detected","timestamp":1772378718283}
+{"clOrderId":"ORD000459","event":"ORDER_NEW","market":"XSHG","price":1797.54,"qty":300,"securityId":"600519","shareholderId":"SH002","side":"B","timestamp":1772378718283}
+{"clOrderId":"ORD000459","event":"ORDER_CONFIRM","timestamp":1772378718283}
+{"clOrderId":"ORD000454","event":"EXECUTION","execId":"EXEC0000000000000143","execPrice":1793.39,"execQty":300,"isMaker":true,"securityId":"600519","side":"S","timestamp":1772378718283}
+{"clOrderId":"ORD000459","event":"EXECUTION","execId":"EXEC0000000000000143","execPrice":1793.39,"execQty":300,"isMaker":false,"securityId":"600519","side":"B","timestamp":1772378718283}
+{"clOrderId":"ORD000460","event":"ORDER_NEW","market":"XSHG","price":1785.57,"qty":300,"securityId":"600519","shareholderId":"SH004","side":"S","timestamp":1772378718283}
+{"clOrderId":"ORD000460","event":"ORDER_REJECT","rejectCode":1,"rejectText":"Cross trade detected","timestamp":1772378718283}
+{"clOrderId":"ORD000461","event":"ORDER_NEW","market":"XSHG","price":31.16,"qty":100,"securityId":"600030","shareholderId":"SH008","side":"S","timestamp":1772378718283}
+{"clOrderId":"ORD000461","event":"ORDER_REJECT","rejectCode":1,"rejectText":"Cross trade detected","timestamp":1772378718283}
+{"clOrderId":"ORD000462","event":"ORDER_NEW","market":"XSHG","price":1801.37,"qty":500,"securityId":"600519","shareholderId":"SH009","side":"S","timestamp":1772378718283}
+{"clOrderId":"ORD000462","event":"ORDER_CONFIRM","timestamp":1772378718283}
+{"event":"CANCEL_REJECT","origClOrderId":"ORD000229","rejectCode":1,"rejectText":"Order not found in book","timestamp":1772378718283}
+{"clOrderId":"ORD000464","event":"ORDER_NEW","market":"XSHE","price":13.83,"qty":200,"securityId":"000001","shareholderId":"SH006","side":"B","timestamp":1772378718283}
+{"clOrderId":"ORD000464","event":"ORDER_CONFIRM","timestamp":1772378718283}
+{"clOrderId":"ORD000465","event":"ORDER_NEW","market":"XSHE","price":15.19,"qty":500,"securityId":"000001","shareholderId":"SH006","side":"B","timestamp":1772378718283}
+{"clOrderId":"ORD000465","event":"ORDER_CONFIRM","timestamp":1772378718283}
+{"clOrderId":"ORD000420","event":"EXECUTION","execId":"EXEC0000000000000144","execPrice":14.05,"execQty":200,"isMaker":true,"securityId":"000001","side":"S","timestamp":1772378718283}
+{"clOrderId":"ORD000465","event":"EXECUTION","execId":"EXEC0000000000000144","execPrice":14.05,"execQty":200,"isMaker":false,"securityId":"000001","side":"B","timestamp":1772378718283}
+{"clOrderId":"ORD000466","event":"ORDER_NEW","market":"XSHG","price":1780.42,"qty":300,"securityId":"600519","shareholderId":"SH004","side":"B","timestamp":1772378718283}
+{"clOrderId":"ORD000466","event":"ORDER_CONFIRM","timestamp":1772378718283}
+{"clOrderId":"ORD000467","event":"ORDER_NEW","market":"XSHE","price":14.84,"qty":500,"securityId":"000001","shareholderId":"SH008","side":"B","timestamp":1772378718283}
+{"clOrderId":"ORD000467","event":"ORDER_REJECT","rejectCode":1,"rejectText":"Cross trade detected","timestamp":1772378718283}
+{"clOrderId":"ORD000468","event":"ORDER_NEW","market":"XSHE","price":14.53,"qty":100,"securityId":"000001","shareholderId":"SH008","side":"B","timestamp":1772378718283}
+{"clOrderId":"ORD000468","event":"ORDER_REJECT","rejectCode":1,"rejectText":"Cross trade detected","timestamp":1772378718283}
+{"clOrderId":"ORD000469","event":"ORDER_NEW","market":"XSHG","price":1784.64,"qty":200,"securityId":"600519","shareholderId":"SH006","side":"B","timestamp":1772378718283}
+{"clOrderId":"ORD000469","event":"ORDER_CONFIRM","timestamp":1772378718283}
+{"clOrderId":"ORD000470","event":"ORDER_NEW","market":"XSHG","price":1800.84,"qty":300,"securityId":"600519","shareholderId":"SH008","side":"B","timestamp":1772378718284}
+{"clOrderId":"ORD000470","event":"ORDER_CONFIRM","timestamp":1772378718284}
+{"clOrderId":"ORD000454","event":"EXECUTION","execId":"EXEC0000000000000145","execPrice":1793.39,"execQty":300,"isMaker":true,"securityId":"600519","side":"S","timestamp":1772378718284}
+{"clOrderId":"ORD000470","event":"EXECUTION","execId":"EXEC0000000000000145","execPrice":1793.39,"execQty":300,"isMaker":false,"securityId":"600519","side":"B","timestamp":1772378718284}
+{"clOrderId":"ORD000471","event":"ORDER_NEW","market":"XSHE","price":14.46,"qty":300,"securityId":"000001","shareholderId":"SH001","side":"S","timestamp":1772378718284}
+{"clOrderId":"ORD000471","event":"ORDER_CONFIRM","timestamp":1772378718284}
+{"clOrderId":"ORD000465","event":"EXECUTION","execId":"EXEC0000000000000146","execPrice":15.19,"execQty":300,"isMaker":true,"securityId":"000001","side":"B","timestamp":1772378718284}
+{"clOrderId":"ORD000471","event":"EXECUTION","execId":"EXEC0000000000000146","execPrice":15.19,"execQty":300,"isMaker":false,"securityId":"000001","side":"S","timestamp":1772378718284}
+{"clOrderId":"ORD000472","event":"ORDER_NEW","market":"XSHG","price":31.4,"qty":100,"securityId":"600030","shareholderId":"SH003","side":"B","timestamp":1772378718284}
+{"clOrderId":"ORD000472","event":"ORDER_CONFIRM","timestamp":1772378718284}
+{"clOrderId":"ORD000473","event":"ORDER_NEW","market":"XSHE","price":15.05,"qty":1000,"securityId":"000001","shareholderId":"SH003","side":"B","timestamp":1772378718284}
+{"clOrderId":"ORD000473","event":"ORDER_REJECT","rejectCode":1,"rejectText":"Cross trade detected","timestamp":1772378718284}
+{"clOrderId":"ORD000474","event":"ORDER_NEW","market":"XSHG","price":1789.27,"qty":500,"securityId":"600519","shareholderId":"SH003","side":"S","timestamp":1772378718284}
+{"clOrderId":"ORD000474","event":"ORDER_CONFIRM","timestamp":1772378718284}
+{"clOrderId":"ORD000193","event":"EXECUTION","execId":"EXEC0000000000000147","execPrice":1790.58,"execQty":100,"isMaker":true,"securityId":"600519","side":"B","timestamp":1772378718284}
+{"clOrderId":"ORD000474","event":"EXECUTION","execId":"EXEC0000000000000147","execPrice":1790.58,"execQty":100,"isMaker":false,"securityId":"600519","side":"S","timestamp":1772378718284}
+{"clOrderId":"ORD000397","event":"EXECUTION","execId":"EXEC0000000000000148","execPrice":1789.79,"execQty":100,"isMaker":true,"securityId":"600519","side":"B","timestamp":1772378718284}
+{"clOrderId":"ORD000474","event":"EXECUTION","execId":"EXEC0000000000000148","execPrice":1789.79,"execQty":100,"isMaker":false,"securityId":"600519","side":"S","timestamp":1772378718284}
+{"clOrderId":"ORD000396","event":"EXECUTION","execId":"EXEC0000000000000149","execPrice":1789.63,"execQty":100,"isMaker":true,"securityId":"600519","side":"B","timestamp":1772378718284}
+{"clOrderId":"ORD000474","event":"EXECUTION","execId":"EXEC0000000000000149","execPrice":1789.63,"execQty":100,"isMaker":false,"securityId":"600519","side":"S","timestamp":1772378718284}
+{"clOrderId":"ORD000182","event":"EXECUTION","execId":"EXEC0000000000000150","execPrice":1789.49,"execQty":200,"isMaker":true,"securityId":"600519","side":"B","timestamp":1772378718284}
+{"clOrderId":"ORD000474","event":"EXECUTION","execId":"EXEC0000000000000150","execPrice":1789.49,"execQty":200,"isMaker":false,"securityId":"600519","side":"S","timestamp":1772378718284}
+{"clOrderId":"ORD000475","event":"ORDER_NEW","market":"XSHE","price":14.69,"qty":1000,"securityId":"000001","shareholderId":"SH004","side":"S","timestamp":1772378718284}
+{"clOrderId":"ORD000475","event":"ORDER_REJECT","rejectCode":1,"rejectText":"Cross trade detected","timestamp":1772378718284}
+{"clOrderId":"ORD000476","event":"ORDER_NEW","market":"XSHG","price":1780.18,"qty":200,"securityId":"600519","shareholderId":"SH004","side":"S","timestamp":1772378718284}
+{"clOrderId":"ORD000476","event":"ORDER_REJECT","rejectCode":1,"rejectText":"Cross trade detected","timestamp":1772378718284}
+{"clOrderId":"ORD000477","event":"ORDER_NEW","market":"XSHE","price":15.23,"qty":1000,"securityId":"000001","shareholderId":"SH003","side":"B","timestamp":1772378718284}
+{"clOrderId":"ORD000477","event":"ORDER_REJECT","rejectCode":1,"rejectText":"Cross trade detected","timestamp":1772378718284}
+{"clOrderId":"ORD000478","event":"ORDER_NEW","market":"XSHG","price":28.46,"qty":500,"securityId":"600030","shareholderId":"SH009","side":"S","timestamp":1772378718284}
+{"clOrderId":"ORD000478","event":"ORDER_REJECT","rejectCode":1,"rejectText":"Cross trade detected","timestamp":1772378718284}
+{"clOrderId":"ORD000479","event":"ORDER_NEW","market":"XSHG","price":1804.45,"qty":1000,"securityId":"600519","shareholderId":"SH002","side":"S","timestamp":1772378718284}
+{"clOrderId":"ORD000479","event":"ORDER_REJECT","rejectCode":1,"rejectText":"Cross trade detected","timestamp":1772378718284}
+{"clOrderId":"ORD000480","event":"ORDER_NEW","market":"XSHG","price":1812.55,"qty":300,"securityId":"600519","shareholderId":"SH010","side":"B","timestamp":1772378718284}
+{"clOrderId":"ORD000480","event":"ORDER_REJECT","rejectCode":1,"rejectText":"Cross trade detected","timestamp":1772378718284}
+{"clOrderId":"ORD000481","event":"ORDER_NEW","market":"XSHE","price":14.44,"qty":200,"securityId":"000001","shareholderId":"SH005","side":"B","timestamp":1772378718284}
+{"clOrderId":"ORD000481","event":"ORDER_REJECT","rejectCode":1,"rejectText":"Cross trade detected","timestamp":1772378718284}
+{"clOrderId":"ORD000482","event":"ORDER_NEW","market":"XSHG","price":1800.43,"qty":500,"securityId":"600519","shareholderId":"SH010","side":"B","timestamp":1772378718284}
+{"clOrderId":"ORD000482","event":"ORDER_REJECT","rejectCode":1,"rejectText":"Cross trade detected","timestamp":1772378718284}
+{"clOrderId":"ORD000483","event":"ORDER_NEW","market":"XSHG","price":1787.43,"qty":1000,"securityId":"600519","shareholderId":"SH003","side":"S","timestamp":1772378718284}
+{"clOrderId":"ORD000483","event":"ORDER_CONFIRM","timestamp":1772378718284}
+{"clOrderId":"ORD000182","event":"EXECUTION","execId":"EXEC0000000000000151","execPrice":1789.49,"execQty":800,"isMaker":true,"securityId":"600519","side":"B","timestamp":1772378718284}
+{"clOrderId":"ORD000483","event":"EXECUTION","execId":"EXEC0000000000000151","execPrice":1789.49,"execQty":800,"isMaker":false,"securityId":"600519","side":"S","timestamp":1772378718284}
+{"clOrderId":"ORD000189","event":"EXECUTION","execId":"EXEC0000000000000152","execPrice":1788.03,"execQty":200,"isMaker":true,"securityId":"600519","side":"B","timestamp":1772378718284}
+{"clOrderId":"ORD000483","event":"EXECUTION","execId":"EXEC0000000000000152","execPrice":1788.03,"execQty":200,"isMaker":false,"securityId":"600519","side":"S","timestamp":1772378718284}
+{"clOrderId":"ORD000484","event":"ORDER_NEW","market":"XSHG","price":1785.61,"qty":300,"securityId":"600519","shareholderId":"SH008","side":"S","timestamp":1772378718284}
+{"clOrderId":"ORD000484","event":"ORDER_REJECT","rejectCode":1,"rejectText":"Cross trade detected","timestamp":1772378718284}
+{"clOrderId":"ORD000485","event":"ORDER_NEW","market":"XSHG","price":1799.38,"qty":200,"securityId":"600519","shareholderId":"SH007","side":"B","timestamp":1772378718284}
+{"clOrderId":"ORD000485","event":"ORDER_CONFIRM","timestamp":1772378718284}
+{"clOrderId":"ORD000454","event":"EXECUTION","execId":"EXEC0000000000000153","execPrice":1793.39,"execQty":100,"isMaker":true,"securityId":"600519","side":"S","timestamp":1772378718284}
+{"clOrderId":"ORD000485","event":"EXECUTION","execId":"EXEC0000000000000153","execPrice":1793.39,"execQty":100,"isMaker":false,"securityId":"600519","side":"B","timestamp":1772378718284}
+{"clOrderId":"ORD000486","event":"ORDER_NEW","market":"XSHE","price":14.73,"qty":500,"securityId":"000001","shareholderId":"SH007","side":"S","timestamp":1772378718284}
+{"clOrderId":"ORD000486","event":"ORDER_REJECT","rejectCode":1,"rejectText":"Cross trade detected","timestamp":1772378718285}
+{"clOrderId":"ORD000487","event":"ORDER_NEW","market":"XSHG","price":1786.69,"qty":1000,"securityId":"600519","shareholderId":"SH001","side":"S","timestamp":1772378718285}
+{"clOrderId":"ORD000487","event":"ORDER_CONFIRM","timestamp":1772378718285}
+{"clOrderId":"ORD000485","event":"EXECUTION","execId":"EXEC0000000000000154","execPrice":1799.38,"execQty":100,"isMaker":true,"securityId":"600519","side":"B","timestamp":1772378718285}
+{"clOrderId":"ORD000487","event":"EXECUTION","execId":"EXEC0000000000000154","execPrice":1799.38,"execQty":100,"isMaker":false,"securityId":"600519","side":"S","timestamp":1772378718285}
+{"clOrderId":"ORD000189","event":"EXECUTION","execId":"EXEC0000000000000155","execPrice":1788.03,"execQty":800,"isMaker":true,"securityId":"600519","side":"B","timestamp":1772378718285}
+{"clOrderId":"ORD000487","event":"EXECUTION","execId":"EXEC0000000000000155","execPrice":1788.03,"execQty":800,"isMaker":false,"securityId":"600519","side":"S","timestamp":1772378718285}
+{"clOrderId":"ORD000069","event":"EXECUTION","execId":"EXEC0000000000000156","execPrice":1787.98,"execQty":100,"isMaker":true,"securityId":"600519","side":"B","timestamp":1772378718285}
+{"clOrderId":"ORD000487","event":"EXECUTION","execId":"EXEC0000000000000156","execPrice":1787.98,"execQty":100,"isMaker":false,"securityId":"600519","side":"S","timestamp":1772378718285}
+{"clOrderId":"ORD000488","event":"ORDER_NEW","market":"XSHG","price":28.13,"qty":200,"securityId":"600030","shareholderId":"SH009","side":"S","timestamp":1772378718285}
+{"clOrderId":"ORD000488","event":"ORDER_REJECT","rejectCode":1,"rejectText":"Cross trade detected","timestamp":1772378718285}
+{"clOrderId":"ORD000489","event":"ORDER_NEW","market":"XSHG","price":1801.99,"qty":100,"securityId":"600519","shareholderId":"SH010","side":"S","timestamp":1772378718285}
+{"clOrderId":"ORD000489","event":"ORDER_CONFIRM","timestamp":1772378718285}
+{"clOrderId":"ORD000490","event":"ORDER_NEW","market":"XSHE","price":15.13,"qty":100,"securityId":"000001","shareholderId":"SH008","side":"S","timestamp":1772378718285}
+{"clOrderId":"ORD000490","event":"ORDER_CONFIRM","timestamp":1772378718285}
+{"clOrderId":"ORD000491","event":"ORDER_NEW","market":"XSHG","price":1809.44,"qty":200,"securityId":"600519","shareholderId":"SH005","side":"B","timestamp":1772378718285}
+{"clOrderId":"ORD000491","event":"ORDER_REJECT","rejectCode":1,"rejectText":"Cross trade detected","timestamp":1772378718285}
+{"clOrderId":"ORD000492","event":"ORDER_NEW","market":"XSHG","price":29.05,"qty":100,"securityId":"600030","shareholderId":"SH008","side":"S","timestamp":1772378718285}
+{"clOrderId":"ORD000492","event":"ORDER_REJECT","rejectCode":1,"rejectText":"Cross trade detected","timestamp":1772378718285}
+{"clOrderId":"ORD000493","event":"ORDER_NEW","market":"XSHG","price":28.84,"qty":1000,"securityId":"600030","shareholderId":"SH006","side":"B","timestamp":1772378718285}
+{"clOrderId":"ORD000493","event":"ORDER_CONFIRM","timestamp":1772378718285}
+{"clOrderId":"ORD000494","event":"ORDER_NEW","market":"XSHE","price":14.0,"qty":200,"securityId":"000001","shareholderId":"SH004","side":"S","timestamp":1772378718285}
+{"clOrderId":"ORD000494","event":"ORDER_REJECT","rejectCode":1,"rejectText":"Cross trade detected","timestamp":1772378718285}
+{"clOrderId":"ORD000495","event":"ORDER_NEW","market":"XSHG","price":30.13,"qty":1000,"securityId":"600030","shareholderId":"SH009","side":"S","timestamp":1772378718285}
+{"clOrderId":"ORD000495","event":"ORDER_REJECT","rejectCode":1,"rejectText":"Cross trade detected","timestamp":1772378718285}
+{"clOrderId":"ORD000496","event":"ORDER_NEW","market":"XSHE","price":14.37,"qty":300,"securityId":"000001","shareholderId":"SH009","side":"S","timestamp":1772378718285}
+{"clOrderId":"ORD000496","event":"ORDER_CONFIRM","timestamp":1772378718285}
+{"clOrderId":"ORD000497","event":"ORDER_NEW","market":"XSHE","price":13.91,"qty":500,"securityId":"000001","shareholderId":"SH001","side":"B","timestamp":1772378718285}
+{"clOrderId":"ORD000497","event":"ORDER_REJECT","rejectCode":1,"rejectText":"Cross trade detected","timestamp":1772378718285}
+{"clOrderId":"ORD000498","event":"ORDER_NEW","market":"XSHE","price":15.6,"qty":200,"securityId":"000001","shareholderId":"SH004","side":"B","timestamp":1772378718285}
+{"clOrderId":"ORD000498","event":"ORDER_CONFIRM","timestamp":1772378718285}
+{"clOrderId":"ORD000496","event":"EXECUTION","execId":"EXEC0000000000000157","execPrice":14.37,"execQty":200,"isMaker":true,"securityId":"000001","side":"S","timestamp":1772378718285}
+{"clOrderId":"ORD000498","event":"EXECUTION","execId":"EXEC0000000000000157","execPrice":14.37,"execQty":200,"isMaker":false,"securityId":"000001","side":"B","timestamp":1772378718285}
+{"clOrderId":"ORD000499","event":"ORDER_NEW","market":"XSHG","price":1810.46,"qty":500,"securityId":"600519","shareholderId":"SH008","side":"B","timestamp":1772378718285}
+{"clOrderId":"ORD000499","event":"ORDER_CONFIRM","timestamp":1772378718285}
+{"clOrderId":"ORD000462","event":"EXECUTION","execId":"EXEC0000000000000158","execPrice":1801.37,"execQty":500,"isMaker":true,"securityId":"600519","side":"S","timestamp":1772378718285}
+{"clOrderId":"ORD000499","event":"EXECUTION","execId":"EXEC0000000000000158","execPrice":1801.37,"execQty":500,"isMaker":false,"securityId":"600519","side":"B","timestamp":1772378718285}
+{"clOrderId":"ORD000500","event":"ORDER_NEW","market":"XSHE","price":15.38,"qty":500,"securityId":"000001","shareholderId":"SH008","side":"S","timestamp":1772378718285}
+{"clOrderId":"ORD000500","event":"ORDER_CONFIRM","timestamp":1772378718285}
