@@ -1,14 +1,19 @@
 #pragma once
 
 #include "types.h"
+#include <atomic>
+#include <condition_variable>
+#include <fstream>
+#include <mutex>
 #include <nlohmann/json.hpp>
+#include <queue>
 #include <string>
-#include <vector>
+#include <thread>
 
 namespace hdf {
 
 /**
- * @brief 交易历史记录器 — 记录交易系统中所有事件，并支持离线分析
+ * @brief 交易历史记录器 — 异步记录交易系统中所有事件
  *
  * 事件类型:
  *   - ORDER_NEW:    新订单委托
@@ -20,35 +25,32 @@ namespace hdf {
  *
  * 存储格式: JSONL（每行一个 JSON 对象，带毫秒时间戳）
  *
- * 使用方式:
- *   TradeLogger logger;
- *   logger.open("data/history_20260301.jsonl");
- *   logger.logOrderNew(order);
- *   ...
- *   logger.close();
- *
- * 离线分析:
- *   auto records = TradeLogger::loadFromFile("data/history_20260301.jsonl");
- *   auto report  = TradeLogger::analyze(records);
+ * 异步写入:
+ *   log*() 方法将记录推入无锁队列，立即返回，不阻塞交易线程。
+ *   后台写入线程定期从队列中取出并写入文件。
  */
 class TradeLogger {
   public:
     TradeLogger();
     ~TradeLogger();
 
+    // 禁止拷贝（拥有线程和文件句柄）
+    TradeLogger(const TradeLogger &) = delete;
+    TradeLogger &operator=(const TradeLogger &) = delete;
+
     // ============================================================
     // 文件管理
     // ============================================================
 
     /**
-     * @brief 打开日志文件（append 模式）
-     * @param filePath JSONL 文件路径，如 "data/history_20260301.jsonl"
+     * @brief 打开日志文件并启动后台写入线程
+     * @param filePath JSONL 文件路径
      * @return true 打开成功
      */
     bool open(const std::string &filePath);
 
     /**
-     * @brief 关闭日志文件
+     * @brief 关闭日志文件，等待队列写完后停止后台线程
      */
     void close();
 
@@ -58,90 +60,44 @@ class TradeLogger {
     bool isOpen() const;
 
     // ============================================================
-    // 事件记录接口 — 由 TradeSystem 在各事件点调用
+    // 事件记录接口 — 全部异步，不阻塞调用线程
     // ============================================================
 
-    /**
-     * @brief 记录新订单委托
-     */
     void logOrderNew(const Order &order);
-
-    /**
-     * @brief 记录订单确认
-     */
     void logOrderConfirm(const std::string &clOrderId);
-
-    /**
-     * @brief 记录订单拒绝
-     */
     void logOrderReject(const std::string &clOrderId, int32_t rejectCode,
                         const std::string &rejectText);
-
-    /**
-     * @brief 记录成交事件
-     * @param execId     成交编号
-     * @param clOrderId  关联订单号
-     * @param securityId 证券代码
-     * @param side       买卖方向
-     * @param execQty    成交数量
-     * @param execPrice  成交价格
-     * @param isMaker    是否为被动方
-     */
     void logExecution(const std::string &execId, const std::string &clOrderId,
                       const std::string &securityId, Side side,
                       uint32_t execQty, double execPrice, bool isMaker);
-
-    /**
-     * @brief 记录撤单确认
-     */
     void logCancelConfirm(const std::string &origClOrderId,
                           uint32_t canceledQty, uint32_t cumQty);
-
-    /**
-     * @brief 记录撤单拒绝
-     */
     void logCancelReject(const std::string &origClOrderId, int32_t rejectCode,
                          const std::string &rejectText);
-
-    /**
-     * @brief 记录行情快照
-     */
     void logMarketData(const std::string &securityId, Market market,
                        double bidPrice, double askPrice);
 
-    // ============================================================
-    // 离线分析接口
-    // ============================================================
-
-    /**
-     * @brief 从 JSONL 文件加载所有历史记录
-     * @param filePath 文件路径
-     * @return JSON 数组，每个元素为一条记录
-     */
-    static std::vector<nlohmann::json>
-    loadFromFile(const std::string &filePath);
-
-    /**
-     * @brief 对历史记录进行分析，输出分析报告
-     *
-     * 分析维度：
-     *   - 成交汇总：按股票统计成交量、成交额、笔数
-     *   - 撤单率：撤单笔数 / 总委托笔数
-     *   - 拒绝分析：各类拒绝原因占比
-     *
-     * @param records loadFromFile 返回的记录
-     * @return JSON 格式的分析报告
-     */
-    static nlohmann::json analyze(const std::vector<nlohmann::json> &records);
-
   private:
     /**
-     * @brief 写入一条记录（自动添加时间戳）
+     * @brief 将记录推入异步队列（自动添加时间戳）
      */
-    void writeRecord(const nlohmann::json &record);
+    void enqueue(nlohmann::json record);
+
+    /**
+     * @brief 后台写入线程主循环
+     */
+    void writerLoop();
 
     std::string filePath_;
-    bool isOpen_ = false;
+    std::ofstream file_;
+    std::atomic<bool> isOpen_{false};
+
+    // 异步写入队列
+    std::queue<nlohmann::json> queue_;
+    std::mutex mutex_;
+    std::condition_variable cv_;
+    std::atomic<bool> stopRequested_{false};
+    std::thread writerThread_;
 };
 
 } // namespace hdf

@@ -1,4 +1,6 @@
 #include "trade_logger.h"
+#include <chrono>
+#include <filesystem>
 #include <iostream>
 
 namespace hdf {
@@ -12,9 +14,28 @@ TradeLogger::~TradeLogger() { close(); }
 // ============================================================
 
 bool TradeLogger::open(const std::string &filePath) {
-    // TODO: 使用 std::ofstream 以 append 模式打开文件
+    if (isOpen_)
+        close();
+
+    // 自动创建父目录
+    auto parent = std::filesystem::path(filePath).parent_path();
+    if (!parent.empty()) {
+        std::filesystem::create_directories(parent);
+    }
+
+    file_.open(filePath, std::ios::app);
+    if (!file_.is_open()) {
+        std::cerr << "[TradeLogger] 无法打开文件: " << filePath << std::endl;
+        return false;
+    }
+
     filePath_ = filePath;
+    stopRequested_ = false;
     isOpen_ = true;
+
+    // 启动后台写入线程
+    writerThread_ = std::thread(&TradeLogger::writerLoop, this);
+
     std::cout << "[TradeLogger] open: " << filePath << std::endl;
     return true;
 }
@@ -22,23 +43,70 @@ bool TradeLogger::open(const std::string &filePath) {
 void TradeLogger::close() {
     if (!isOpen_)
         return;
-    // TODO: 关闭 ofstream
-    std::cout << "[TradeLogger] close: " << filePath_ << std::endl;
+
+    // 通知后台线程停止
+    stopRequested_ = true;
+    cv_.notify_one();
+
+    // 等待后台线程写完队列剩余内容并退出
+    if (writerThread_.joinable()) {
+        writerThread_.join();
+    }
+
+    file_.close();
     isOpen_ = false;
+    std::cout << "[TradeLogger] close: " << filePath_ << std::endl;
 }
 
 bool TradeLogger::isOpen() const { return isOpen_; }
 
 // ============================================================
-// 内部写入
+// 异步队列
 // ============================================================
 
-void TradeLogger::writeRecord(const nlohmann::json &record) {
+void TradeLogger::enqueue(nlohmann::json record) {
     if (!isOpen_)
         return;
-    // TODO: 添加毫秒级时间戳，序列化为单行 JSON，写入文件
-    // 目前仅打印到 stdout 占位
-    std::cout << "[TradeLogger] write: " << record.dump() << std::endl;
+
+    // 添加毫秒级时间戳
+    auto now = std::chrono::system_clock::now();
+    auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(
+                  now.time_since_epoch())
+                  .count();
+    record["timestamp"] = ms;
+
+    {
+        std::lock_guard<std::mutex> lock(mutex_);
+        queue_.push(std::move(record));
+    }
+    cv_.notify_one();
+}
+
+void TradeLogger::writerLoop() {
+    while (true) {
+        std::queue<nlohmann::json> batch;
+
+        {
+            std::unique_lock<std::mutex> lock(mutex_);
+            cv_.wait(lock,
+                     [this] { return !queue_.empty() || stopRequested_; });
+            std::swap(batch, queue_);
+        }
+
+        // 批量写入
+        while (!batch.empty()) {
+            file_ << batch.front().dump() << '\n';
+            batch.pop();
+        }
+        file_.flush();
+
+        // 队列已排空且收到停止信号时退出
+        if (stopRequested_) {
+            std::lock_guard<std::mutex> lock(mutex_);
+            if (queue_.empty())
+                break;
+        }
+    }
 }
 
 // ============================================================
@@ -55,14 +123,14 @@ void TradeLogger::logOrderNew(const Order &order) {
     record["price"] = order.price;
     record["qty"] = order.qty;
     record["shareholderId"] = order.shareholderId;
-    writeRecord(record);
+    enqueue(std::move(record));
 }
 
 void TradeLogger::logOrderConfirm(const std::string &clOrderId) {
     nlohmann::json record;
     record["event"] = "ORDER_CONFIRM";
     record["clOrderId"] = clOrderId;
-    writeRecord(record);
+    enqueue(std::move(record));
 }
 
 void TradeLogger::logOrderReject(const std::string &clOrderId,
@@ -73,7 +141,7 @@ void TradeLogger::logOrderReject(const std::string &clOrderId,
     record["clOrderId"] = clOrderId;
     record["rejectCode"] = rejectCode;
     record["rejectText"] = rejectText;
-    writeRecord(record);
+    enqueue(std::move(record));
 }
 
 void TradeLogger::logExecution(const std::string &execId,
@@ -90,7 +158,7 @@ void TradeLogger::logExecution(const std::string &execId,
     record["execQty"] = execQty;
     record["execPrice"] = execPrice;
     record["isMaker"] = isMaker;
-    writeRecord(record);
+    enqueue(std::move(record));
 }
 
 void TradeLogger::logCancelConfirm(const std::string &origClOrderId,
@@ -100,7 +168,7 @@ void TradeLogger::logCancelConfirm(const std::string &origClOrderId,
     record["origClOrderId"] = origClOrderId;
     record["canceledQty"] = canceledQty;
     record["cumQty"] = cumQty;
-    writeRecord(record);
+    enqueue(std::move(record));
 }
 
 void TradeLogger::logCancelReject(const std::string &origClOrderId,
@@ -111,7 +179,7 @@ void TradeLogger::logCancelReject(const std::string &origClOrderId,
     record["origClOrderId"] = origClOrderId;
     record["rejectCode"] = rejectCode;
     record["rejectText"] = rejectText;
-    writeRecord(record);
+    enqueue(std::move(record));
 }
 
 void TradeLogger::logMarketData(const std::string &securityId, Market market,
@@ -122,34 +190,7 @@ void TradeLogger::logMarketData(const std::string &securityId, Market market,
     record["market"] = to_string(market);
     record["bidPrice"] = bidPrice;
     record["askPrice"] = askPrice;
-    writeRecord(record);
-}
-
-// ============================================================
-// 离线分析接口
-// ============================================================
-
-std::vector<nlohmann::json>
-TradeLogger::loadFromFile(const std::string &filePath) {
-    // TODO: 逐行读取 JSONL 文件，解析为 JSON 对象
-    std::cout << "[TradeLogger] loadFromFile: " << filePath << std::endl;
-    return {};
-}
-
-nlohmann::json
-TradeLogger::analyze(const std::vector<nlohmann::json> &records) {
-    // TODO: 遍历 records，按 event 类型分类汇总
-    // 输出指标：
-    //   - 按证券代码统计成交量、成交额、笔数
-    //   - 撤单率 = CANCEL_CONFIRM 数 / ORDER_NEW 数
-    //   - 拒绝分析：各 rejectCode 出现次数
-    std::cout << "[TradeLogger] analyze: " << records.size() << " records"
-              << std::endl;
-
-    nlohmann::json report;
-    report["totalRecords"] = records.size();
-    report["summary"] = "TODO: implement analysis";
-    return report;
+    enqueue(std::move(record));
 }
 
 } // namespace hdf
