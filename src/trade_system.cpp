@@ -17,6 +17,10 @@ void TradeSystem::setSendToExchange(SendToExchange callback) {
 }
 
 void TradeSystem::handleOrder(const nlohmann::json &input) {
+    if (input.is_array()) {
+        handleMarketData(input);
+        return;
+    }
     Order order;
     try {
         order = input.get<Order>();
@@ -67,7 +71,14 @@ void TradeSystem::handleOrder(const nlohmann::json &input) {
         }
         // 尝试拿去市场行情
         // TODO: 在这里拿到市场行情，然后传入`match`函数
-        auto matchResult = matchingEngine_.match(order);
+        std::optional<MarketData> marketData;
+        const std::string marketKey =
+            to_string(order.market) + "+" + order.securityId;
+        auto marketIt = latestMarketData_.find(marketKey);
+        if (marketIt != latestMarketData_.end()) {
+            marketData = marketIt->second;
+        }
+        auto matchResult = matchingEngine_.match(order, marketData);
         if (!matchResult.executions.empty()) {
             auto &executions = matchResult.executions;
             if (sendToExchange_) {
@@ -269,6 +280,29 @@ void TradeSystem::handleMarketData(const nlohmann::json &input) {
     // TODO:
     // 依据项目书，这里的input输入的json是以 JSON Array 格式输入的多个行情数据，
     // 需要解析并对 latestMarketData_ 进行更新
+    if (!input.is_array()) {
+        return;
+    }
+
+    for (const auto &item : input) {
+        try {
+            std::string marketStr = item.at("market").get<std::string>();
+            std::string securityId = item.at("securityId").get<std::string>();
+            Market market = market_from_string(marketStr);
+            MarketData md;
+            md.bidPrice = item.at("bidPrice").get<double>();
+            md.askPrice = item.at("askPrice").get<double>();
+            const std::string marketKey = to_string(market) + "+" + securityId;
+            latestMarketData_[marketKey] = md;
+        } catch (const std::exception &) {
+            continue;
+        }
+    }
+    // 前置模式下，将行情数据同步转发给交易所，
+    // 确保交易所侧的撮合也受相同的行情约束。
+    if (sendToExchange_) {
+        sendToExchange_(input);
+    }
 }
 
 void TradeSystem::handleResponse(const nlohmann::json &input) {
