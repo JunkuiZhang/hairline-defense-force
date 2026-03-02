@@ -1191,3 +1191,206 @@ TEST_F(MatchingEngineTest, MarketData_SellPriceEqualsBid) {
     EXPECT_EQ(result.executions.size(), 1u);
     EXPECT_EQ(result.remainingQty, 0u);
 }
+
+// ============================================================
+// getBestQuote 测试
+// ============================================================
+
+/**
+ * @brief 空订单簿时 getBestQuote 返回 0/0
+ */
+TEST_F(MatchingEngineTest, GetBestQuote_EmptyBook) {
+    auto md = engine.getBestQuote("600030", Market::XSHG);
+    EXPECT_DOUBLE_EQ(md.bidPrice, 0.0);
+    EXPECT_DOUBLE_EQ(md.askPrice, 0.0);
+}
+
+/**
+ * @brief 仅有买盘时，askPrice 为 0
+ */
+TEST_F(MatchingEngineTest, GetBestQuote_OnlyBids) {
+    engine.addOrder(createOrder("Q001", "600030", Side::BUY, 10.0, 100));
+    engine.addOrder(createOrder("Q002", "600030", Side::BUY, 9.5, 200));
+
+    auto md = engine.getBestQuote("600030", Market::XSHG);
+    EXPECT_DOUBLE_EQ(md.bidPrice, 10.0);
+    EXPECT_DOUBLE_EQ(md.askPrice, 0.0);
+}
+
+/**
+ * @brief 仅有卖盘时，bidPrice 为 0
+ */
+TEST_F(MatchingEngineTest, GetBestQuote_OnlyAsks) {
+    engine.addOrder(createOrder("Q003", "600030", Side::SELL, 11.0, 100));
+    engine.addOrder(createOrder("Q004", "600030", Side::SELL, 12.0, 200));
+
+    auto md = engine.getBestQuote("600030", Market::XSHG);
+    EXPECT_DOUBLE_EQ(md.bidPrice, 0.0);
+    EXPECT_DOUBLE_EQ(md.askPrice, 11.0);
+}
+
+/**
+ * @brief 买卖盘均有时，返回最优买价和最优卖价
+ */
+TEST_F(MatchingEngineTest, GetBestQuote_BothSides) {
+    engine.addOrder(createOrder("Q010", "600030", Side::BUY, 9.8, 100));
+    engine.addOrder(createOrder("Q011", "600030", Side::BUY, 10.0, 100));
+    engine.addOrder(createOrder("Q012", "600030", Side::SELL, 10.5, 100));
+    engine.addOrder(createOrder("Q013", "600030", Side::SELL, 11.0, 200));
+
+    auto md = engine.getBestQuote("600030", Market::XSHG);
+    EXPECT_DOUBLE_EQ(md.bidPrice, 10.0); // 最高买价
+    EXPECT_DOUBLE_EQ(md.askPrice, 10.5); // 最低卖价
+}
+
+/**
+ * @brief 不同证券互不干扰
+ */
+TEST_F(MatchingEngineTest, GetBestQuote_DifferentSecurities) {
+    engine.addOrder(createOrder("Q020", "600030", Side::BUY, 10.0, 100));
+    engine.addOrder(createOrder("Q021", "600030", Side::SELL, 11.0, 100));
+    engine.addOrder(createOrder("Q022", "000001", Side::BUY, 15.0, 100));
+    engine.addOrder(createOrder("Q023", "000001", Side::SELL, 16.0, 100));
+
+    auto md1 = engine.getBestQuote("600030", Market::XSHG);
+    EXPECT_DOUBLE_EQ(md1.bidPrice, 10.0);
+    EXPECT_DOUBLE_EQ(md1.askPrice, 11.0);
+
+    auto md2 = engine.getBestQuote("000001", Market::XSHG);
+    EXPECT_DOUBLE_EQ(md2.bidPrice, 15.0);
+    EXPECT_DOUBLE_EQ(md2.askPrice, 16.0);
+}
+
+/**
+ * @brief 查询不存在的证券返回 0/0
+ */
+TEST_F(MatchingEngineTest, GetBestQuote_NonexistentSecurity) {
+    engine.addOrder(createOrder("Q030", "600030", Side::BUY, 10.0, 100));
+
+    auto md = engine.getBestQuote("999999", Market::XSHG);
+    EXPECT_DOUBLE_EQ(md.bidPrice, 0.0);
+    EXPECT_DOUBLE_EQ(md.askPrice, 0.0);
+}
+
+/**
+ * @brief 不同市场同一证券代码互不干扰
+ */
+TEST_F(MatchingEngineTest, GetBestQuote_DifferentMarkets) {
+    // 上交所的 600030
+    Order shBuy;
+    shBuy.clOrderId = "Q040";
+    shBuy.market = Market::XSHG;
+    shBuy.securityId = "600030";
+    shBuy.side = Side::BUY;
+    shBuy.price = 10.0;
+    shBuy.qty = 100;
+    shBuy.shareholderId = "SH001";
+    engine.addOrder(shBuy);
+
+    Order shSell;
+    shSell.clOrderId = "Q041";
+    shSell.market = Market::XSHG;
+    shSell.securityId = "600030";
+    shSell.side = Side::SELL;
+    shSell.price = 11.0;
+    shSell.qty = 100;
+    shSell.shareholderId = "SH002";
+    engine.addOrder(shSell);
+
+    // 深交所的 600030（同证券代码，不同市场）
+    Order szBuy;
+    szBuy.clOrderId = "Q042";
+    szBuy.market = Market::XSHE;
+    szBuy.securityId = "600030";
+    szBuy.side = Side::BUY;
+    szBuy.price = 20.0;
+    szBuy.qty = 100;
+    szBuy.shareholderId = "SH003";
+    engine.addOrder(szBuy);
+
+    Order szSell;
+    szSell.clOrderId = "Q043";
+    szSell.market = Market::XSHE;
+    szSell.securityId = "600030";
+    szSell.side = Side::SELL;
+    szSell.price = 22.0;
+    szSell.qty = 100;
+    szSell.shareholderId = "SH004";
+    engine.addOrder(szSell);
+
+    // 上交所：bid=10, ask=11
+    auto mdSH = engine.getBestQuote("600030", Market::XSHG);
+    EXPECT_DOUBLE_EQ(mdSH.bidPrice, 10.0);
+    EXPECT_DOUBLE_EQ(mdSH.askPrice, 11.0);
+
+    // 深交所：bid=20, ask=22
+    auto mdSZ = engine.getBestQuote("600030", Market::XSHE);
+    EXPECT_DOUBLE_EQ(mdSZ.bidPrice, 20.0);
+    EXPECT_DOUBLE_EQ(mdSZ.askPrice, 22.0);
+}
+
+/**
+ * @brief 撤单后 getBestQuote 反映新的最优价
+ */
+TEST_F(MatchingEngineTest, GetBestQuote_AfterCancel) {
+    engine.addOrder(createOrder("Q050", "600030", Side::BUY, 10.0, 100));
+    engine.addOrder(createOrder("Q051", "600030", Side::BUY, 9.5, 100));
+
+    auto md1 = engine.getBestQuote("600030", Market::XSHG);
+    EXPECT_DOUBLE_EQ(md1.bidPrice, 10.0);
+
+    // 撤掉最优买单
+    engine.cancelOrder("Q050");
+
+    auto md2 = engine.getBestQuote("600030", Market::XSHG);
+    EXPECT_DOUBLE_EQ(md2.bidPrice, 9.5);
+}
+
+/**
+ * @brief 成交消耗后 getBestQuote 反映变化
+ */
+TEST_F(MatchingEngineTest, GetBestQuote_AfterMatch) {
+    engine.addOrder(createOrder("Q060", "600030", Side::SELL, 10.0, 100));
+    engine.addOrder(createOrder("Q061", "600030", Side::SELL, 11.0, 100));
+
+    auto md1 = engine.getBestQuote("600030", Market::XSHG);
+    EXPECT_DOUBLE_EQ(md1.askPrice, 10.0);
+
+    // 买单吃掉最优卖单
+    Order buy = createOrder("Q062", "600030", Side::BUY, 10.0, 100);
+    engine.match(buy, std::nullopt);
+
+    auto md2 = engine.getBestQuote("600030", Market::XSHG);
+    EXPECT_DOUBLE_EQ(md2.askPrice, 11.0);
+}
+
+/**
+ * @brief reduceOrderQty 后 getBestQuote 仍能正确返回
+ * （部分减少不移除订单，完全减少后切换到下一档）
+ */
+TEST_F(MatchingEngineTest, GetBestQuote_AfterReduce) {
+    engine.addOrder(createOrder("Q070", "600030", Side::BUY, 10.0, 200));
+    engine.addOrder(createOrder("Q071", "600030", Side::BUY, 9.0, 100));
+
+    // 部分减少，最优买价不变
+    engine.reduceOrderQty("Q070", 100);
+    auto md1 = engine.getBestQuote("600030", Market::XSHG);
+    EXPECT_DOUBLE_EQ(md1.bidPrice, 10.0);
+
+    // 完全减少，最优买价切换到下一档
+    engine.reduceOrderQty("Q070", 100);
+    auto md2 = engine.getBestQuote("600030", Market::XSHG);
+    EXPECT_DOUBLE_EQ(md2.bidPrice, 9.0);
+}
+
+/**
+ * @brief 同价多笔订单时 getBestQuote 返回该价格（不受数量影响）
+ */
+TEST_F(MatchingEngineTest, GetBestQuote_MultipleSamePrice) {
+    engine.addOrder(createOrder("Q080", "600030", Side::BUY, 10.0, 100));
+    engine.addOrder(createOrder("Q081", "600030", Side::BUY, 10.0, 200));
+    engine.addOrder(createOrder("Q082", "600030", Side::BUY, 10.0, 300));
+
+    auto md = engine.getBestQuote("600030", Market::XSHG);
+    EXPECT_DOUBLE_EQ(md.bidPrice, 10.0);
+}

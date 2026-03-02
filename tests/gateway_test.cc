@@ -622,20 +622,15 @@ TEST_F(GatewayTest, MultiplePendingMatches_DifferentSecurities) {
  */
 
 TEST_F(GatewayTest, MarketDataConstraint_PartialMatch) {
-    // 设置行情数据，以json array输入多个市场、股票的行情
-    // XSHG市场的600030股票，卖价9.5，买价8.5，
-    // XSHE市场的000001股票，卖价20.0，买价19.0
-    json marketData = json::array({
-        {{"market", "XSHG"},
-         {"securityId", "600030"},
-         {"bidPrice", 8.5},
-         {"askPrice", 9.5}},
-        {{"market", "XSHE"},
-         {"securityId", "000001"},
-         {"bidPrice", 19.0},
-         {"askPrice", 20.0}},
-    });
-    gateway.handleMarketData(marketData);
+    // 交易所 → 前置：行情数据自动推送
+    exchange.setSendMarketData(
+        [this](const json &data) { gateway.handleMarketData(data); });
+
+    // 在交易所设置行情数据，XSHG市场的600030股票，卖价9.5，买价8.5
+    exchange.handleOrder(
+        makeOrder("MD001", "XSHG", "600030", "S", 9.5, 100, "MD001"));
+    exchange.handleOrder(
+        makeOrder("MD002", "XSHG", "600030", "B", 8.5, 100, "MD002"));
 
     // 挂卖单两档：9.0 和 10.0
     gateway.handleOrder(
@@ -644,10 +639,13 @@ TEST_F(GatewayTest, MarketDataConstraint_PartialMatch) {
         makeOrder("S2", "XSHG", "600030", "S", 10.0, 100, "SH003"));
     clientResponses.clear();
 
-    // 买单 10.0，应该先吃到 9.0 档，然后被行情约束阻止 10.0 档
+    // 买单 10.0，应该先吃到 9.0 档，然后被行情约束阻止 10.0 档。
+    // 买单送到交易所后，在交易所成交 9.5 档
     gateway.handleOrder(
         makeOrder("B1", "XSHG", "600030", "B", 10.0, 200, "SH001"));
 
+    // 共5个回报：1个确认 + 4个成交
+    ASSERT_EQ(clientResponses.size(), 5);
     // 验证成交回报
     int execCount = 0;
     for (const auto &resp : clientResponses) {
@@ -656,7 +654,15 @@ TEST_F(GatewayTest, MarketDataConstraint_PartialMatch) {
             EXPECT_EQ(resp["execQty"], 100);
         }
     }
-    EXPECT_EQ(execCount, 2); // 被动方+主动方
+    EXPECT_EQ(execCount, 4); // 被动方+主动方
+
+    ASSERT_EQ(clientResponses[1]["clOrderId"], "S1");
+    ASSERT_EQ(clientResponses[1]["shareholderId"], "SH002");
+    ASSERT_DOUBLE_EQ(clientResponses[1]["execPrice"], 9.0);
+
+    ASSERT_EQ(clientResponses[3]["clOrderId"], "MD001");
+    ASSERT_EQ(clientResponses[3]["shareholderId"], "MD001");
+    ASSERT_DOUBLE_EQ(clientResponses[3]["execPrice"], 9.5);
 }
 
 /**
@@ -668,20 +674,15 @@ TEST_F(GatewayTest, MarketDataConstraint_PartialMatch) {
  */
 
 TEST_F(GatewayTest, MarketDataConstraint_PartialMatch_Sell) {
-    // 设置行情数据，以json array输入多个市场、股票的行情
-    // XSHG市场的600030股票，买价9.5，卖价10.5，
-    // XSHE市场的000001股票，买价19.0，卖价20.0
-    json marketData = json::array({
-        {{"market", "XSHG"},
-         {"securityId", "600030"},
-         {"bidPrice", 9.5},
-         {"askPrice", 10.5}},
-        {{"market", "XSHE"},
-         {"securityId", "000001"},
-         {"bidPrice", 19.0},
-         {"askPrice", 20.0}},
-    });
-    gateway.handleMarketData(marketData);
+    // 交易所 → 前置：行情数据自动推送
+    exchange.setSendMarketData(
+        [this](const json &data) { gateway.handleMarketData(data); });
+
+    // 在交易所设置行情数据，XSHG市场的600030股票，买价9.5，卖价10.5
+    exchange.handleOrder(
+        makeOrder("MD001", "XSHG", "600030", "B", 9.5, 100, "MD001"));
+    exchange.handleOrder(
+        makeOrder("MD002", "XSHG", "600030", "S", 10.5, 100, "MD002"));
 
     // 挂买单两档：9.0 和 10.0
     gateway.handleOrder(
@@ -691,9 +692,12 @@ TEST_F(GatewayTest, MarketDataConstraint_PartialMatch_Sell) {
     clientResponses.clear();
 
     // 卖单 9.0，应该先吃到 10.0 档，然后被行情约束阻止 9.0 档
+    // 卖单送到交易所后，在交易所成交 9.5 档
     gateway.handleOrder(
         makeOrder("S1", "XSHG", "600030", "S", 9.0, 200, "SH003"));
 
+    // 共5个回报：1个确认 + 4个成交
+    ASSERT_EQ(clientResponses.size(), 5);
     // 验证成交回报
     int execCount = 0;
     for (const auto &resp : clientResponses) {
@@ -702,7 +706,15 @@ TEST_F(GatewayTest, MarketDataConstraint_PartialMatch_Sell) {
             EXPECT_EQ(resp["execQty"], 100);
         }
     }
-    EXPECT_EQ(execCount, 2); // 被动方+主动方
+    EXPECT_EQ(execCount, 4); // 被动方+主动方
+
+    ASSERT_EQ(clientResponses[1]["clOrderId"], "B2");
+    ASSERT_EQ(clientResponses[1]["shareholderId"], "SH002");
+    ASSERT_DOUBLE_EQ(clientResponses[1]["execPrice"], 10.0);
+
+    ASSERT_EQ(clientResponses[3]["clOrderId"], "MD001");
+    ASSERT_EQ(clientResponses[3]["shareholderId"], "MD001");
+    ASSERT_DOUBLE_EQ(clientResponses[3]["execPrice"], 9.5);
 }
 
 // ==================== PendingMatch: 全部确认 ====================
@@ -971,4 +983,221 @@ TEST_F(PureGatewayTest, PartialMatch_RemainingForwardedToExchange) {
     auto &forwarded = exchangeRequests.back();
     EXPECT_EQ(forwarded["clOrderId"], "B1");
     EXPECT_EQ(forwarded["qty"], 400);
+}
+
+//
+//
+//            行情信息 / 行情接入 测试
+//
+//
+
+/**
+ * @brief 多档卖盘部分撮合后遇到行情约束 —— 买单先吃到低价档，然后被
+ * 行情价格约束截停
+ *
+ * 场景：卖盘 9.0 和 10.0 两档，行情卖价 9.5，买入价 10.0
+ * → 9.0 档正常成交，10.0 档被约束阻止
+ */
+
+TEST_F(PureGatewayTest, MarketDataConstraint_PartialMatch) {
+    // 设置行情数据，以json array输入多个市场、股票的行情
+    // XSHG市场的600030股票，卖价9.5，买价8.5，
+    // XSHE市场的000001股票，卖价20.0，买价19.0
+    json marketData = json::array({
+        {{"market", "XSHG"},
+         {"securityId", "600030"},
+         {"bidPrice", 8.5},
+         {"askPrice", 9.5}},
+        {{"market", "XSHE"},
+         {"securityId", "000001"},
+         {"bidPrice", 19.0},
+         {"askPrice", 20.0}},
+    });
+    system.handleMarketData(marketData);
+
+    // 挂卖单两档：9.0 和 10.0
+    system.handleOrder(
+        makeOrder("S1", "XSHG", "600030", "S", 9.0, 100, "SH002"));
+    system.handleOrder(
+        makeOrder("S2", "XSHG", "600030", "S", 10.0, 100, "SH003"));
+    clientResponses.clear();
+    // 交易所收到2个订单
+    ASSERT_EQ(exchangeRequests.size(), 2);
+    exchangeRequests.clear();
+    // 交易所发送2个确认回报
+    system.handleResponse({{"clOrderId", "S1"},
+                           {"market", "XSHG"},
+                           {"securityId", "600030"},
+                           {"side", "S"},
+                           {"qty", 100},
+                           {"price", 9.0},
+                           {"shareholderId", "SH002"}});
+    system.handleResponse({{"clOrderId", "S2"},
+                           {"market", "XSHG"},
+                           {"securityId", "600030"},
+                           {"side", "S"},
+                           {"qty", 100},
+                           {"price", 10.0},
+                           {"shareholderId", "SH003"}});
+    ASSERT_EQ(clientResponses.size(), 2); // 卖单确认回报
+    clientResponses.clear();
+
+    // 买单 10.0，应该先吃到 9.0 档，然后被行情约束阻止 10.0 档
+    system.handleOrder(
+        makeOrder("B1", "XSHG", "600030", "B", 10.0, 200, "SH001"));
+
+    // 交易所收到撤单
+    ASSERT_EQ(exchangeRequests.size(), 1);
+    ASSERT_EQ(exchangeRequests[0]["origClOrderId"], "S1");
+    ASSERT_EQ(exchangeRequests[0]["side"], "S");
+    ASSERT_EQ(exchangeRequests[0]["shareholderId"], "SH002");
+    exchangeRequests.clear();
+
+    // 交易所发送撤单确认回报
+    system.handleResponse({{"clOrderId", "C1"},
+                           {"origClOrderId", "S1"},
+                           {"market", "XSHG"},
+                           {"securityId", "600030"},
+                           {"side", "S"},
+                           {"qty", 100},
+                           {"price", 9.0},
+                           {"cumQty", 0},
+                           {"canceledQty", 100},
+                           {"shareholderId", "SH002"}});
+    clientResponses.clear();
+
+    // 交易所收到剩余100的订单
+    ASSERT_EQ(exchangeRequests.size(), 1);
+    EXPECT_EQ(exchangeRequests[0]["side"], "B");
+    EXPECT_EQ(exchangeRequests[0]["shareholderId"], "SH001");
+    EXPECT_EQ(exchangeRequests[0]["qty"], 100);
+    EXPECT_EQ(exchangeRequests[0]["price"], 10.0);
+    exchangeRequests.clear();
+
+    // 交易所发送剩余100的订单确认回报
+    system.handleResponse({{"clOrderId", "B1"},
+                           {"market", "XSHG"},
+                           {"securityId", "600030"},
+                           {"side", "B"},
+                           {"qty", 100},
+                           {"price", 10.0},
+                           {"shareholderId", "SH001"}});
+    ASSERT_EQ(clientResponses.size(),
+              3); // 确认回报 + 卖方成交回报 + 买方成交回报
+
+    // 验证成交回报
+    int execCount = 0;
+    for (const auto &resp : clientResponses) {
+        if (resp.contains("execId")) {
+            execCount++;
+            EXPECT_EQ(resp["execQty"], 100);
+        }
+    }
+    EXPECT_EQ(execCount, 2); // 被动方+主动方
+}
+
+/**
+ * @brief 多档卖盘部分撮合后遇到行情约束 —— 卖单先吃到高价档，然后被
+ * 行情价格约束截停
+ *
+ * 场景：买盘 9.0 和 10.0 两档，行情买价 9.5，卖出价 9.0
+ * → 10.0 档正常成交，9.0 档被约束阻止
+ */
+
+TEST_F(PureGatewayTest, MarketDataConstraint_PartialMatch_Sell) {
+    // 设置行情数据，以json array输入多个市场、股票的行情
+    // XSHG市场的600030股票，买价9.5，卖价10.5，
+    // XSHE市场的000001股票，买价19.0，卖价20.0
+    json marketData = json::array({
+        {{"market", "XSHG"},
+         {"securityId", "600030"},
+         {"bidPrice", 9.5},
+         {"askPrice", 10.5}},
+        {{"market", "XSHE"},
+         {"securityId", "000001"},
+         {"bidPrice", 19.0},
+         {"askPrice", 20.0}},
+    });
+    system.handleMarketData(marketData);
+
+    // 挂买单两档：9.0 和 10.0
+    system.handleOrder(
+        makeOrder("B1", "XSHG", "600030", "B", 9.0, 100, "SH001"));
+    system.handleOrder(
+        makeOrder("B2", "XSHG", "600030", "B", 10.0, 100, "SH002"));
+    clientResponses.clear();
+
+    // 交易所收到2个订单
+    ASSERT_EQ(exchangeRequests.size(), 2);
+    exchangeRequests.clear();
+    // 交易所发送2个确认回报
+    system.handleResponse({{"clOrderId", "B1"},
+                           {"market", "XSHG"},
+                           {"securityId", "600030"},
+                           {"side", "B"},
+                           {"qty", 100},
+                           {"price", 9.0},
+                           {"shareholderId", "SH001"}});
+    system.handleResponse({{"clOrderId", "B2"},
+                           {"market", "XSHG"},
+                           {"securityId", "600030"},
+                           {"side", "B"},
+                           {"qty", 100},
+                           {"price", 10.0},
+                           {"shareholderId", "SH002"}});
+    ASSERT_EQ(clientResponses.size(), 2); // 买单确认回报
+    clientResponses.clear();
+
+    // 卖单 9.0，应该先吃到 10.0 档，然后被行情约束阻止 9.0 档
+    system.handleOrder(
+        makeOrder("S1", "XSHG", "600030", "S", 9.0, 200, "SH003"));
+
+    // 交易所收到撤单
+    ASSERT_EQ(exchangeRequests.size(), 1);
+    ASSERT_EQ(exchangeRequests[0]["origClOrderId"], "B2");
+    ASSERT_EQ(exchangeRequests[0]["side"], "B");
+    ASSERT_EQ(exchangeRequests[0]["shareholderId"], "SH002");
+    exchangeRequests.clear();
+
+    // 交易所发送撤单确认回报
+    system.handleResponse({{"clOrderId", "C1"},
+                           {"origClOrderId", "B2"},
+                           {"market", "XSHG"},
+                           {"securityId", "600030"},
+                           {"side", "B"},
+                           {"qty", 100},
+                           {"price", 10.0},
+                           {"canceledQty", 100},
+                           {"cumQty", 0},
+                           {"shareholderId", "SH002"}});
+    clientResponses.clear();
+
+    // 交易所收到剩余100的订单
+    ASSERT_EQ(exchangeRequests.size(), 1);
+    EXPECT_EQ(exchangeRequests[0]["side"], "S");
+    EXPECT_EQ(exchangeRequests[0]["shareholderId"], "SH003");
+    EXPECT_EQ(exchangeRequests[0]["qty"], 100);
+    EXPECT_EQ(exchangeRequests[0]["price"], 9.0);
+    exchangeRequests.clear();
+
+    // 交易所发送剩余100的订单确认回报
+    system.handleResponse({{"clOrderId", "S1"},
+                           {"market", "XSHG"},
+                           {"securityId", "600030"},
+                           {"side", "S"},
+                           {"qty", 100},
+                           {"price", 9.0},
+                           {"shareholderId", "SH003"}});
+    ASSERT_EQ(clientResponses.size(),
+              3); // 确认回报 + 卖方成交回报 + 买方成交回报
+
+    // 验证成交回报
+    int execCount = 0;
+    for (const auto &resp : clientResponses) {
+        if (resp.contains("execId")) {
+            execCount++;
+            EXPECT_EQ(resp["execQty"], 100);
+        }
+    }
+    EXPECT_EQ(execCount, 2); // 被动方+主动方
 }

@@ -27,6 +27,7 @@ class TradeSystem {
 
     using SendToClient = std::function<void(const nlohmann::json &)>;
     using SendToExchange = std::function<void(const nlohmann::json &)>;
+    using SendMarketData = std::function<void(const nlohmann::json &)>;
 
     /**
      * @brief 启用交易历史记录。调用后所有事件将写入指定文件。
@@ -53,6 +54,15 @@ class TradeSystem {
      * @brief 设置与交易所的交互接口，图中op2
      */
     void setSendToExchange(SendToExchange callback);
+
+    /**
+     * @brief 设置行情数据推送接口
+     *
+     * 当订单簿发生变动时，系统会自动通过此回调推送受影响证券的
+     * 最新行情（best bid / best ask）。交易所前置收到后可调用
+     * handleMarketData() 进行行情约束。
+     */
+    void setSendMarketData(SendMarketData callback);
 
     /**
      * @brief 处理来自客户端的订单指令，图中op1
@@ -82,6 +92,7 @@ class TradeSystem {
     // sendToExchange_来判断自己是交易所前置还是纯撮合系统。
     SendToClient sendToClient_;
     SendToExchange sendToExchange_;
+    SendMarketData sendMarketData_;
 
     /**
      * 前置模式下内部撮合成功后，需要先向交易所发送撤单请求，
@@ -147,6 +158,16 @@ class TradeSystem {
     void
     sendConfirmAndExecReports(const Order &activeOrder,
                               const std::vector<OrderResponse> &executions);
+
+    /**
+     * @brief 推送指定证券的最新行情数据
+     *
+     * 从内部订单簿获取 best bid/ask，通过 sendMarketData_ 回调发送。
+     * 仅在设置了 sendMarketData_ 回调时生效。
+     * 且仅在当前系统为交易所，即纯撮合系统时调用。
+     * 如果是交易所前置模式，则由交易所负责推送行情数据。
+     */
+    void broadcastMarketData(const std::string &securityId, Market market);
 };
 
 } // namespace hdf

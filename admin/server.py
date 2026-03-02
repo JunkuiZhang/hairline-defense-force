@@ -21,11 +21,10 @@ import uuid
 from contextlib import asynccontextmanager
 from typing import Optional
 
+from bridge import TcpBridge
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
-
-from bridge import TcpBridge
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -156,6 +155,9 @@ class AppState:
         # 订单跟踪：clOrderId -> OrderTracker
         self.orders: dict[str, OrderTracker] = {}
 
+        # 交易所行情数据：securityId -> {market, bidPrice, askPrice}
+        self.exchange_market_data: dict[str, dict] = {}
+
     def generate_order_id(self) -> str:
         """生成唯一订单号"""
         self.order_counter += 1
@@ -247,6 +249,25 @@ app.add_middleware(
 
 def on_cpp_response(msg: dict):
     """收到 C++ 回报时的回调"""
+    # 处理行情数据推送
+    if msg.get("type") == "market_data":
+        data = msg.get("data", [])
+        if isinstance(data, list):
+            for item in data:
+                market = item.get("market", "")
+                sec_id = item.get("securityId", "")
+                if market and sec_id:
+                    key = f"{market}+{sec_id}"
+                    state.exchange_market_data[key] = {
+                        "market": market,
+                        "securityId": sec_id,
+                        "bidPrice": item.get("bidPrice", 0.0),
+                        "askPrice": item.get("askPrice", 0.0),
+                    }
+        # 也广播给 WebSocket 客户端，方便实时更新
+        asyncio.create_task(broadcast_to_websockets(msg))
+        return
+
     state.add_response(msg)
     # 广播给所有 WebSocket 客户端
     asyncio.create_task(broadcast_to_websockets(msg))
@@ -458,6 +479,18 @@ async def get_status():
 async def get_exchange_responses(limit: int = 50):
     """获取交易所侧的回报记录"""
     return {"responses": state.exchange_responses[-limit:]}
+
+
+@app.get("/api/exchange/market", summary="交易所行情数据")
+async def get_exchange_market():
+    """
+    获取交易所推送的最新行情数据（best bid / best ask）。
+    数据来源：交易所订单簿变动时自动推送。
+    """
+    quotes = list(state.exchange_market_data.values())
+    # 按证券代码排序
+    quotes.sort(key=lambda q: q.get("securityId", ""))
+    return {"quotes": quotes}
 
 
 @app.get("/api/exchange/status", summary="交易所状态")

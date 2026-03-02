@@ -51,6 +51,7 @@ int main(int argc, char *argv[]) {
     gateway.setSendToClient([&adminServer](const nlohmann::json &output) {
         std::cout << "[→Client] " << output.dump() << std::endl;
         nlohmann::json gatewayResp = output;
+        gatewayResp["type"] = "response";
         gatewayResp["source"] = "gateway";
         adminServer.broadcast(gatewayResp);
     });
@@ -77,12 +78,28 @@ int main(int argc, char *argv[]) {
             std::cout << "[←Exchange] " << resp.dump() << std::endl;
             // 广播交易所回报（加 source 标记供前端区分）
             nlohmann::json exchangeResp = resp;
+            exchangeResp["type"] = "response";
             exchangeResp["source"] = "exchange";
             adminServer.broadcast(exchangeResp);
             // 回报也需要流入 gateway 处理
             gateway.handleResponse(resp);
         });
     // exchange 不设置 sendToExchange_ → 纯撮合模式
+
+    // ---- 连接 exchange → gateway（行情推送） ----
+    // 交易所订单簿变动时推送 best bid/ask，前置据此做行情约束
+    exchange.setSendMarketData(
+        [&gateway, &adminServer](const nlohmann::json &data) {
+            std::cout << "[MarketData] " << data.dump() << std::endl;
+            // 推送给前置系统做行情约束
+            gateway.handleMarketData(data);
+            // 广播给管理界面显示
+            nlohmann::json msg;
+            msg["type"] = "market_data";
+            msg["source"] = "exchange";
+            msg["data"] = data;
+            adminServer.broadcast(msg);
+        });
 
     // ---- 连接 AdminServer → gateway/exchange（管理界面指令转发） ----
     // 根据 target 字段路由到 gateway（默认）或 exchange

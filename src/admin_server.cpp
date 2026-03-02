@@ -68,16 +68,12 @@ void AdminServer::stop() {
 }
 
 void AdminServer::broadcast(const nlohmann::json &message) {
-    // 包装为 response 类型
-    nlohmann::json wrapped = message;
-    wrapped["type"] = "response";
-
     std::lock_guard<std::mutex> lock(clientsMutex_);
 
     // 发送并移除已断开的连接
     auto it = clientFds_.begin();
     while (it != clientFds_.end()) {
-        if (!sendToFd(*it, wrapped)) {
+        if (!sendToFd(*it, message)) {
             ::close(*it);
             it = clientFds_.erase(it);
         } else {

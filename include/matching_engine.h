@@ -83,6 +83,18 @@ class MatchingEngine {
      */
     nlohmann::json getSnapshot() const;
 
+    /**
+     * @brief 获取指定证券的最优买卖报价（best bid / best ask）。
+     *
+     * 遍历订单簿找到指定 securityId 的最高买价和最低卖价。
+     * 如果某一侧无挂单，对应价格为 0。
+     *
+     * @param securityId 证券代码
+     * @param market 市场（如 XSHG、XHKG）
+     * @return MarketData 包含 bidPrice 和 askPrice
+     */
+    MarketData getBestQuote(const std::string &securityId, Market market) const;
+
   private:
     /**
      * @brief 订单簿中的订单条目，记录订单信息及已成交累计量。

@@ -24,11 +24,11 @@ void TradeSystem::setSendToExchange(SendToExchange callback) {
     sendToExchange_ = callback;
 }
 
+void TradeSystem::setSendMarketData(SendMarketData callback) {
+    sendMarketData_ = callback;
+}
+
 void TradeSystem::handleOrder(const nlohmann::json &input) {
-    if (input.is_array()) {
-        handleMarketData(input);
-        return;
-    }
     Order order;
     try {
         order = input.get<Order>();
@@ -83,8 +83,8 @@ void TradeSystem::handleOrder(const nlohmann::json &input) {
             sendToClient_(response);
             logger_.logOrderConfirm(order.clOrderId);
         }
-        // 尝试拿去市场行情
-        // TODO: 在这里拿到市场行情，然后传入`match`函数
+
+        // 在这里拿到市场行情，然后传入`match`函数
         std::optional<MarketData> marketData;
         const std::string marketKey =
             to_string(order.market) + "+" + order.securityId;
@@ -92,6 +92,7 @@ void TradeSystem::handleOrder(const nlohmann::json &input) {
         if (marketIt != latestMarketData_.end()) {
             marketData = marketIt->second;
         }
+
         auto matchResult = matchingEngine_.match(order, marketData);
         if (!matchResult.executions.empty()) {
             auto &executions = matchResult.executions;
@@ -194,6 +195,10 @@ void TradeSystem::handleOrder(const nlohmann::json &input) {
             // 更新风控系统订单状态
             riskController_.onOrderAccepted(order);
         }
+
+        // 订单簿变动后，推送最新行情
+        if (!sendToExchange_)
+            broadcastMarketData(order.securityId, order.market);
     }
 }
 
@@ -301,12 +306,13 @@ void TradeSystem::handleCancel(const nlohmann::json &input) {
                 response["canceledQty"] = result.canceledQty;
                 sendToClient_(response);
             }
+            // 撤单成功，订单簿变动，推送最新行情
+            broadcastMarketData(order.securityId, order.market);
         }
     }
 }
 
 void TradeSystem::handleMarketData(const nlohmann::json &input) {
-    // TODO:
     // 依据项目书，这里的input输入的json是以 JSON Array 格式输入的多个行情数据，
     // 需要解析并对 latestMarketData_ 进行更新
     if (!input.is_array()) {
@@ -323,14 +329,12 @@ void TradeSystem::handleMarketData(const nlohmann::json &input) {
             md.askPrice = item.at("askPrice").get<double>();
             const std::string marketKey = to_string(market) + "+" + securityId;
             latestMarketData_[marketKey] = md;
+
+            // 记录日志
+            logger_.logMarketData(securityId, market, md.bidPrice, md.askPrice);
         } catch (const std::exception &) {
             continue;
         }
-    }
-    // 前置模式下，将行情数据同步转发给交易所，
-    // 确保交易所侧的撮合也受相同的行情约束。
-    if (sendToExchange_) {
-        sendToExchange_(input);
     }
 }
 
@@ -553,6 +557,21 @@ void TradeSystem::sendConfirmAndExecReports(
 
 nlohmann::json TradeSystem::queryOrderbook() const {
     return matchingEngine_.getSnapshot();
+}
+
+void TradeSystem::broadcastMarketData(const std::string &securityId,
+                                      Market market) {
+    if (!sendMarketData_)
+        return;
+
+    MarketData md = matchingEngine_.getBestQuote(securityId, market);
+
+    nlohmann::json data = nlohmann::json::array();
+    data.push_back({{"market", to_string(market)},
+                    {"securityId", securityId},
+                    {"bidPrice", md.bidPrice},
+                    {"askPrice", md.askPrice}});
+    sendMarketData_(data);
 }
 
 } // namespace hdf
