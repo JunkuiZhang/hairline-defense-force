@@ -68,10 +68,6 @@ class GatewayTest : public testing::Test {
         exchange.setSendToClient(
             [this](const json &resp) { gateway.handleResponse(resp); });
 
-        // 交易所 → 前置：行情数据自动推送
-        exchange.setSendMarketData(
-            [this](const json &data) { gateway.handleMarketData(data); });
-
         // exchange 不设置 sendToExchange_ → 纯撮合模式
     }
 };
@@ -626,6 +622,10 @@ TEST_F(GatewayTest, MultiplePendingMatches_DifferentSecurities) {
  */
 
 TEST_F(GatewayTest, MarketDataConstraint_PartialMatch) {
+    // 交易所 → 前置：行情数据自动推送
+    exchange.setSendMarketData(
+        [this](const json &data) { gateway.handleMarketData(data); });
+
     // 在交易所设置行情数据，XSHG市场的600030股票，卖价9.5，买价8.5
     exchange.handleOrder(
         makeOrder("MD001", "XSHG", "600030", "S", 9.5, 100, "MD001"));
@@ -674,6 +674,10 @@ TEST_F(GatewayTest, MarketDataConstraint_PartialMatch) {
  */
 
 TEST_F(GatewayTest, MarketDataConstraint_PartialMatch_Sell) {
+    // 交易所 → 前置：行情数据自动推送
+    exchange.setSendMarketData(
+        [this](const json &data) { gateway.handleMarketData(data); });
+
     // 在交易所设置行情数据，XSHG市场的600030股票，买价9.5，卖价10.5
     exchange.handleOrder(
         makeOrder("MD001", "XSHG", "600030", "B", 9.5, 100, "MD001"));
