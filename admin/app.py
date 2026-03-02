@@ -110,6 +110,52 @@ if page == "仪表盘":
 elif page == "市场行情":
     st.title("📈 市场行情")
 
+    # ---- 交易所实时行情 ----
+    st.subheader("🏛️ 交易所实时行情")
+    st.caption("来自交易所订单簿的最优买卖报价（自动推送）")
+
+    exchange_market = api_get("/api/exchange/market")
+    if exchange_market and exchange_market.get("quotes"):
+        quotes = exchange_market["quotes"]
+
+        # 行情卡片
+        cols = st.columns(min(len(quotes), 4))
+        for i, q in enumerate(quotes):
+            with cols[i % len(cols)]:
+                sec_id = q["securityId"]
+                bid = q["bidPrice"]
+                ask = q["askPrice"]
+                spread = ask - bid if bid > 0 and ask > 0 else 0
+                market_name = q.get("market", "")
+
+                st.markdown(
+                    f"### {sec_id}\n"
+                    f"<small>{market_name}</small>",
+                    unsafe_allow_html=True,
+                )
+
+                bid_col, ask_col = st.columns(2)
+                with bid_col:
+                    if bid > 0:
+                        st.metric("买一", f"¥{bid:.2f}")
+                    else:
+                        st.metric("买一", "—")
+                with ask_col:
+                    if ask > 0:
+                        st.metric("卖一", f"¥{ask:.2f}")
+                    else:
+                        st.metric("卖一", "—")
+
+                if spread > 0:
+                    st.caption(f"价差: ¥{spread:.2f}")
+    else:
+        st.info("暂无交易所行情数据，交易所有订单后将自动推送。")
+
+    st.markdown("---")
+
+    # ---- 前置订单簿 ----
+    st.subheader("📊 前置系统订单簿")
+
     # 证券筛选
     market_data = api_get("/api/market")
     if not market_data:

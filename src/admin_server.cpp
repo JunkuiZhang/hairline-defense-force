@@ -68,9 +68,11 @@ void AdminServer::stop() {
 }
 
 void AdminServer::broadcast(const nlohmann::json &message) {
-    // 包装为 response 类型
     nlohmann::json wrapped = message;
-    wrapped["type"] = "response";
+    // 保留消息自身的 type（如 market_data），仅在缺省时补 "response"
+    if (!wrapped.contains("type")) {
+        wrapped["type"] = "response";
+    }
 
     std::lock_guard<std::mutex> lock(clientsMutex_);
 
