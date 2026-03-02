@@ -254,10 +254,12 @@ def on_cpp_response(msg: dict):
         data = msg.get("data", [])
         if isinstance(data, list):
             for item in data:
+                market = item.get("market", "")
                 sec_id = item.get("securityId", "")
-                if sec_id:
-                    state.exchange_market_data[sec_id] = {
-                        "market": item.get("market", ""),
+                if market and sec_id:
+                    key = f"{market}+{sec_id}"
+                    state.exchange_market_data[key] = {
+                        "market": market,
                         "securityId": sec_id,
                         "bidPrice": item.get("bidPrice", 0.0),
                         "askPrice": item.get("askPrice", 0.0),
