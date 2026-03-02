@@ -626,20 +626,11 @@ TEST_F(GatewayTest, MultiplePendingMatches_DifferentSecurities) {
  */
 
 TEST_F(GatewayTest, MarketDataConstraint_PartialMatch) {
-    // 设置行情数据，以json array输入多个市场、股票的行情
-    // XSHG市场的600030股票，卖价9.5，买价8.5，
-    // XSHE市场的000001股票，卖价20.0，买价19.0
-    json marketData = json::array({
-        {{"market", "XSHG"},
-         {"securityId", "600030"},
-         {"bidPrice", 8.5},
-         {"askPrice", 9.5}},
-        {{"market", "XSHE"},
-         {"securityId", "000001"},
-         {"bidPrice", 19.0},
-         {"askPrice", 20.0}},
-    });
-    gateway.handleMarketData(marketData);
+    // 在交易所设置行情数据，XSHG市场的600030股票，卖价9.5，买价8.5
+    exchange.handleOrder(
+        makeOrder("MD001", "XSHG", "600030", "S", 9.5, 100, "MD001"));
+    exchange.handleOrder(
+        makeOrder("MD002", "XSHG", "600030", "B", 8.5, 100, "MD002"));
 
     // 挂卖单两档：9.0 和 10.0
     gateway.handleOrder(
@@ -648,10 +639,13 @@ TEST_F(GatewayTest, MarketDataConstraint_PartialMatch) {
         makeOrder("S2", "XSHG", "600030", "S", 10.0, 100, "SH003"));
     clientResponses.clear();
 
-    // 买单 10.0，应该先吃到 9.0 档，然后被行情约束阻止 10.0 档
+    // 买单 10.0，应该先吃到 9.0 档，然后被行情约束阻止 10.0 档。
+    // 买单送到交易所后，在交易所成交 9.5 档
     gateway.handleOrder(
         makeOrder("B1", "XSHG", "600030", "B", 10.0, 200, "SH001"));
 
+    // 共5个回报：1个确认 + 4个成交
+    ASSERT_EQ(clientResponses.size(), 5);
     // 验证成交回报
     int execCount = 0;
     for (const auto &resp : clientResponses) {
@@ -660,8 +654,15 @@ TEST_F(GatewayTest, MarketDataConstraint_PartialMatch) {
             EXPECT_EQ(resp["execQty"], 100);
         }
     }
-    std::cout << "Exec: " << clientResponses << std::endl;
-    EXPECT_EQ(execCount, 2); // 被动方+主动方
+    EXPECT_EQ(execCount, 4); // 被动方+主动方
+
+    ASSERT_EQ(clientResponses[1]["clOrderId"], "S1");
+    ASSERT_EQ(clientResponses[1]["shareholderId"], "SH002");
+    ASSERT_DOUBLE_EQ(clientResponses[1]["execPrice"], 9.0);
+
+    ASSERT_EQ(clientResponses[3]["clOrderId"], "MD001");
+    ASSERT_EQ(clientResponses[3]["shareholderId"], "MD001");
+    ASSERT_DOUBLE_EQ(clientResponses[3]["execPrice"], 9.5);
 }
 
 /**
@@ -673,20 +674,11 @@ TEST_F(GatewayTest, MarketDataConstraint_PartialMatch) {
  */
 
 TEST_F(GatewayTest, MarketDataConstraint_PartialMatch_Sell) {
-    // 设置行情数据，以json array输入多个市场、股票的行情
-    // XSHG市场的600030股票，买价9.5，卖价10.5，
-    // XSHE市场的000001股票，买价19.0，卖价20.0
-    json marketData = json::array({
-        {{"market", "XSHG"},
-         {"securityId", "600030"},
-         {"bidPrice", 9.5},
-         {"askPrice", 10.5}},
-        {{"market", "XSHE"},
-         {"securityId", "000001"},
-         {"bidPrice", 19.0},
-         {"askPrice", 20.0}},
-    });
-    gateway.handleMarketData(marketData);
+    // 在交易所设置行情数据，XSHG市场的600030股票，买价9.5，卖价10.5
+    exchange.handleOrder(
+        makeOrder("MD001", "XSHG", "600030", "B", 9.5, 100, "MD001"));
+    exchange.handleOrder(
+        makeOrder("MD002", "XSHG", "600030", "S", 10.5, 100, "MD002"));
 
     // 挂买单两档：9.0 和 10.0
     gateway.handleOrder(
@@ -696,9 +688,12 @@ TEST_F(GatewayTest, MarketDataConstraint_PartialMatch_Sell) {
     clientResponses.clear();
 
     // 卖单 9.0，应该先吃到 10.0 档，然后被行情约束阻止 9.0 档
+    // 卖单送到交易所后，在交易所成交 9.5 档
     gateway.handleOrder(
         makeOrder("S1", "XSHG", "600030", "S", 9.0, 200, "SH003"));
 
+    // 共5个回报：1个确认 + 4个成交
+    ASSERT_EQ(clientResponses.size(), 5);
     // 验证成交回报
     int execCount = 0;
     for (const auto &resp : clientResponses) {
@@ -707,7 +702,15 @@ TEST_F(GatewayTest, MarketDataConstraint_PartialMatch_Sell) {
             EXPECT_EQ(resp["execQty"], 100);
         }
     }
-    EXPECT_EQ(execCount, 2); // 被动方+主动方
+    EXPECT_EQ(execCount, 4); // 被动方+主动方
+
+    ASSERT_EQ(clientResponses[1]["clOrderId"], "B2");
+    ASSERT_EQ(clientResponses[1]["shareholderId"], "SH002");
+    ASSERT_DOUBLE_EQ(clientResponses[1]["execPrice"], 10.0);
+
+    ASSERT_EQ(clientResponses[3]["clOrderId"], "MD001");
+    ASSERT_EQ(clientResponses[3]["shareholderId"], "MD001");
+    ASSERT_DOUBLE_EQ(clientResponses[3]["execPrice"], 9.5);
 }
 
 // ==================== PendingMatch: 全部确认 ====================
