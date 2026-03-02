@@ -457,4 +457,39 @@ nlohmann::json MatchingEngine::getSnapshot() const {
     return result;
 }
 
+// ============================================================
+// getBestQuote — 获取指定证券的最优买卖报价
+// 遍历买卖订单簿，找到该证券的最高买价和最低卖价。
+// 无挂单时对应价格为 0。
+// ============================================================
+MarketData MatchingEngine::getBestQuote(const std::string &securityId) const {
+    MarketData md{0.0, 0.0};
+
+    // 最优买价：bidBook_ 按价格降序，找第一个含该证券的价格档位
+    for (const auto &[price, level] : bidBook_) {
+        for (const auto &entry : level) {
+            if (entry.order.securityId == securityId &&
+                entry.remainingQty > 0) {
+                md.bidPrice = price;
+                goto foundBid;
+            }
+        }
+    }
+foundBid:
+
+    // 最优卖价：askBook_ 按价格升序，找第一个含该证券的价格档位
+    for (const auto &[price, level] : askBook_) {
+        for (const auto &entry : level) {
+            if (entry.order.securityId == securityId &&
+                entry.remainingQty > 0) {
+                md.askPrice = price;
+                goto foundAsk;
+            }
+        }
+    }
+foundAsk:
+
+    return md;
+}
+
 } // namespace hdf

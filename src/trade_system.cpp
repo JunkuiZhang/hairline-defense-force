@@ -24,6 +24,10 @@ void TradeSystem::setSendToExchange(SendToExchange callback) {
     sendToExchange_ = callback;
 }
 
+void TradeSystem::setSendMarketData(SendMarketData callback) {
+    sendMarketData_ = callback;
+}
+
 void TradeSystem::handleOrder(const nlohmann::json &input) {
     Order order;
     try {
@@ -191,6 +195,9 @@ void TradeSystem::handleOrder(const nlohmann::json &input) {
             // 更新风控系统订单状态
             riskController_.onOrderAccepted(order);
         }
+
+        // 订单簿变动后，推送最新行情
+        broadcastMarketData(order.securityId, order.market);
     }
 }
 
@@ -298,6 +305,8 @@ void TradeSystem::handleCancel(const nlohmann::json &input) {
                 response["canceledQty"] = result.canceledQty;
                 sendToClient_(response);
             }
+            // 撤单成功，订单簿变动，推送最新行情
+            broadcastMarketData(order.securityId, order.market);
         }
     }
 }
@@ -319,6 +328,9 @@ void TradeSystem::handleMarketData(const nlohmann::json &input) {
             md.askPrice = item.at("askPrice").get<double>();
             const std::string marketKey = to_string(market) + "+" + securityId;
             latestMarketData_[marketKey] = md;
+
+            // 记录日志
+            logger_.logMarketData(securityId, market, md.bidPrice, md.askPrice);
         } catch (const std::exception &) {
             continue;
         }
@@ -544,6 +556,21 @@ void TradeSystem::sendConfirmAndExecReports(
 
 nlohmann::json TradeSystem::queryOrderbook() const {
     return matchingEngine_.getSnapshot();
+}
+
+void TradeSystem::broadcastMarketData(const std::string &securityId,
+                                      Market market) {
+    if (!sendMarketData_)
+        return;
+
+    MarketData md = matchingEngine_.getBestQuote(securityId);
+
+    nlohmann::json data = nlohmann::json::array();
+    data.push_back({{"market", to_string(market)},
+                    {"securityId", securityId},
+                    {"bidPrice", md.bidPrice},
+                    {"askPrice", md.askPrice}});
+    sendMarketData_(data);
 }
 
 } // namespace hdf
