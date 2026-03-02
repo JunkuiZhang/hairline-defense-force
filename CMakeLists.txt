@@ -29,6 +29,7 @@ add_library(trade_engine
   src/risk_controller.cpp
   src/matching_engine.cpp
   src/trade_system.cpp
+  src/trade_logger.cpp
   src/admin_server.cpp
 )
 target_link_libraries(trade_engine nlohmann_json::nlohmann_json)
@@ -44,6 +45,9 @@ target_link_libraries(pre_exchange trade_engine)
 # admin_main.cpp 启动管理界面 TCP 服务端，供 Python 管理 UI 连接
 add_executable(admin_main examples/admin_main.cpp)
 target_link_libraries(admin_main trade_engine)
+# generate_history.cpp 批量跑订单生成交易历史记录
+add_executable(generate_history examples/generate_history.cpp)
+target_link_libraries(generate_history trade_engine)
 
 # Tests
 enable_testing()
@@ -54,6 +58,7 @@ add_executable(unit_tests
   tests/json_test.cpp
   tests/exchange_test.cc
   tests/gateway_test.cc
+  tests/trade_logger_test.cpp
 )
 target_link_libraries(unit_tests gtest_main trade_engine)
 
