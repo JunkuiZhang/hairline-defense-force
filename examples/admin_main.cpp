@@ -51,6 +51,7 @@ int main(int argc, char *argv[]) {
     gateway.setSendToClient([&adminServer](const nlohmann::json &output) {
         std::cout << "[→Client] " << output.dump() << std::endl;
         nlohmann::json gatewayResp = output;
+        gatewayResp["type"] = "response";
         gatewayResp["source"] = "gateway";
         adminServer.broadcast(gatewayResp);
     });
@@ -77,6 +78,7 @@ int main(int argc, char *argv[]) {
             std::cout << "[←Exchange] " << resp.dump() << std::endl;
             // 广播交易所回报（加 source 标记供前端区分）
             nlohmann::json exchangeResp = resp;
+            exchangeResp["type"] = "response";
             exchangeResp["source"] = "exchange";
             adminServer.broadcast(exchangeResp);
             // 回报也需要流入 gateway 处理

@@ -68,18 +68,12 @@ void AdminServer::stop() {
 }
 
 void AdminServer::broadcast(const nlohmann::json &message) {
-    nlohmann::json wrapped = message;
-    // 保留消息自身的 type（如 market_data），仅在缺省时补 "response"
-    if (!wrapped.contains("type")) {
-        wrapped["type"] = "response";
-    }
-
     std::lock_guard<std::mutex> lock(clientsMutex_);
 
     // 发送并移除已断开的连接
     auto it = clientFds_.begin();
     while (it != clientFds_.end()) {
-        if (!sendToFd(*it, wrapped)) {
+        if (!sendToFd(*it, message)) {
             ::close(*it);
             it = clientFds_.erase(it);
         } else {
