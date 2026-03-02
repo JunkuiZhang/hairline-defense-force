@@ -197,7 +197,8 @@ void TradeSystem::handleOrder(const nlohmann::json &input) {
         }
 
         // 订单簿变动后，推送最新行情
-        broadcastMarketData(order.securityId, order.market);
+        if (!sendToExchange_)
+            broadcastMarketData(order.securityId, order.market);
     }
 }
 
