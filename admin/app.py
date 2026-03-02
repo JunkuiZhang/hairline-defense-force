@@ -128,11 +128,9 @@ elif page == "市场行情":
                 spread = ask - bid if bid > 0 and ask > 0 else 0
                 market_name = q.get("market", "")
 
-                st.markdown(
-                    f"### {sec_id}\n"
-                    f"<small>{market_name}</small>",
-                    unsafe_allow_html=True,
-                )
+                st.markdown(f"### {sec_id}")
+                if market_name:
+                    st.caption(market_name)
 
                 bid_col, ask_col = st.columns(2)
                 with bid_col:
