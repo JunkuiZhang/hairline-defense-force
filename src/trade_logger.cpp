@@ -20,7 +20,13 @@ bool TradeLogger::open(const std::string &filePath) {
     // 自动创建父目录
     auto parent = std::filesystem::path(filePath).parent_path();
     if (!parent.empty()) {
-        std::filesystem::create_directories(parent);
+        try {
+            std::filesystem::create_directories(parent);
+        } catch (const std::filesystem::filesystem_error &e) {
+            std::cerr << "[TradeLogger] 创建目录失败: " << parent
+                      << ", 错误: " << e.what() << std::endl;
+            return false;
+        }
     }
 
     file_.open(filePath, std::ios::app);
@@ -29,12 +35,12 @@ bool TradeLogger::open(const std::string &filePath) {
         return false;
     }
 
+    // 启动后台写入线程
+    writerThread_ = std::thread(&TradeLogger::writerLoop, this);
+
     filePath_ = filePath;
     stopRequested_ = false;
     isOpen_ = true;
-
-    // 启动后台写入线程
-    writerThread_ = std::thread(&TradeLogger::writerLoop, this);
 
     std::cout << "[TradeLogger] open: " << filePath << std::endl;
     return true;
