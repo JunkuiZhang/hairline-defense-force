@@ -98,7 +98,6 @@ TradeLogger &logger();                              // 获取引用
 | 事件点 | 调用 |
 |--------|------|
 | 新订单解析成功 | `logOrderNew` |
-| 订单格式错误 | `logOrderReject` |
 | 对敲拒绝 | `logOrderReject` |
 | 纯撮合确认回报 | `logOrderConfirm` |
 | 内部成交（被动方） | `logExecution(isMaker=true)` |

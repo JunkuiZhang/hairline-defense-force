@@ -16,18 +16,19 @@ namespace hdf {
  * @brief 交易历史记录器 — 异步记录交易系统中所有事件
  *
  * 事件类型:
- *   - ORDER_NEW:    新订单委托
- *   - ORDER_CONFIRM:订单确认
- *   - EXECUTION:    成交
- *   - CANCEL:       撤单（确认/拒绝）
- *   - REJECT:       订单拒绝
- *   - MARKET_DATA:  行情快照
+ *   - ORDER_NEW:      新订单委托
+ *   - ORDER_CONFIRM:  订单确认
+ *   - ORDER_REJECT:   订单拒绝
+ *   - EXECUTION:      成交
+ *   - CANCEL_CONFIRM: 撤单确认
+ *   - CANCEL_REJECT:  撤单拒绝
+ *   - MARKET_DATA:    行情快照
  *
  * 存储格式: JSONL（每行一个 JSON 对象，带毫秒时间戳）
  *
  * 异步写入:
- *   log*() 方法将记录推入无锁队列，立即返回，不阻塞交易线程。
- *   后台写入线程定期从队列中取出并写入文件。
+ *   log*() 方法将记录推入队列，立即返回。
+ *   后台写入线程在条件变量通知下从队列中取出记录并写入文件。
  */
 class TradeLogger {
   public:
