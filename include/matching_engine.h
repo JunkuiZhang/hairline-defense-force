@@ -90,9 +90,10 @@ class MatchingEngine {
      * 如果某一侧无挂单，对应价格为 0。
      *
      * @param securityId 证券代码
+     * @param market 市场（如 XSHG、XHKG）
      * @return MarketData 包含 bidPrice 和 askPrice
      */
-    MarketData getBestQuote(const std::string &securityId) const;
+    MarketData getBestQuote(const std::string &securityId, Market market) const;
 
   private:
     /**

@@ -563,7 +563,7 @@ void TradeSystem::broadcastMarketData(const std::string &securityId,
     if (!sendMarketData_)
         return;
 
-    MarketData md = matchingEngine_.getBestQuote(securityId);
+    MarketData md = matchingEngine_.getBestQuote(securityId, market);
 
     nlohmann::json data = nlohmann::json::array();
     data.push_back({{"market", to_string(market)},
