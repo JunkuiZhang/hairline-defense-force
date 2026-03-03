@@ -71,6 +71,9 @@ target_link_libraries(bench_matching trade_engine)
 # bench_concurrent.cpp 并发压测基线
 add_executable(bench_concurrent benchmarks/bench_concurrent.cpp)
 target_link_libraries(bench_concurrent trade_engine)
+# bench_network.cpp 网络 I/O 层压测（TCP 连接/RTT/broadcast）
+add_executable(bench_network benchmarks/bench_network.cpp)
+target_link_libraries(bench_network trade_engine)
 
 # Tests
 enable_testing()
