@@ -60,11 +60,13 @@ target_link_libraries(admin_main trade_engine)
 # generate_history.cpp 批量跑订单生成交易历史记录
 add_executable(generate_history examples/generate_history.cpp)
 target_link_libraries(generate_history trade_engine)
+
+# Benchmarks
 # benchmark.cpp 纯撮合性能基线测试
-add_executable(benchmark examples/benchmark.cpp)
+add_executable(benchmark benchmarks/benchmark.cpp)
 target_link_libraries(benchmark trade_engine)
 # bench_matching.cpp 撮合引擎专项 benchmark
-add_executable(bench_matching examples/bench_matching.cpp)
+add_executable(bench_matching benchmarks/bench_matching.cpp)
 target_link_libraries(bench_matching trade_engine)
 
 # Tests

@@ -9,7 +9,7 @@ cd /path/to/hairline-defense-force
 
 # 清理旧构建并以 Release 模式配置
 rm -rf build
-cmake -B build -S . -DCMAKE_BUILD_TYPE=Release
+cmake -B build -S . -DCMAKE_BUILD_TYPE=Release -DCMAKE_EXPORT_COMPILE_COMMANDS=1
 
 # 编译 benchmark
 cmake --build build --target benchmark -j$(nproc)
@@ -21,7 +21,7 @@ cmake --build build --target benchmark -j$(nproc)
 
 ```bash
 rm -rf build
-cmake -B build -S . -DCMAKE_BUILD_TYPE=RelWithDebInfo
+cmake -B build -S . -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCMAKE_EXPORT_COMPILE_COMMANDS=1
 cmake --build build --target benchmark -j$(nproc)
 ```
 
@@ -180,7 +180,7 @@ Top 3 全在 `match()` 内部，说明**撮合引擎是最大瓶颈**。
 
 ```bash
 rm -rf build
-cmake -B build -S . -DCMAKE_BUILD_TYPE=Release
+cmake -B build -S . -DCMAKE_BUILD_TYPE=Release -DCMAKE_EXPORT_COMPILE_COMMANDS=1
 cmake --build build --target bench_matching -j$(nproc)
 ```
 
