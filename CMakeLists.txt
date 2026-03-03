@@ -68,6 +68,9 @@ target_link_libraries(benchmark trade_engine)
 # bench_matching.cpp 撮合引擎专项 benchmark
 add_executable(bench_matching benchmarks/bench_matching.cpp)
 target_link_libraries(bench_matching trade_engine)
+# bench_concurrent.cpp 并发压测基线
+add_executable(bench_concurrent benchmarks/bench_concurrent.cpp)
+target_link_libraries(bench_concurrent trade_engine)
 
 # Tests
 enable_testing()
