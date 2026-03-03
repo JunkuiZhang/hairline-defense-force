@@ -5,3 +5,6 @@ lib/
 build/
 __pycache__/
 test_logs/
+third_party/
+perf.data
+perf.data.old

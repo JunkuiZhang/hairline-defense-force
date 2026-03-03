@@ -1,0 +1,270 @@
+# 性能测试记录
+
+## 编译
+
+### Release 模式
+
+```bash
+cd /path/to/hairline-defense-force
+
+# 清理旧构建并以 Release 模式配置
+rm -rf build
+cmake -B build -S . -DCMAKE_BUILD_TYPE=Release
+
+# 编译 benchmark
+cmake --build build --target benchmark -j$(nproc)
+```
+
+### RelWithDebInfo 模式（perf profiling 用）
+
+保留优化的同时附带调试符号，`perf report` 才能显示函数名：
+
+```bash
+rm -rf build
+cmake -B build -S . -DCMAKE_BUILD_TYPE=RelWithDebInfo
+cmake --build build --target benchmark -j$(nproc)
+```
+
+---
+
+## 运行 Benchmark
+
+### 基本用法
+
+```bash
+./bin/benchmark
+```
+
+默认参数：10 万笔订单、10 只证券、500 个股东、无日志。
+
+### 命令行参数
+
+| 参数 | 说明 | 默认值 |
+|------|------|--------|
+| `--orders N` | 正式测量的总订单数 | 100000 |
+| `--securities M` | 证券种类数 | 10 |
+| `--shareholders K` | 股东数（越大 → 对敲拒绝越少，撮合越真实） | 500 |
+| `--warmup W` | 热身订单数（不计入统计） | 1000 |
+| `--logging` | 启用 TradeLogger 异步日志 | 关闭 |
+
+### 测试场景
+
+均使用Release模式编译：
+
+```bash
+./bin/benchmark
+
+======================================================
+  纯撮合 (无日志)
+======================================================
+  总订单数:          100000
+  成交回报数:        76302
+  拒绝回报数:        39441
+------------------------------------------------------
+  吞吐量:            164089.37 orders/s
+------------------------------------------------------
+  延时 mean:         6.06 us
+  延时 p50:          1.41 us
+  延时 p95:          29.25 us
+  延时 p99:          71.43 us
+  延时 max:          2490.18 us
+======================================================
+```
+
+高负载测试：
+```bash
+./bin/benchmark --orders 500000 --securities 20 --shareholders 1000
+
+======================================================
+  纯撮合 (无日志)
+======================================================
+  总订单数:          500000
+  成交回报数:        404066
+  拒绝回报数:        205005
+------------------------------------------------------
+  吞吐量:            49445.03 orders/s
+------------------------------------------------------
+  延时 mean:         20.18 us
+  延时 p50:          1.73 us
+  延时 p95:          96.55 us
+  延时 p99:          371.51 us
+  延时 max:          18643.34 us
+======================================================
+```
+
+高对敲率场景（少股东，触发风控拒绝）：
+```bash
+./bin/benchmark --orders 100000 --securities 10 --shareholders 20
+
+======================================================
+  纯撮合 (无日志)
+======================================================
+  总订单数:          100000
+  成交回报数:        11322
+  拒绝回报数:        49805
+------------------------------------------------------
+  吞吐量:            30849.93 orders/s
+------------------------------------------------------
+  延时 mean:         32.38 us
+  延时 p50:          1.94 us
+  延时 p95:          158.25 us
+  延时 p99:          238.62 us
+  延时 max:          4601.18 us
+======================================================
+```
+
+## CPU Profiling（perf）
+
+### 采集数据
+
+使用 RelWithDebInfo 编译后：
+
+```bash
+cd /path/to/hairline-defense-force
+
+perf record -g --call-graph dwarf -F 4000 \
+  -- ./bin/benchmark
+
+perf record -g --call-graph dwarf -F 4000 \
+  -- ./bin/benchmark --orders 200000 --securities 10 --shareholders 500
+```
+
+参数说明：
+- `-g --call-graph dwarf`：采集完整调用栈
+- `-F 4000`：采样频率约 4000 Hz
+
+
+### 查看报告
+
+```bash
+# 交互式 TUI
+perf report --no-children
+
+# 或命令行文本输出
+perf report --stdio --no-children --percent-limit 1.0
+```
+
+### 测试场景
+
+基础场景：
+```bash
+perf record -g --call-graph dwarf -F 4000 \
+  -- ./bin/benchmark
+
+======================================================
+  纯撮合 (无日志)
+======================================================
+  总订单数:          100000
+  成交回报数:        76302
+  拒绝回报数:        39441
+------------------------------------------------------
+  吞吐量:            141303.21 orders/s
+------------------------------------------------------
+  延时 mean:         7.03 us
+  延时 p50:          1.55 us
+  延时 p95:          34.08 us
+  延时 p99:          82.85 us
+  延时 max:          2875.56 us
+======================================================
+
+perf report --stdio --no-children --percent-limit 1.0
+
+33.84%  __memcmp_evex_movbe
+25.34%  hdf::MatchingEngine::match(hdf::Order const&, std::optional<hdf::MarketData> const&)
+```
+
+Top 3 全在 `match()` 内部，说明**撮合引擎是最大瓶颈**。
+
+
+## Matching Engine 内部性能分析
+
+```bash
+rm -rf build
+cmake -B build -S . -DCMAKE_BUILD_TYPE=Release
+cmake --build build --target bench_matching -j$(nproc)
+```
+
+运行10个证券，深度为5000：
+```bash
+./bin/bench_matching
+
+=== MatchingEngine 专项 Benchmark ===
+  订单数: 100000  证券数: 10  簿深度: 5000  热身: 1000
+
+=== Bench: addOrder ===
+  [addOrder]  N=100000  tput=2148273.86 op/s
+    mean=0.43 us  p50=0.25  p95=1.67  p99=1.91  max=4055.76 us
+
+=== Bench: match (有成交) ===
+  订单簿已填充 50000 笔
+  [match(hit)]  N=100000  tput=3844822.95 op/s
+    mean=0.22 us  p50=0.19  p95=0.38  p99=0.58  max=7.52 us
+    成交笔数: 100000
+
+=== Bench: match (无成交) ===
+  订单簿已填充 50000 笔 (仅买单)
+  [match(miss)]  N=100000  tput=15600624.02 op/s
+    mean=0.03 us  p50=0.03  p95=0.03  p99=0.03  max=10.05 us
+
+=== Bench: cancelOrder ===
+  [cancelOrder]  N=100000  tput=2094635.64 op/s
+    mean=0.44 us  p50=0.39  p95=0.77  p99=1.00  max=34.50 us
+```
+
+运行100个证券，深度为500：
+```bash
+./bin/bench_matching --securities 100 --depth 500
+
+=== MatchingEngine 专项 Benchmark ===
+  订单数: 100000  证券数: 100  簿深度: 500  热身: 1000
+
+=== Bench: addOrder ===
+  [addOrder]  N=100000  tput=1774402.47 op/s
+    mean=0.53 us  p50=0.28  p95=1.73  p99=2.08  max=7589.12 us
+
+=== Bench: match (有成交) ===
+  订单簿已填充 50000 笔
+  [match(hit)]  N=100000  tput=1374192.66 op/s
+    mean=0.69 us  p50=0.49  p95=1.80  p99=2.64  max=12.23 us
+    成交笔数: 100000
+
+=== Bench: match (无成交) ===
+  订单簿已填充 50000 笔 (仅买单)
+  [match(miss)]  N=100000  tput=16401508.94 op/s
+    mean=0.03 us  p50=0.03  p95=0.03  p99=0.03  max=5.57 us
+
+=== Bench: cancelOrder ===
+  [cancelOrder]  N=100000  tput=1750853.54 op/s
+    mean=0.54 us  p50=0.48  p95=0.98  p99=1.31  max=37.65 us
+```
+
+运行10个证券，深度为50000：
+```bash
+./bin/bench_matching --securities 10 --depth 50000
+
+=== MatchingEngine 专项 Benchmark ===
+  订单数: 100000  证券数: 10  簿深度: 50000  热身: 1000
+
+=== Bench: addOrder ===
+  [addOrder]  N=100000  tput=2073699.27 op/s
+    mean=0.45 us  p50=0.26  p95=1.74  p99=1.98  max=3510.43 us
+
+=== Bench: match (有成交) ===
+  订单簿已填充 500000 笔
+  [match(hit)]  N=100000  tput=3678905.16 op/s
+    mean=0.23 us  p50=0.20  p95=0.39  p99=0.72  max=8.48 us
+    成交笔数: 100000
+
+=== Bench: match (无成交) ===
+  订单簿已填充 500000 笔 (仅买单)
+  [match(miss)]  N=100000  tput=16420361.25 op/s
+    mean=0.03 us  p50=0.03  p95=0.03  p99=0.03  max=6.79 us
+
+=== Bench: cancelOrder ===
+  [cancelOrder]  N=100000  tput=1803947.04 op/s
+    mean=0.52 us  p50=0.43  p95=0.86  p99=1.13  max=2515.73 us
+```
+
+- 证券数从10到100时 match(hit) 吞吐从384万降到137万，表明了 perf 的结论：match() 遍历时不断跳过不匹配的 securityId，证券越多无效遍历越多。
+- 簿深度从5k到50k对 match(hit) 影响很小，因此，瓶颈在"遍历到目标证券"
+

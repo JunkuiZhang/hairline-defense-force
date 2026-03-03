@@ -2,23 +2,35 @@ cmake_minimum_required(VERSION 3.28)
 
 set(CMAKE_CXX_STANDARD 23)
 
+set(LOCAL_THIRD_PARTY_DIR "${CMAKE_SOURCE_DIR}/third_party")
+
 project(hairline_defense_force)
 
 include_directories(include)
 include(FetchContent)
 
+# FetchContent_Declare(
+#   googletest
+#   GIT_REPOSITORY https://github.com/google/googletest.git
+#   GIT_TAG v1.17.0
+# )
 FetchContent_Declare(
   googletest
-  GIT_REPOSITORY https://github.com/google/googletest.git
-  GIT_TAG v1.17.0
+  URL "${LOCAL_THIRD_PARTY_DIR}/googletest-1.17.0.tar.gz"
 )
+set(FETCHCONTENT_UPDATES_DISCONNECTED_GOOGLETEST ON)
 FetchContent_MakeAvailable(googletest)
 
+# FetchContent_Declare(
+#   json
+#   GIT_REPOSITORY https://github.com/nlohmann/json.git
+#   GIT_TAG v3.11.3
+# )
 FetchContent_Declare(
   json
-  GIT_REPOSITORY https://github.com/nlohmann/json.git
-  GIT_TAG v3.11.3
+  URL "${LOCAL_THIRD_PARTY_DIR}/json-3.11.3.tar.gz"
 )
+set(FETCHCONTENT_UPDATES_DISCONNECTED_JSON ON)
 FetchContent_MakeAvailable(json)
 
 set(EXECUTABLE_OUTPUT_PATH ${CMAKE_SOURCE_DIR}/bin)
@@ -48,6 +60,12 @@ target_link_libraries(admin_main trade_engine)
 # generate_history.cpp 批量跑订单生成交易历史记录
 add_executable(generate_history examples/generate_history.cpp)
 target_link_libraries(generate_history trade_engine)
+# benchmark.cpp 纯撮合性能基线测试
+add_executable(benchmark examples/benchmark.cpp)
+target_link_libraries(benchmark trade_engine)
+# bench_matching.cpp 撮合引擎专项 benchmark
+add_executable(bench_matching examples/bench_matching.cpp)
+target_link_libraries(bench_matching trade_engine)
 
 # Tests
 enable_testing()
