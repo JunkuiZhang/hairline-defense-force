@@ -8,9 +8,7 @@ server.py — FastAPI 后端服务
 
 启动方式：
   conda activate hdf
-  uvicorn server:app --host 0.0.0.0 --port 8000 --reload
-
-TODO: 由组员完善以下标记为 TODO 的部分
+  uvicorn server:app --host 0.0.0.0 --port 9100 --reload
 """
 
 import asyncio

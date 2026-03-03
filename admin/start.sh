@@ -17,9 +17,9 @@ echo "=========================================="
 echo "        发际线保卫队 撮合系统管理界面"
 echo "=========================================="
 
-echo "[1/2] 启动 FastAPI 后端 (port 8000)..."
+echo "[1/2] 启动 FastAPI 后端 (port 9100)..."
 cd "$SCRIPT_DIR"
-uvicorn server:app --host 127.0.0.1 --port 8000 &
+uvicorn server:app --host 127.0.0.1 --port 9100 &
 FASTAPI_PID=$!
 echo "      PID: $FASTAPI_PID"
 
@@ -34,7 +34,7 @@ echo ""
 echo "=========================================="
 echo "  管理界面已启动："
 echo "    前端: http://localhost:8501"
-echo "    API:  http://localhost:8000/docs"
+echo "    API:  http://localhost:9100/docs"
 echo "=========================================="
 echo "  按 Ctrl+C 停止所有服务"
 echo "=========================================="
