@@ -11,8 +11,6 @@ app.py — Streamlit 管理界面前端
 启动方式：
   conda activate hdf
   streamlit run app.py
-
-TODO: 由组员完善各页面的具体展示逻辑
 """
 
 import time
@@ -23,7 +21,7 @@ import streamlit as st
 
 # ======================== 配置 ========================
 
-API_BASE = "http://127.0.0.1:8000"
+API_BASE = "http://127.0.0.1:9100"
 
 st.set_page_config(
     page_title="HDF 撮合系统管理界面",
@@ -92,11 +90,9 @@ if page == "仪表盘":
     st.markdown("---")
     st.subheader("最近回报")
 
-    # TODO: 组员实现
     # 1. 调用 api_get("/api/responses", limit=20)
     # 2. 将回报按类型分类展示（确认/成交/拒绝/撤单）
     # 3. 使用 st.dataframe 或 st.table 展示
-    # 4. 考虑添加 st.auto_refresh 或 st.button("刷新") 实现实时更新
 
     responses = api_get("/api/responses", limit=20)
     if responses and responses.get("responses"):
@@ -684,12 +680,10 @@ elif page == "交易所监控":
 elif page == "风控日志":
     st.title("🛡️ 风控日志")
 
-    # TODO: 组员实现
     # 1. 从 /api/responses 获取所有回报
     # 2. 过滤出含 rejectCode 的拒绝回报
     # 3. 区分对敲拒绝（rejectCode=0x01）和格式错误（rejectCode=0x02）
     # 4. 展示字段：clOrderId, securityId, side, rejectCode, rejectText
-    # 5. 可选：按拒绝类型分 tab 展示
 
     responses = api_get("/api/responses", limit=500)
     if responses:

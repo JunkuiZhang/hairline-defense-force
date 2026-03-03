@@ -18,7 +18,7 @@
 │   仪表盘 │ 市场行情 │ 手动下单    │
 │  手动撤单 │ 交易所监控 │ 风控日志 │
 └──────────────┬────────────────┘
-               │ REST API (HTTP :8000)
+               │ REST API (HTTP :9100)
 ┌──────────────▼────────────────┐
 │    FastAPI 后端 (server.py)    │
 │   订单跟踪  │  回报分类存储      │
@@ -322,7 +322,7 @@ cd build && ninja && cd ..
 ./bin/admin_main              # 监听 TCP 9900
 
 # 2. 启动 Python 端
-cd admin && bash start.sh     # 自动启动 FastAPI(:8000) + Streamlit(:8501)
+cd admin && bash start.sh     # 自动启动 FastAPI(:9100) + Streamlit(:8501)
 
 # 3. 浏览器访问
 open http://localhost:8501
