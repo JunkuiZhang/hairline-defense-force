@@ -44,6 +44,11 @@ class AdminServer {
     AdminServer(uint16_t port = 9900);
     ~AdminServer();
 
+    /**
+     * @brief 设置是否打印日志（默认 true）
+     */
+    void setVerbose(bool v) { verbose_ = v; }
+
     // 设置回调
     void setOnOrder(OnOrder callback);
     void setOnCancel(OnCancel callback);
@@ -79,6 +84,7 @@ class AdminServer {
     OnCancel onCancel_;
     OnQuery onQuery_;
 
+    bool verbose_ = true;
     int serverFd_ = -1;
 
     /**

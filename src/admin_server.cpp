@@ -86,7 +86,7 @@ void AdminServer::acceptLoop() {
     // 1. 创建 socket
     serverFd_ = ::socket(AF_INET, SOCK_STREAM, 0);
     if (serverFd_ < 0) {
-        std::cerr << "[AdminServer] socket() failed: " << std::strerror(errno)
+        if (verbose_) std::cerr << "[AdminServer] socket() failed: " << std::strerror(errno)
                   << std::endl;
         running_ = false;
         return;
@@ -105,7 +105,7 @@ void AdminServer::acceptLoop() {
 
     if (::bind(serverFd_, reinterpret_cast<sockaddr *>(&addr), sizeof(addr)) <
         0) {
-        std::cerr << "[AdminServer] bind() port " << port_
+        if (verbose_) std::cerr << "[AdminServer] bind() port " << port_
                   << " failed: " << std::strerror(errno) << std::endl;
         ::close(serverFd_);
         serverFd_ = -1;
@@ -115,7 +115,7 @@ void AdminServer::acceptLoop() {
 
     // 4. listen
     if (::listen(serverFd_, 8) < 0) {
-        std::cerr << "[AdminServer] listen() failed: " << std::strerror(errno)
+        if (verbose_) std::cerr << "[AdminServer] listen() failed: " << std::strerror(errno)
                   << std::endl;
         ::close(serverFd_);
         serverFd_ = -1;
@@ -123,7 +123,7 @@ void AdminServer::acceptLoop() {
         return;
     }
 
-    std::cout << "[AdminServer] Listening on port " << port_ << std::endl;
+    if (verbose_) std::cout << "[AdminServer] Listening on port " << port_ << std::endl;
 
     // 5. accept loop
     while (running_) {
@@ -135,7 +135,7 @@ void AdminServer::acceptLoop() {
         if (clientFd < 0) {
             if (!running_)
                 break; // stop() 被调用
-            std::cerr << "[AdminServer] accept() failed: "
+            if (verbose_) std::cerr << "[AdminServer] accept() failed: "
                       << std::strerror(errno) << std::endl;
             continue;
         }
@@ -146,7 +146,7 @@ void AdminServer::acceptLoop() {
 
         char addrStr[INET_ADDRSTRLEN];
         ::inet_ntop(AF_INET, &clientAddr.sin_addr, addrStr, sizeof(addrStr));
-        std::cout << "[AdminServer] Client connected from " << addrStr << ":"
+        if (verbose_) std::cout << "[AdminServer] Client connected from " << addrStr << ":"
                   << ntohs(clientAddr.sin_port) << " (fd=" << clientFd << ")"
                   << std::endl;
 
@@ -253,7 +253,7 @@ void AdminServer::handleClient(int clientFd) {
     }
 
     // 客户端断开 — 从列表中移除
-    std::cout << "[AdminServer] Client disconnected (fd=" << clientFd << ")"
+    if (verbose_) std::cout << "[AdminServer] Client disconnected (fd=" << clientFd << ")"
               << std::endl;
     {
         std::lock_guard<std::mutex> lock(clientsMutex_);
