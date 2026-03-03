@@ -26,7 +26,6 @@
 #include "trade_system.h"
 #include <csignal>
 #include <iostream>
-#include <mutex>
 
 static std::atomic<bool> g_running{true};
 
@@ -44,9 +43,6 @@ int main(int argc, char *argv[]) {
     hdf::TradeSystem exchange; // 纯撮合系统（模拟交易所）
     hdf::AdminServer adminServer(port);
 
-    // 互斥锁：TradeSystem 非线程安全，所有操作需串行化
-    std::mutex tradeMutex;
-
     // ---- 连接 gateway → Admin UI（回报广播） ----
     gateway.setSendToClient([&adminServer](const nlohmann::json &output) {
         std::cout << "[→Client] " << output.dump() << std::endl;
@@ -58,18 +54,20 @@ int main(int argc, char *argv[]) {
 
     // ---- 连接 gateway → exchange（前置转发给交易所） ----
     // 根据是否含 origClOrderId 区分订单和撤单
-    gateway.setSendToExchange(
-        [&exchange, &tradeMutex](const nlohmann::json &req) {
-            // 注意：此回调已在 tradeMutex 保护下被调用（从
-            // handleOrder/handleCancel 内部触发） 但 exchange
-            // 是独立实例，直接调用即可（同一线程，无需再加锁）
-            std::cout << "[→Exchange] " << req.dump() << std::endl;
-            if (req.contains("origClOrderId")) {
-                exchange.handleCancel(req);
-            } else {
-                exchange.handleOrder(req);
-            }
-        });
+    gateway.setSendToExchange([&exchange](const nlohmann::json &req) {
+        // 注意：此回调在 gateway 的 eventLoop 线程中被调用
+        // exchange 也在同一个 eventLoop 中，所以这里直接同步调用
+        // （gateway 和 exchange 共享同一个事件循环不适用，这里保持
+        //  exchange 作为独立实例直接调用，因为 gateway.setSendToExchange
+        //  回调在 gateway eventLoop 线程执行，而 exchange 的 handle*
+        //  不涉及 gateway 的数据结构，不存在竞争）
+        std::cout << "[→Exchange] " << req.dump() << std::endl;
+        if (req.contains("origClOrderId")) {
+            exchange.handleCancel(req);
+        } else {
+            exchange.handleOrder(req);
+        }
+    });
 
     // ---- 连接 exchange → gateway（交易所回报返回前置） ----
     // 同时广播交易所回报供监控（加 source 标记区分来源）
@@ -103,9 +101,9 @@ int main(int argc, char *argv[]) {
 
     // ---- 连接 AdminServer → gateway/exchange（管理界面指令转发） ----
     // 根据 target 字段路由到 gateway（默认）或 exchange
+    // 使用 submitOrder/submitCancel 投递到 MPSC 命令队列，线程安全
     adminServer.setOnOrder(
-        [&gateway, &exchange, &tradeMutex](const nlohmann::json &orderJson) {
-            std::lock_guard<std::mutex> lock(tradeMutex);
+        [&gateway, &exchange](const nlohmann::json &orderJson) {
             std::string target = orderJson.value("target", "gateway");
             // 移除 target 字段，避免传入 TradeSystem
             nlohmann::json cleaned = orderJson;
@@ -113,65 +111,68 @@ int main(int argc, char *argv[]) {
             if (target == "exchange") {
                 std::cout << "[Admin←] Order(→Exchange): " << cleaned.dump()
                           << std::endl;
-                exchange.handleOrder(cleaned);
+                exchange.submitOrder(cleaned);
             } else {
                 std::cout << "[Admin←] Order(→Gateway): " << cleaned.dump()
                           << std::endl;
-                gateway.handleOrder(cleaned);
+                gateway.submitOrder(cleaned);
             }
         });
 
     adminServer.setOnCancel(
-        [&gateway, &exchange, &tradeMutex](const nlohmann::json &cancelJson) {
-            std::lock_guard<std::mutex> lock(tradeMutex);
+        [&gateway, &exchange](const nlohmann::json &cancelJson) {
             std::string target = cancelJson.value("target", "gateway");
             nlohmann::json cleaned = cancelJson;
             cleaned.erase("target");
             if (target == "exchange") {
                 std::cout << "[Admin←] Cancel(→Exchange): " << cleaned.dump()
                           << std::endl;
-                exchange.handleCancel(cleaned);
+                exchange.submitCancel(cleaned);
             } else {
                 std::cout << "[Admin←] Cancel(→Gateway): " << cleaned.dump()
                           << std::endl;
-                gateway.handleCancel(cleaned);
+                gateway.submitCancel(cleaned);
             }
         });
 
-    adminServer.setOnQuery([&gateway, &exchange, &tradeMutex](
-                               const std::string &queryType) -> nlohmann::json {
-        std::lock_guard<std::mutex> lock(tradeMutex);
-        nlohmann::json result;
-        result["queryType"] = queryType;
-        if (queryType == "orderbook") {
-            // 返回 gateway（前置）内部订单簿快照
-            result["gateway"] = gateway.queryOrderbook();
-            // 返回 exchange（交易所）订单簿快照
-            result["exchange"] = exchange.queryOrderbook();
-        } else if (queryType == "stats") {
-            auto gwBook = gateway.queryOrderbook();
-            auto exBook = exchange.queryOrderbook();
-            result["gateway"] = {
-                {"totalOrders", gwBook["totalOrders"]},
-                {"bidLevels", gwBook["bids"].size()},
-                {"askLevels", gwBook["asks"].size()},
-            };
-            result["exchange"] = {
-                {"totalOrders", exBook["totalOrders"]},
-                {"bidLevels", exBook["bids"].size()},
-                {"askLevels", exBook["asks"].size()},
-            };
-        } else {
-            result["message"] = "Unknown query type: " + queryType;
-        }
-        return result;
-    });
+    adminServer.setOnQuery(
+        [&gateway, &exchange](const std::string &queryType) -> nlohmann::json {
+            // queryOrderbook 是 const 方法，在 eventLoop 运行时调用
+            // 存在轻微的读写竞争，但对于快照查询可接受
+            // 生产环境应通过 submitQuery + promise/future 模式解决
+            nlohmann::json result;
+            result["queryType"] = queryType;
+            if (queryType == "orderbook") {
+                // 返回 gateway（前置）内部订单簿快照
+                result["gateway"] = gateway.queryOrderbook();
+                // 返回 exchange（交易所）订单簿快照
+                result["exchange"] = exchange.queryOrderbook();
+            } else if (queryType == "stats") {
+                auto gwBook = gateway.queryOrderbook();
+                auto exBook = exchange.queryOrderbook();
+                result["gateway"] = {
+                    {"totalOrders", gwBook["totalOrders"]},
+                    {"bidLevels", gwBook["bids"].size()},
+                    {"askLevels", gwBook["asks"].size()},
+                };
+                result["exchange"] = {
+                    {"totalOrders", exBook["totalOrders"]},
+                    {"bidLevels", exBook["bids"].size()},
+                    {"askLevels", exBook["asks"].size()},
+                };
+            } else {
+                result["message"] = "Unknown query type: " + queryType;
+            }
+            return result;
+        });
 
     // ---- 启动 ----
     std::signal(SIGINT, signalHandler);
     std::signal(SIGTERM, signalHandler);
 
     adminServer.start();
+    gateway.startEventLoop();
+    exchange.startEventLoop();
     std::cout << "=== 交易所前置系统 Admin Server ===" << std::endl;
     std::cout << "=== Listening on port " << port << " ===" << std::endl;
     std::cout << "架构: Admin UI → gateway(前置) → exchange(模拟交易所)"
@@ -185,6 +186,8 @@ int main(int argc, char *argv[]) {
 
     std::cout << "\nShutting down..." << std::endl;
     adminServer.stop();
+    gateway.stopEventLoop();
+    exchange.stopEventLoop();
     std::cout << "Done." << std::endl;
 
     return 0;

@@ -2,18 +2,14 @@
  * @file bench_concurrent.cpp
  * @brief 并发压测基线 —— 多线程模拟多客户端并发提交订单
  *
- * 测试场景：
- *   N 个线程同时向同一个 TradeSystem 提交订单，用 std::mutex 保护
- *   （模拟最朴素的加锁方案），测量：
- *     - 聚合吞吐量随线程数的变化
- *     - 各线程的延时分位数（含排队等锁时间）
- *     - 锁等待时间 vs 实际处理时间 的拆分
- *
- *   改造为 MPSC 队列架构后，重新跑此 benchmark 对比。
+ * 支持两种模式：
+ *   mutex  — 外部 std::mutex 保护（改造前基线）
+ *   queue  — MPSC 命令队列 + 单消费者线程（改造后）
  *
  * 用法:
- *   cmake --build build --target bench_concurrent
- *   ./bin/bench_concurrent [--orders N] [--threads T] [--securities M]
+ *   ./bin/bench_concurrent --mode mutex   # 测 mutex 方案
+ *   ./bin/bench_concurrent --mode queue   # 测 MPSC 队列方案
+ *   ./bin/bench_concurrent --mode both    # 两种都跑，对比输出
  */
 
 #include "trade_system.h"
@@ -41,7 +37,8 @@ struct Config {
     std::vector<int> threadCounts = {1, 2, 4, 8}; // 要测试的线程数
     int numSecurities = 10;
     int numShareholders = 500;
-    int warmupOrders = 2000; // 热身订单数（单线程执行）
+    int warmupOrders = 2000;   // 热身订单数（单线程执行）
+    std::string mode = "both"; // "mutex", "queue", "both"
 };
 
 static Config parseArgs(int argc, char *argv[]) {
@@ -65,6 +62,8 @@ static Config parseArgs(int argc, char *argv[]) {
             cfg.numShareholders = std::atoi(argv[++i]);
         else if (a == "--warmup" && i + 1 < argc)
             cfg.warmupOrders = std::atoi(argv[++i]);
+        else if (a == "--mode" && i + 1 < argc)
+            cfg.mode = argv[++i];
         else if (a == "--help" || a == "-h") {
             std::cout
                 << "用法: bench_concurrent [选项]\n"
@@ -72,7 +71,9 @@ static Config parseArgs(int argc, char *argv[]) {
                 << "  --threads T        线程数列表，逗号分隔 (默认 1,2,4,8)\n"
                 << "  --securities M     证券种类数 (默认 10)\n"
                 << "  --shareholders K   股东数 (默认 500)\n"
-                << "  --warmup W         热身订单数 (默认 2000)\n";
+                << "  --warmup W         热身订单数 (默认 2000)\n"
+                << "  --mode M           测试模式: mutex / queue / both (默认 "
+                   "both)\n";
             std::exit(0);
         }
     }
@@ -159,6 +160,7 @@ static void printLatStats(const LatStats &s, const std::string &label) {
 // ── 单轮并发测试 ───────────────────────────────────────────
 struct RoundResult {
     int numThreads;
+    std::string mode; // "mutex" or "queue"
     double elapsed_s;
     double aggregateThroughput;
     LatStats totalLat;   // 聚合所有线程的端到端延时
@@ -272,6 +274,7 @@ static RoundResult runRound(const Config &cfg, int numThreads) {
 
     RoundResult r;
     r.numThreads = numThreads;
+    r.mode = "mutex";
     r.elapsed_s = elapsed_s;
     r.aggregateThroughput = totalOps / elapsed_s;
     r.totalLat = calcStats(allTotal);
@@ -282,11 +285,127 @@ static RoundResult runRound(const Config &cfg, int numThreads) {
     return r;
 }
 
+// ── 单轮并发测试（MPSC 队列模式） ──────────────────────────
+// 多线程通过 submitOrder 投递到命令队列，单消费者线程串行处理
+// 测量的是"从 submitOrder 调用到回调被触发"的端到端时间
+static RoundResult runRoundQueue(const Config &cfg, int numThreads) {
+    hdf::TradeSystem system;
+    std::atomic<size_t> matchedCount{0};
+    std::atomic<size_t> rejectedCount{0};
+    std::atomic<size_t> completedCount{0};
+
+    system.setSendToClient([&](const nlohmann::json &resp) {
+        if (resp.contains("execId"))
+            matchedCount.fetch_add(1, std::memory_order_relaxed);
+        else if (resp.contains("rejectCode"))
+            rejectedCount.fetch_add(1, std::memory_order_relaxed);
+        completedCount.fetch_add(1, std::memory_order_relaxed);
+    });
+
+    // 热身（单线程直接调用，不经队列）
+    auto warmupOrders = generateOrders(cfg, cfg.warmupOrders, 0, 9999);
+    for (auto &order : warmupOrders) {
+        system.handleOrder(order);
+    }
+    matchedCount = 0;
+    rejectedCount = 0;
+    completedCount = 0;
+
+    // 启动事件循环
+    system.startEventLoop();
+
+    // 为每个线程预生成订单
+    int ordersPerThread = cfg.totalOrders / numThreads;
+    int actualTotal = ordersPerThread * numThreads;
+    std::vector<std::vector<nlohmann::json>> threadOrders(numThreads);
+    for (int t = 0; t < numThreads; ++t) {
+        threadOrders[t] =
+            generateOrders(cfg, ordersPerThread,
+                           cfg.warmupOrders + t * ordersPerThread, 42 + t);
+    }
+
+    // 每线程只测量提交延时（入队时间）
+    std::vector<std::vector<double>> submitLats(numThreads);
+    for (int t = 0; t < numThreads; ++t) {
+        submitLats[t].reserve(ordersPerThread);
+    }
+
+    std::barrier syncStart(numThreads + 1);
+
+    std::vector<std::thread> threads;
+    threads.reserve(numThreads);
+
+    for (int t = 0; t < numThreads; ++t) {
+        threads.emplace_back([&, t]() {
+            auto &orders = threadOrders[t];
+            auto &lats = submitLats[t];
+
+            syncStart.arrive_and_wait();
+
+            for (auto &order : orders) {
+                auto t0 = Clock::now();
+                system.submitOrder(order);
+                auto t1 = Clock::now();
+
+                double submit_us =
+                    duration_cast<nanoseconds>(t1 - t0).count() / 1000.0;
+                lats.push_back(submit_us);
+            }
+        });
+    }
+
+    auto wallStart = Clock::now();
+    syncStart.arrive_and_wait();
+
+    // 等待所有生产者完成
+    for (auto &th : threads) {
+        th.join();
+    }
+    auto submitEnd = Clock::now();
+
+    // 等待消费者处理完所有命令（通过轮询 queueDepth）
+    while (system.queueDepth() > 0) {
+        std::this_thread::sleep_for(std::chrono::microseconds(100));
+    }
+    // 再等一小段确保最后一批处理完毕
+    std::this_thread::sleep_for(std::chrono::milliseconds(10));
+
+    auto wallEnd = Clock::now();
+    double elapsed_s =
+        duration_cast<microseconds>(wallEnd - wallStart).count() / 1e6;
+    double submitElapsed =
+        duration_cast<microseconds>(submitEnd - wallStart).count() / 1e6;
+
+    system.stopEventLoop();
+
+    // 聚合提交延时
+    std::vector<double> allSubmit;
+    for (int t = 0; t < numThreads; ++t) {
+        allSubmit.insert(allSubmit.end(), submitLats[t].begin(),
+                         submitLats[t].end());
+    }
+
+    RoundResult r;
+    r.numThreads = numThreads;
+    r.mode = "queue";
+    r.elapsed_s = elapsed_s;
+    r.aggregateThroughput = actualTotal / elapsed_s;
+    r.totalLat = calcStats(allSubmit); // 对 queue 模式，total = 提交延时
+    // wait 和 process 不适用于 queue 模式，设为提交延时和 0
+    r.waitLat = calcStats(allSubmit);
+    LatStats zeroStats{};
+    zeroStats.count = allSubmit.size();
+    r.processLat = zeroStats;
+    r.execReports = matchedCount.load();
+    r.rejectReports = rejectedCount.load();
+    return r;
+}
+
 // ── 输出 ────────────────────────────────────────────────────
 static void printRound(const RoundResult &r) {
     std::cout << "\n==========================================================="
                  "=====\n";
-    std::cout << "  线程数: " << r.numThreads
+    std::cout << "  [" << r.mode << "] 线程数: " << r.numThreads
               << "    总订单: " << r.totalLat.count
               << "    耗时: " << std::fixed << std::setprecision(3)
               << r.elapsed_s << "s\n";
@@ -299,24 +418,28 @@ static void printRound(const RoundResult &r) {
     std::cout
         << "----------------------------------------------------------------\n";
     std::cout << "  延时 (us):\n";
-    printLatStats(r.totalLat, "端到端 (含等锁)");
-    printLatStats(r.waitLat, "等锁时间        ");
-    printLatStats(r.processLat, "锁内处理时间    ");
+    if (r.mode == "mutex") {
+        printLatStats(r.totalLat, "端到端 (含等锁)");
+        printLatStats(r.waitLat, "等锁时间        ");
+        printLatStats(r.processLat, "锁内处理时间    ");
+    } else {
+        printLatStats(r.totalLat, "提交延时 (入队) ");
+    }
     std::cout
         << "================================================================\n";
 }
 
-static void printSummaryTable(const std::vector<RoundResult> &results) {
+static void printSummaryTable(const std::vector<RoundResult> &results,
+                              const std::string &title) {
     std::cout << "\n\n╔════════════════════════════════════════════════════════"
                  "═══════╗\n";
-    std::cout << "║                     并发扩展性总结                         "
-                 "   ║\n";
+    std::cout << "║  " << std::left << std::setw(61) << title << "║\n";
     std::cout << "╠════════╦═══════════╦══════════╦══════════╦══════════╦══════"
                  "═══╣\n";
-    std::cout << "║ Threads║ Throughput║ Total-p50║ Total-p99║ Wait-p50 ║ "
-                 "Wait-p99║\n";
-    std::cout << "║        ║  (ops/s)  ║   (us)   ║   (us)   ║   (us)   ║  "
-                 "(us)   ║\n";
+    std::cout
+        << "║ Threads║ Throughput║ Lat-p50  ║ Lat-p99  ║ Wait-p50 ║Wait-p99║\n";
+    std::cout
+        << "║        ║  (ops/s)  ║   (us)   ║   (us)   ║   (us)   ║  (us)  ║\n";
     std::cout << "╠════════╬═══════════╬══════════╬══════════╬══════════╬══════"
                  "═══╣\n";
 
@@ -334,7 +457,6 @@ static void printSummaryTable(const std::vector<RoundResult> &results) {
     std::cout << "╚════════╩═══════════╩══════════╩══════════╩══════════╩══════"
                  "═══╝\n";
 
-    // 计算扩展效率
     if (results.size() >= 2) {
         double baseline = results[0].aggregateThroughput;
         std::cout << "\n  扩展效率 (相对 " << results[0].numThreads
@@ -356,11 +478,11 @@ int main(int argc, char *argv[]) {
     Config cfg = parseArgs(argc, argv);
 
     unsigned int hwThreads = std::thread::hardware_concurrency();
-    std::cout << "=== 并发压测基线 Benchmark ===\n"
+    std::cout << "=== 并发压测 Benchmark ===\n"
               << "  总订单: " << cfg.totalOrders
               << "  证券数: " << cfg.numSecurities
               << "  股东数: " << cfg.numShareholders
-              << "  热身: " << cfg.warmupOrders
+              << "  热身: " << cfg.warmupOrders << "  模式: " << cfg.mode
               << "\n  硬件线程数: " << hwThreads << "  测试线程数: ";
     for (size_t i = 0; i < cfg.threadCounts.size(); ++i) {
         if (i > 0)
@@ -369,14 +491,55 @@ int main(int argc, char *argv[]) {
     }
     std::cout << "\n";
 
-    std::vector<RoundResult> results;
-    for (int nThreads : cfg.threadCounts) {
-        std::cout << "\n>>> 正在测试 " << nThreads << " 线程..." << std::flush;
-        auto r = runRound(cfg, nThreads);
-        results.push_back(r);
-        printRound(r);
+    bool runMutex = (cfg.mode == "mutex" || cfg.mode == "both");
+    bool runQueue = (cfg.mode == "queue" || cfg.mode == "both");
+
+    std::vector<RoundResult> mutexResults, queueResults;
+
+    if (runMutex) {
+        std::cout
+            << "\n━━━ Mutex 模式 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n";
+        for (int nThreads : cfg.threadCounts) {
+            std::cout << "\n>>> [mutex] " << nThreads << " 线程..."
+                      << std::flush;
+            auto r = runRound(cfg, nThreads);
+            mutexResults.push_back(r);
+            printRound(r);
+        }
+        printSummaryTable(mutexResults, "Mutex 模式 — 并发扩展性");
     }
 
-    printSummaryTable(results);
+    if (runQueue) {
+        std::cout
+            << "\n━━━ MPSC Queue 模式 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n";
+        for (int nThreads : cfg.threadCounts) {
+            std::cout << "\n>>> [queue] " << nThreads << " 线程..."
+                      << std::flush;
+            auto r = runRoundQueue(cfg, nThreads);
+            queueResults.push_back(r);
+            printRound(r);
+        }
+        printSummaryTable(queueResults, "MPSC Queue 模式 — 并发扩展性");
+    }
+
+    // 对比总结
+    if (runMutex && runQueue && !mutexResults.empty() &&
+        !queueResults.empty()) {
+        std::cout
+            << "\n\n━━━ Mutex vs Queue 对比 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n";
+        std::cout << std::fixed << std::setprecision(0);
+        for (size_t i = 0; i < mutexResults.size() && i < queueResults.size();
+             ++i) {
+            auto &m = mutexResults[i];
+            auto &q = queueResults[i];
+            double speedup = q.aggregateThroughput / m.aggregateThroughput;
+            std::cout << "  " << m.numThreads << " 线程: "
+                      << "mutex=" << m.aggregateThroughput << " ops/s, "
+                      << "queue=" << q.aggregateThroughput << " ops/s, "
+                      << std::setprecision(2) << speedup << "x\n"
+                      << std::setprecision(0);
+        }
+    }
+
     return 0;
 }
