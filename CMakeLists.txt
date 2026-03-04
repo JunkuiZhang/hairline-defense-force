@@ -2,23 +2,35 @@ cmake_minimum_required(VERSION 3.28)
 
 set(CMAKE_CXX_STANDARD 23)
 
+set(LOCAL_THIRD_PARTY_DIR "${CMAKE_SOURCE_DIR}/third_party")
+
 project(hairline_defense_force)
 
 include_directories(include)
 include(FetchContent)
 
+# FetchContent_Declare(
+#   googletest
+#   GIT_REPOSITORY https://github.com/google/googletest.git
+#   GIT_TAG v1.17.0
+# )
 FetchContent_Declare(
   googletest
-  GIT_REPOSITORY https://github.com/google/googletest.git
-  GIT_TAG v1.17.0
+  URL "${LOCAL_THIRD_PARTY_DIR}/googletest-1.17.0.tar.gz"
 )
+set(FETCHCONTENT_UPDATES_DISCONNECTED_GOOGLETEST ON)
 FetchContent_MakeAvailable(googletest)
 
+# FetchContent_Declare(
+#   json
+#   GIT_REPOSITORY https://github.com/nlohmann/json.git
+#   GIT_TAG v3.11.3
+# )
 FetchContent_Declare(
   json
-  GIT_REPOSITORY https://github.com/nlohmann/json.git
-  GIT_TAG v3.11.3
+  URL "${LOCAL_THIRD_PARTY_DIR}/json-3.11.3.tar.gz"
 )
+set(FETCHCONTENT_UPDATES_DISCONNECTED_JSON ON)
 FetchContent_MakeAvailable(json)
 
 set(EXECUTABLE_OUTPUT_PATH ${CMAKE_SOURCE_DIR}/bin)
@@ -31,6 +43,7 @@ add_library(trade_engine
   src/trade_system.cpp
   src/trade_logger.cpp
   src/admin_server.cpp
+  src/sharded_matching_engine.cpp
 )
 target_link_libraries(trade_engine nlohmann_json::nlohmann_json)
 target_include_directories(trade_engine PUBLIC include)
@@ -62,6 +75,9 @@ target_link_libraries(bench_concurrent trade_engine)
 # bench_network.cpp 网络 I/O 层压测（TCP 连接/RTT/broadcast）
 add_executable(bench_network benchmarks/bench_network.cpp)
 target_link_libraries(bench_network trade_engine)
+# bench_sharded.cpp 分片撮合引擎扩展性 benchmark
+add_executable(bench_sharded benchmarks/bench_sharded.cpp)
+target_link_libraries(bench_sharded trade_engine)
 
 # Tests
 enable_testing()
