@@ -38,15 +38,24 @@ void MatchingEngine::addOrder(const Order &order) {
         sb.askBook[order.price].push_back(entry);
     }
 
+    // 建立反向索引，用于 cancelOrder 和 reduceOrderQty 快速定位
     orderIndex_[order.clOrderId] = {bookKey, order.price, order.side};
 }
 
 // ============================================================
 // B3-B6: match
 //
-// 直接通过 makeBookKey 定位目标 SecurityBook，
-// 无需在循环内比较 securityId/market，彻底消除原实现中的
-// 约38% 无效字符串比较开销。
+// 撮合规则：
+//   - 价格优先：买单优先匹配最低卖价，卖单优先匹配最高买价
+//   - 时间优先：同价格先挂单先成交
+//   - 成交价：以被动方（maker）的挂单价格作为成交价
+//   - 部分成交：一笔订单可匹配多个对手方，逐个消耗数量
+//   - 零股处理：买入单必须为100股整数倍，卖出单可以不是100股整数倍
+//
+// 此函数为纯匹配操作：
+//   - 不会将新订单入簿
+//   - 但会从订单簿中移除/减少已匹配的对手方订单
+//   - 返回成交结果和剩余未成交数量
 // ============================================================
 MatchingEngine::MatchResult
 MatchingEngine::match(const Order &order,
@@ -69,8 +78,11 @@ MatchingEngine::match(const Order &order,
         while (priceIt != sb.askBook.end() && remainingQty > 0) {
             const double askPrice = priceIt->first;
 
+            // 价格不满足：买入价 < 卖出价，无法成交，退出
             if (order.price < askPrice)
                 break;
+
+            // 行情约束：如果有行情数据，成交价不能高于行情卖价
             if (marketData.has_value() && marketData->askPrice > 0 &&
                 askPrice > marketData->askPrice)
                 break;
@@ -103,10 +115,12 @@ MatchingEngine::match(const Order &order,
                 exec.type = OrderResponse::Type::EXECUTION;
                 result.executions.emplace_back(std::move(exec));
 
+                // 更新对手方订单的剩余量和累计成交量
                 entryIt->remainingQty -= matchQty;
                 entryIt->cumQty += matchQty;
                 remainingQty -= matchQty;
 
+                // 如果对手方完全成交，从订单簿和索引中移除
                 if (entryIt->remainingQty == 0) {
                     orderIndex_.erase(entryIt->order.clOrderId);
                     entryIt = level.erase(entryIt);
@@ -114,6 +128,7 @@ MatchingEngine::match(const Order &order,
                     ++entryIt;
                 }
             }
+            // 如果该价格档位已无订单，删除该价格层级
             if (level.empty())
                 priceIt = sb.askBook.erase(priceIt);
             else
@@ -125,8 +140,11 @@ MatchingEngine::match(const Order &order,
         while (priceIt != sb.bidBook.end() && remainingQty > 0) {
             const double bidPrice = priceIt->first;
 
+            // 价格不满足：买入价 < 卖出价，无法成交，退出
             if (bidPrice < order.price)
                 break;
+
+            // 行情约束：如果有行情数据，成交价不能低于行情买价
             if (marketData.has_value() && marketData->bidPrice > 0 &&
                 bidPrice < marketData->bidPrice)
                 break;
@@ -155,10 +173,12 @@ MatchingEngine::match(const Order &order,
                 exec.type = OrderResponse::Type::EXECUTION;
                 result.executions.emplace_back(std::move(exec));
 
+                // 更新对手方订单的剩余量和累计成交量
                 entryIt->remainingQty -= matchQty;
                 entryIt->cumQty += matchQty;
                 remainingQty -= matchQty;
 
+                // 如果对手方完全成交，从订单簿和索引中移除
                 if (entryIt->remainingQty == 0) {
                     orderIndex_.erase(entryIt->order.clOrderId);
                     entryIt = level.erase(entryIt);
@@ -166,6 +186,7 @@ MatchingEngine::match(const Order &order,
                     ++entryIt;
                 }
             }
+            // 如果该价格档位已无订单，删除该价格层级
             if (level.empty())
                 priceIt = sb.bidBook.erase(priceIt);
             else
@@ -186,6 +207,7 @@ CancelResponse MatchingEngine::cancelOrder(const std::string &clOrderId) {
 
     auto indexIt = orderIndex_.find(clOrderId);
     if (indexIt == orderIndex_.end()) {
+        // 订单不在簿中（可能已完全成交或不存在），返回拒绝
         response.type = CancelResponse::Type::REJECT;
         response.rejectCode = 1;
         response.rejectText = "Order not found in book";
@@ -195,6 +217,7 @@ CancelResponse MatchingEngine::cancelOrder(const std::string &clOrderId) {
 
     auto bookIt = books_.find(loc.bookKey);
     if (bookIt == books_.end()) {
+        // 订单簿不存在，说明订单索引不一致，返回拒绝并清理索引
         std::cerr << "[MatchingEngine] CRITICAL: book not found for key="
                   << loc.bookKey << "\n";
         response.type = CancelResponse::Type::REJECT;
@@ -254,6 +277,7 @@ void MatchingEngine::reduceOrderQty(const std::string &clOrderId,
                                     uint32_t qty) {
     auto indexIt = orderIndex_.find(clOrderId);
     if (indexIt == orderIndex_.end())
+        // 订单不在簿中，忽略（可能已经完全成交或被撤单）
         return;
 
     const OrderLocation &loc = indexIt->second;
@@ -270,8 +294,11 @@ void MatchingEngine::reduceOrderQty(const std::string &clOrderId,
         for (auto entryIt = level.begin(); entryIt != level.end(); ++entryIt) {
             if (entryIt->order.clOrderId != clOrderId)
                 continue;
+            // 更新累计成交量
             entryIt->cumQty += qty;
+            // 减少剩余量
             if (qty >= entryIt->remainingQty) {
+                // 完全消耗，从订单簿移除
                 entryIt->remainingQty = 0;
                 level.erase(entryIt);
                 if (level.empty())
