@@ -54,7 +54,12 @@ static Config parseArgs(int argc, char *argv[]) {
             std::istringstream ss(list);
             std::string token;
             while (std::getline(ss, token, ',')) {
-                cfg.threadCounts.push_back(std::atoi(token.c_str()));
+                int n = std::atoi(token.c_str());
+                if (n > 0) cfg.threadCounts.push_back(n);
+            }
+            if (cfg.threadCounts.empty()) {
+                std::cerr << "错误: --threads 至少需要一个 >0 的线程数\n";
+                std::exit(1);
             }
         } else if (a == "--securities" && i + 1 < argc)
             cfg.numSecurities = std::atoi(argv[++i]);
@@ -129,8 +134,8 @@ struct ThreadLatency {
 
 // ── 延时统计 ────────────────────────────────────────────────
 struct LatStats {
-    double mean, p50, p95, p99, max;
-    size_t count;
+    double mean = 0, p50 = 0, p95 = 0, p99 = 0, max = 0;
+    size_t count = 0;
 };
 
 static LatStats calcStats(std::vector<double> &lat) {
@@ -157,19 +162,21 @@ static void printLatStats(const LatStats &s, const std::string &label) {
               << " us\n";
 }
 
-// ── 单轮并发测试 ───────────────────────────────────────────
+// ── 测试结果 ────────────────────────────────────────────────
 struct RoundResult {
     int numThreads;
     std::string mode; // "mutex" or "queue"
     double elapsed_s;
     double aggregateThroughput;
-    LatStats totalLat;   // 聚合所有线程的端到端延时
-    LatStats waitLat;    // 聚合所有线程的等锁延时
-    LatStats processLat; // 聚合所有线程的锁内处理延时
+    LatStats totalLat;   // mutex: 端到端(含等锁); queue: 端到端(提交→首次回调)
+    LatStats waitLat;    // mutex: 等锁延时
+    LatStats processLat; // mutex: 锁内处理延时
+    LatStats submitLat;  // queue: 入队延时
     size_t execReports;
     size_t rejectReports;
 };
 
+// ── 单轮并发测试（Mutex 模式） ──────────────────────────────
 static RoundResult runRound(const Config &cfg, int numThreads) {
     // 1. 初始化 TradeSystem（每轮独立实例，保证订单簿从空开始）
     hdf::TradeSystem system;
@@ -193,6 +200,7 @@ static RoundResult runRound(const Config &cfg, int numThreads) {
 
     // 3. 为每个线程预生成订单
     int ordersPerThread = cfg.totalOrders / numThreads;
+    int actualTotal = ordersPerThread * numThreads;
     std::vector<std::vector<nlohmann::json>> threadOrders(numThreads);
     for (int t = 0; t < numThreads; ++t) {
         threadOrders[t] =
@@ -286,20 +294,51 @@ static RoundResult runRound(const Config &cfg, int numThreads) {
 }
 
 // ── 单轮并发测试（MPSC 队列模式） ──────────────────────────
-// 多线程通过 submitOrder 投递到命令队列，单消费者线程串行处理
-// 测量的是"从 submitOrder 调用到回调被触发"的端到端时间
+// 多生产者线程通过 submitOrder 投递到命令队列，单消费者线程串行处理。
+// 测量两种延时：
+//   submitLat  — 入队延时（生产者侧）
+//   totalLat   — 端到端延时（从 submitOrder 到首次回调被触发）
 static RoundResult runRoundQueue(const Config &cfg, int numThreads) {
     hdf::TradeSystem system;
     std::atomic<size_t> matchedCount{0};
     std::atomic<size_t> rejectedCount{0};
-    std::atomic<size_t> completedCount{0};
+
+    // 提前计算订单数（callback lambda 需要捕获 actualTotal）
+    int ordersPerThread = cfg.totalOrders / numThreads;
+    int actualTotal = ordersPerThread * numThreads;
+
+    // ── 端到端延时追踪 ──────────────────────────────────────
+    // 每个订单一个 slot，按 clOrderId 中的序号索引。
+    // 生产者写 submit_ns（在 submitOrder 前），消费者写 first_response_ns。
+    // 两者之间通过 MPSC 队列的 mutex 保证 happens-before。
+    struct OrderTiming {
+        int64_t submit_ns = 0;
+        int64_t first_response_ns = 0;
+    };
+    std::vector<OrderTiming> timings(actualTotal);
+
+    // clOrderId = "T{warmupOrders + globalIdx}" → 解析回 globalIdx
+    auto parseIdx = [&](const std::string &id) -> int {
+        if (id.size() < 2 || id[0] != 'T') return -1;
+        int x = std::atoi(id.c_str() + 1);
+        int idx = x - cfg.warmupOrders;
+        return (idx >= 0 && idx < actualTotal) ? idx : -1;
+    };
 
     system.setSendToClient([&](const nlohmann::json &resp) {
         if (resp.contains("execId"))
             matchedCount.fetch_add(1, std::memory_order_relaxed);
         else if (resp.contains("rejectCode"))
             rejectedCount.fetch_add(1, std::memory_order_relaxed);
-        completedCount.fetch_add(1, std::memory_order_relaxed);
+
+        // 记录该订单的首次回调时间（用于端到端延时）
+        // 一个订单可能触发多次回调（maker + taker exec report），只记首次
+        std::string orderId = resp.value("clOrderId", "");
+        int idx = parseIdx(orderId);
+        if (idx >= 0 && timings[idx].first_response_ns == 0) {
+            timings[idx].first_response_ns =
+                Clock::now().time_since_epoch().count();
+        }
     });
 
     // 热身（单线程直接调用，不经队列）
@@ -309,14 +348,11 @@ static RoundResult runRoundQueue(const Config &cfg, int numThreads) {
     }
     matchedCount = 0;
     rejectedCount = 0;
-    completedCount = 0;
 
-    // 启动事件循环
+    // 启动事件循环（消费者线程）
     system.startEventLoop();
 
     // 为每个线程预生成订单
-    int ordersPerThread = cfg.totalOrders / numThreads;
-    int actualTotal = ordersPerThread * numThreads;
     std::vector<std::vector<nlohmann::json>> threadOrders(numThreads);
     for (int t = 0; t < numThreads; ++t) {
         threadOrders[t] =
@@ -324,7 +360,7 @@ static RoundResult runRoundQueue(const Config &cfg, int numThreads) {
                            cfg.warmupOrders + t * ordersPerThread, 42 + t);
     }
 
-    // 每线程只测量提交延时（入队时间）
+    // 每线程测量提交延时（入队时间）
     std::vector<std::vector<double>> submitLats(numThreads);
     for (int t = 0; t < numThreads; ++t) {
         submitLats[t].reserve(ordersPerThread);
@@ -342,9 +378,15 @@ static RoundResult runRoundQueue(const Config &cfg, int numThreads) {
 
             syncStart.arrive_and_wait();
 
-            for (auto &order : orders) {
+            for (int i = 0; i < ordersPerThread; ++i) {
+                int globalIdx = t * ordersPerThread + i;
+
                 auto t0 = Clock::now();
-                system.submitOrder(order);
+                // 记录提交时间戳（消费者通过 queue mutex happens-before 读取）
+                timings[globalIdx].submit_ns =
+                    t0.time_since_epoch().count();
+
+                system.submitOrder(orders[i]);
                 auto t1 = Clock::now();
 
                 double submit_us =
@@ -361,28 +403,30 @@ static RoundResult runRoundQueue(const Config &cfg, int numThreads) {
     for (auto &th : threads) {
         th.join();
     }
-    auto submitEnd = Clock::now();
 
-    // 等待消费者处理完所有命令（通过轮询 queueDepth）
-    while (system.queueDepth() > 0) {
-        std::this_thread::sleep_for(std::chrono::microseconds(100));
-    }
-    // 再等一小段确保最后一批处理完毕
-    std::this_thread::sleep_for(std::chrono::milliseconds(10));
-
+    // stopEventLoop() 会等待队列排空并处理完全部命令后才返回，
+    // 保证所有订单被消费且回调已执行，wallEnd 时间准确。
+    system.stopEventLoop();
     auto wallEnd = Clock::now();
     double elapsed_s =
         duration_cast<microseconds>(wallEnd - wallStart).count() / 1e6;
-    double submitElapsed =
-        duration_cast<microseconds>(submitEnd - wallStart).count() / 1e6;
 
-    system.stopEventLoop();
-
-    // 聚合提交延时
+    // ── 聚合提交延时 ────────────────────────────────────────
     std::vector<double> allSubmit;
     for (int t = 0; t < numThreads; ++t) {
         allSubmit.insert(allSubmit.end(), submitLats[t].begin(),
                          submitLats[t].end());
+    }
+
+    // ── 计算端到端延时（submit → 首次回调） ─────────────────
+    std::vector<double> allE2E;
+    allE2E.reserve(actualTotal);
+    for (int i = 0; i < actualTotal; ++i) {
+        if (timings[i].submit_ns > 0 && timings[i].first_response_ns > 0) {
+            double e2e_us =
+                (timings[i].first_response_ns - timings[i].submit_ns) / 1000.0;
+            allE2E.push_back(e2e_us);
+        }
     }
 
     RoundResult r;
@@ -390,12 +434,9 @@ static RoundResult runRoundQueue(const Config &cfg, int numThreads) {
     r.mode = "queue";
     r.elapsed_s = elapsed_s;
     r.aggregateThroughput = actualTotal / elapsed_s;
-    r.totalLat = calcStats(allSubmit); // 对 queue 模式，total = 提交延时
-    // wait 和 process 不适用于 queue 模式，设为提交延时和 0
-    r.waitLat = calcStats(allSubmit);
-    LatStats zeroStats{};
-    zeroStats.count = allSubmit.size();
-    r.processLat = zeroStats;
+    r.totalLat = calcStats(allE2E);      // 端到端 = 提交 → 首次回调
+    r.submitLat = calcStats(allSubmit);   // 入队延时
+    // wait / process 不适用于 queue 模式
     r.execReports = matchedCount.load();
     r.rejectReports = rejectedCount.load();
     return r;
@@ -405,10 +446,19 @@ static RoundResult runRoundQueue(const Config &cfg, int numThreads) {
 static void printRound(const RoundResult &r) {
     std::cout << "\n==========================================================="
                  "=====\n";
-    std::cout << "  [" << r.mode << "] 线程数: " << r.numThreads
-              << "    总订单: " << r.totalLat.count
-              << "    耗时: " << std::fixed << std::setprecision(3)
-              << r.elapsed_s << "s\n";
+    if (r.mode == "queue") {
+        // queue 模式有额外的消费者线程，标注清楚
+        std::cout << "  [" << r.mode << "] 生产者线程: " << r.numThreads
+                  << " (+1 consumer)"
+                  << "    总订单: " << r.totalLat.count
+                  << "    耗时: " << std::fixed << std::setprecision(3)
+                  << r.elapsed_s << "s\n";
+    } else {
+        std::cout << "  [" << r.mode << "] 线程数: " << r.numThreads
+                  << "    总订单: " << r.totalLat.count
+                  << "    耗时: " << std::fixed << std::setprecision(3)
+                  << r.elapsed_s << "s\n";
+    }
     std::cout << "  成交回报: " << r.execReports
               << "    拒绝回报: " << r.rejectReports << "\n";
     std::cout
@@ -419,11 +469,12 @@ static void printRound(const RoundResult &r) {
         << "----------------------------------------------------------------\n";
     std::cout << "  延时 (us):\n";
     if (r.mode == "mutex") {
-        printLatStats(r.totalLat, "端到端 (含等锁)");
-        printLatStats(r.waitLat, "等锁时间        ");
-        printLatStats(r.processLat, "锁内处理时间    ");
+        printLatStats(r.totalLat, "端到端 (含等锁)   ");
+        printLatStats(r.waitLat, "等锁时间          ");
+        printLatStats(r.processLat, "锁内处理时间      ");
     } else {
-        printLatStats(r.totalLat, "提交延时 (入队) ");
+        printLatStats(r.totalLat, "端到端 (提交→回调)");
+        printLatStats(r.submitLat, "提交延时 (入队)   ");
     }
     std::cout
         << "================================================================\n";
@@ -431,28 +482,52 @@ static void printRound(const RoundResult &r) {
 
 static void printSummaryTable(const std::vector<RoundResult> &results,
                               const std::string &title) {
+    if (results.empty()) return;
+    bool isQueue = (results[0].mode == "queue");
+
     std::cout << "\n\n╔════════════════════════════════════════════════════════"
                  "═══════╗\n";
     std::cout << "║  " << std::left << std::setw(61) << title << "║\n";
     std::cout << "╠════════╦═══════════╦══════════╦══════════╦══════════╦══════"
                  "═══╣\n";
-    std::cout
-        << "║ Threads║ Throughput║ Lat-p50  ║ Lat-p99  ║ Wait-p50 ║Wait-p99║\n";
-    std::cout
-        << "║        ║  (ops/s)  ║   (us)   ║   (us)   ║   (us)   ║  (us)  ║\n";
+
+    if (isQueue) {
+        // queue 模式：端到端 + 入队延时
+        std::cout
+            << "║ Threads║ Throughput║ E2E-p50  ║ E2E-p99  ║ Enq-p50  ║Enq-p99║\n";
+        std::cout
+            << "║ (+1 C) ║  (ops/s)  ║   (us)   ║   (us)   ║   (us)   ║  (us) ║\n";
+    } else {
+        // mutex 模式：端到端 + 等锁延时
+        std::cout
+            << "║ Threads║ Throughput║ Lat-p50  ║ Lat-p99  ║ Wait-p50 ║Wait-p99║\n";
+        std::cout
+            << "║        ║  (ops/s)  ║   (us)   ║   (us)   ║   (us)   ║  (us)  ║\n";
+    }
     std::cout << "╠════════╬═══════════╬══════════╬══════════╬══════════╬══════"
                  "═══╣\n";
 
     for (auto &r : results) {
         std::cout << std::fixed;
-        std::cout << "║ " << std::setw(6) << r.numThreads << " ║ "
-                  << std::setw(9) << std::setprecision(0)
-                  << r.aggregateThroughput << " ║ " << std::setw(8)
-                  << std::setprecision(2) << r.totalLat.p50 << " ║ "
-                  << std::setw(8) << std::setprecision(2) << r.totalLat.p99
-                  << " ║ " << std::setw(8) << std::setprecision(2)
-                  << r.waitLat.p50 << " ║ " << std::setw(7)
-                  << std::setprecision(2) << r.waitLat.p99 << " ║\n";
+        if (isQueue) {
+            std::cout << "║ " << std::setw(6) << r.numThreads << " ║ "
+                      << std::setw(9) << std::setprecision(0)
+                      << r.aggregateThroughput << " ║ " << std::setw(8)
+                      << std::setprecision(2) << r.totalLat.p50 << " ║ "
+                      << std::setw(8) << std::setprecision(2) << r.totalLat.p99
+                      << " ║ " << std::setw(8) << std::setprecision(2)
+                      << r.submitLat.p50 << " ║ " << std::setw(7)
+                      << std::setprecision(2) << r.submitLat.p99 << " ║\n";
+        } else {
+            std::cout << "║ " << std::setw(6) << r.numThreads << " ║ "
+                      << std::setw(9) << std::setprecision(0)
+                      << r.aggregateThroughput << " ║ " << std::setw(8)
+                      << std::setprecision(2) << r.totalLat.p50 << " ║ "
+                      << std::setw(8) << std::setprecision(2) << r.totalLat.p99
+                      << " ║ " << std::setw(8) << std::setprecision(2)
+                      << r.waitLat.p50 << " ║ " << std::setw(7)
+                      << std::setprecision(2) << r.waitLat.p99 << " ║\n";
+        }
     }
     std::cout << "╚════════╩═══════════╩══════════╩══════════╩══════════╩══════"
                  "═══╝\n";
@@ -513,13 +588,13 @@ int main(int argc, char *argv[]) {
         std::cout
             << "\n━━━ MPSC Queue 模式 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n";
         for (int nThreads : cfg.threadCounts) {
-            std::cout << "\n>>> [queue] " << nThreads << " 线程..."
+            std::cout << "\n>>> [queue] " << nThreads << " 生产者线程 (+1 consumer)..."
                       << std::flush;
             auto r = runRoundQueue(cfg, nThreads);
             queueResults.push_back(r);
             printRound(r);
         }
-        printSummaryTable(queueResults, "MPSC Queue 模式 — 并发扩展性");
+        printSummaryTable(queueResults, "MPSC Queue 模式 — 并发扩展性 (N+1线程)");
     }
 
     // 对比总结
@@ -527,6 +602,7 @@ int main(int argc, char *argv[]) {
         !queueResults.empty()) {
         std::cout
             << "\n\n━━━ Mutex vs Queue 对比 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n";
+        std::cout << "  注: mutex N线程 vs queue N生产者+1消费者\n\n";
         std::cout << std::fixed << std::setprecision(0);
         for (size_t i = 0; i < mutexResults.size() && i < queueResults.size();
              ++i) {
@@ -534,8 +610,13 @@ int main(int argc, char *argv[]) {
             auto &q = queueResults[i];
             double speedup = q.aggregateThroughput / m.aggregateThroughput;
             std::cout << "  " << m.numThreads << " 线程: "
-                      << "mutex=" << m.aggregateThroughput << " ops/s, "
-                      << "queue=" << q.aggregateThroughput << " ops/s, "
+                      << "mutex=" << m.aggregateThroughput << " ops/s"
+                      << " (e2e-p50=" << std::setprecision(1)
+                      << m.totalLat.p50 << "us), "
+                      << std::setprecision(0)
+                      << "queue=" << q.aggregateThroughput << " ops/s"
+                      << " (e2e-p50=" << std::setprecision(1)
+                      << q.totalLat.p50 << "us), "
                       << std::setprecision(2) << speedup << "x\n"
                       << std::setprecision(0);
         }
