@@ -567,6 +567,46 @@ elif page == "交易所监控":
 
     st.markdown("---")
 
+    # ---- 交易所买卖盘口 ----
+    st.subheader("📊 买卖盘口")
+    ex_book = api_get("/api/exchange/orderbook")
+    if ex_book:
+        ex_bid_depth = ex_book.get("bidDepth", [])
+        ex_ask_depth = ex_book.get("askDepth", [])
+        book_col1, book_col2 = st.columns(2)
+        with book_col1:
+            st.markdown("**🟢 买盘 (Bid)**")
+            if ex_bid_depth:
+                bid_display = []
+                for i, b in enumerate(ex_bid_depth[:10], 1):
+                    bid_display.append({
+                        "档位": f"买{i}",
+                        "价格": f"¥{b['price']:.2f}",
+                        "数量": b["qty"],
+                        "累积": b["cumQty"],
+                    })
+                st.dataframe(pd.DataFrame(bid_display), width="stretch", hide_index=True)
+            else:
+                st.caption("无买盘")
+        with book_col2:
+            st.markdown("**🔴 卖盘 (Ask)**")
+            if ex_ask_depth:
+                ask_display = []
+                for i, a in enumerate(ex_ask_depth[:10], 1):
+                    ask_display.append({
+                        "档位": f"卖{i}",
+                        "价格": f"¥{a['price']:.2f}",
+                        "数量": a["qty"],
+                        "累积": a["cumQty"],
+                    })
+                st.dataframe(pd.DataFrame(ask_display), width="stretch", hide_index=True)
+            else:
+                st.caption("无卖盘")
+    else:
+        st.info("暂无挂单数据，向交易所注入订单后将在此显示。")
+
+    st.markdown("---")
+
     # ---- 直接注入交易所订单 ----
     st.subheader("💉 注入交易所订单")
     st.caption("直接向交易所提交订单，模拟外部市场参与者（不经过前置风控）")
