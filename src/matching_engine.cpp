@@ -426,26 +426,14 @@ MarketData MatchingEngine::getBestQuote(const std::string &securityId,
         return md;
     const SecurityBook &sb = bookIt->second;
 
-    // bidBook 降序，首个有剩余的条目即最优买价
-    for (const auto &[price, level] : sb.bidBook) {
-        for (const auto &entry : level) {
-            if (entry.remainingQty > 0) {
-                md.bidPrice = price;
-                goto foundBid;
-            }
-        }
-    }
-foundBid:
-    // askBook 升序，首个有剩余的条目即最优卖价
-    for (const auto &[price, level] : sb.askBook) {
-        for (const auto &entry : level) {
-            if (entry.remainingQty > 0) {
-                md.askPrice = price;
-                goto foundAsk;
-            }
-        }
-    }
-foundAsk:
+    // bidBook 降序，首个价格层即为最优买价（空层级已在撮合时清除）
+    if (!sb.bidBook.empty())
+        md.bidPrice = sb.bidBook.begin()->first;
+
+    // askBook 升序，首个价格层即为最优卖价
+    if (!sb.askBook.empty())
+        md.askPrice = sb.askBook.begin()->first;
+
     return md;
 }
 
