@@ -369,7 +369,7 @@ nlohmann::json MatchingEngine::getSnapshot(const std::string &securityId,
 }
 
 // ============================================================
-// getSnapshot() — 聚合所有证券快照（向后兼容）
+// getSnapshot() — 聚合所有证券快照
 // 仅在单证券或调试场景使用；多证券场景请用 getSnapshot(id, market)。
 // ============================================================
 nlohmann::json MatchingEngine::getSnapshot() const {
