@@ -14,6 +14,9 @@ namespace hdf {
 /**
  * @brief 撮合引擎，负责订单簿管理、订单撮合、撤单等操作。
  *
+ * 内部按 (market, securityId) 分别维护独立订单簿，撮合时直接定位目标订单簿，
+ * 无需遍历跳过不相关证券，消除了 securityId 字符串比较开销。
+ *
  * @note 线程安全：此类不是线程安全的。所有对 MatchingEngine
  *       实例的访问必须在外部进行同步。对于高性能交易系统，
  *       建议使用单线程事件循环来串行化对引擎的访问。
@@ -75,19 +78,29 @@ class MatchingEngine {
     bool hasOrder(const std::string &clOrderId) const;
 
     /**
-     * @brief 获取订单簿快照，返回买卖盘口的价格档位信息。
+     * @brief 获取所有证券的订单簿快照，返回买卖盘口的价格档位信息（聚合）。
      *
-     * 买盘按价格降序、卖盘按价格升序，每档含价格、总量和累积量。
+     * 跨所有 (market, securityId) 聚合后，买盘按价格降序、卖盘按价格升序，
+     * 每档含价格、总量和累积量。
      *
      * @return nlohmann::json 包含 bids 和 asks 数组的 JSON 对象。
      */
     nlohmann::json getSnapshot() const;
 
     /**
+     * @brief 获取指定证券+市场的订单簿快照。
+     *
+     * @param securityId 证券代码
+     * @param market 市场
+     * @return nlohmann::json 包含 bids 和 asks 数组的 JSON 对象。
+     */
+    nlohmann::json getSnapshot(const std::string &securityId,
+                               Market market) const;
+
+    /**
      * @brief 获取指定证券的最优买卖报价（best bid / best ask）。
      *
-     * 遍历订单簿找到指定 securityId 的最高买价和最低卖价。
-     * 如果某一侧无挂单，对应价格为 0。
+     * 直接定位该证券的 SecurityBook，O(1) 查找后取首档价格。
      *
      * @param securityId 证券代码
      * @param market 市场（如 XSHG、XHKG）
@@ -97,65 +110,62 @@ class MatchingEngine {
 
   private:
     /**
-     * @brief 订单簿中的订单条目，记录订单信息及已成交累计量。
+     * @brief 生成订单簿的查找 key。
      *
-     * 使用 remainingQty 表示当前剩余可成交数量，
-     * cumQty 记录已成交的累计数量，用于撤单回报。
+     * 格式为 "MARKET+securityId"，例如 "XSHG+600000"。
+     * 每个 (market, securityId) 对应一个独立的 SecurityBook，
+     * 保证不同市场或不同证券的订单完全隔离，撮合时无需 securityId 比较。
+     */
+    static std::string makeBookKey(const std::string &securityId,
+                                   Market market) {
+        return to_string(market) + "+" + securityId;
+    }
+
+    /**
+     * @brief 订单簿中的订单条目，记录订单信息及已成交累计量。
      */
     struct BookEntry {
-        Order order;               // 原始订单信息
-        uint32_t remainingQty = 0; // 剩余可成交数量
-        uint32_t cumQty = 0;       // 已成交累计数量
+        Order order;
+        uint32_t remainingQty = 0;
+        uint32_t cumQty = 0;
     };
 
     /**
      * @brief 同一价格档位上的订单队列（时间优先）。
-     *
-     * 使用 std::list 保持插入顺序（即时间优先），
-     * 同时支持高效的中间删除操作。
      */
     using PriceLevel = std::list<BookEntry>;
 
     /**
-     * @brief 买方订单簿：按价格降序排列。
+     * @brief 单个 (market, securityId) 的订单簿。
      *
-     * 使用 std::map<double, PriceLevel, std::greater<double>>，
-     * key 为价格，value 为该价格下的订单队列。
-     * std::greater 确保价格从高到低排列（买方优先匹配高价）。
+     * bidBook 按价格降序，askBook 按价格升序。
+     * 只存放同一证券的订单，撮合时无需跳过不相关条目。
      */
-    std::map<double, PriceLevel, std::greater<double>> bidBook_;
+    struct SecurityBook {
+        std::map<double, PriceLevel, std::greater<double>> bidBook;
+        std::map<double, PriceLevel> askBook;
+    };
 
     /**
-     * @brief 卖方订单簿：按价格升序排列。
-     *
-     * 使用 std::map<double, PriceLevel>（默认 std::less），
-     * key 为价格，value 为该价格下的订单队列。
-     * 价格从低到高排列（卖方优先匹配低价）。
+     * @brief 所有证券+市场的订单簿集合。
+     * key = makeBookKey(securityId, market)
      */
-    std::map<double, PriceLevel> askBook_;
+    std::unordered_map<std::string, SecurityBook> books_;
 
     /**
      * @brief 订单ID到订单簿位置的反向索引。
-     *
-     * 用于 cancelOrder 和 reduceOrderQty 快速定位订单，
-     * 避免遍历整个订单簿。存储了订单所在的价格和买卖方向。
      */
     struct OrderLocation {
-        double price; // 订单价格（用于在 bidBook_/askBook_ 中定位）
-        Side side;    // 买卖方向（决定查 bidBook_ 还是 askBook_）
+        std::string bookKey; // 所属 SecurityBook 的 key
+        double price;
+        Side side;
     };
     std::unordered_map<std::string, OrderLocation> orderIndex_;
 
     /**
-     * @brief 全局成交编号计数器，用于生成唯一的 execId。
+     * @brief 全局成交编号计数器。
      */
     uint64_t nextExecId_ = 1;
-
-    /**
-     * @brief 生成唯一的成交编号。
-     *
-     * @return 格式为 "EXEC" + 16位数字的唯一编号字符串。
-     */
     std::string generateExecId();
 };
 
