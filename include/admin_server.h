@@ -12,12 +12,13 @@
  */
 
 #include <atomic>
+#include <deque>
 #include <functional>
 #include <mutex>
 #include <nlohmann/json.hpp>
 #include <string>
 #include <thread>
-#include <vector>
+#include <unordered_map>
 
 namespace hdf {
 
@@ -43,6 +44,11 @@ class AdminServer {
 
     AdminServer(uint16_t port = 9900);
     ~AdminServer();
+
+    /**
+     * @brief 设置是否打印日志（默认 true）
+     */
+    void setVerbose(bool v) { verbose_ = v; }
 
     // 设置回调
     void setOnOrder(OnOrder callback);
@@ -70,8 +76,20 @@ class AdminServer {
     std::atomic<bool> running_{false};
     std::thread acceptThread_;
 
-    // 已连接的客户端 socket fd 列表
-    std::vector<int> clientFds_;
+    struct PendingMessage {
+        std::string data;
+        size_t offset = 0;
+    };
+
+    struct ClientInfo {
+        int fd;
+        std::string readBuffer;
+        std::deque<PendingMessage> writeQueue;
+        bool wantWrite = false;
+    };
+
+    // 已连接客户端
+    std::unordered_map<int, ClientInfo> clients_;
     std::mutex clientsMutex_;
 
     // 回调
@@ -79,23 +97,25 @@ class AdminServer {
     OnCancel onCancel_;
     OnQuery onQuery_;
 
+    bool verbose_ = true;
     int serverFd_ = -1;
+    int epollFd_ = -1;
 
     /**
      * @brief 接受连接的主循环
      */
     void acceptLoop();
 
-    /**
-     * @brief 处理单个客户端连接
-     */
-    void handleClient(int clientFd);
-
-    /**
-     * @brief 向指定 fd 发送 JSON 消息（自动追加 '\n'）
-     * @return true 发送成功，false 连接已断开
-     */
+    void acceptNewClients();
+    void handleReadable(int clientFd);
+    void handleWritable(int clientFd);
+    void processLine(int clientFd, const std::string &line);
+    void closeClient(int clientFd);
+    void updateEpollEventsLocked(int fd, ClientInfo &client, bool wantWrite);
+    bool enqueueMessageLocked(int fd, ClientInfo &client,
+                              std::string &&payload);
     bool sendToFd(int fd, const nlohmann::json &message);
+    static bool makeSocketNonBlocking(int fd);
 };
 
 } // namespace hdf

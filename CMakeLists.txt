@@ -49,6 +49,20 @@ target_link_libraries(admin_main trade_engine)
 add_executable(generate_history examples/generate_history.cpp)
 target_link_libraries(generate_history trade_engine)
 
+# Benchmarks
+# benchmark.cpp 纯撮合性能基线测试
+add_executable(benchmark benchmarks/benchmark.cpp)
+target_link_libraries(benchmark trade_engine)
+# bench_matching.cpp 撮合引擎专项 benchmark
+add_executable(bench_matching benchmarks/bench_matching.cpp)
+target_link_libraries(bench_matching trade_engine)
+# bench_concurrent.cpp 并发压测基线
+add_executable(bench_concurrent benchmarks/bench_concurrent.cpp)
+target_link_libraries(bench_concurrent trade_engine)
+# bench_network.cpp 网络 I/O 层压测（TCP 连接/RTT/broadcast）
+add_executable(bench_network benchmarks/bench_network.cpp)
+target_link_libraries(bench_network trade_engine)
+
 # Tests
 enable_testing()
 add_executable(unit_tests 

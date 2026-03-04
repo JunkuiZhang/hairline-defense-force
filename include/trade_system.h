@@ -3,11 +3,17 @@
 #include "matching_engine.h"
 #include "risk_controller.h"
 #include "trade_logger.h"
+#include <atomic>
+#include <condition_variable>
+#include <deque>
 #include <functional>
+#include <mutex>
 #include <nlohmann/json.hpp>
 #include <string>
+#include <thread>
 #include <unordered_map>
 #include <unordered_set>
+#include <variant>
 
 namespace hdf {
 
@@ -66,15 +72,18 @@ class TradeSystem {
 
     /**
      * @brief 处理来自客户端的订单指令，图中op1
+     * @note 非线程安全，直接在调用线程中同步执行
      */
     void handleOrder(const nlohmann::json &input);
     /**
      * @brief 处理来自客户端的撤单指令，图中op1
+     * @note 非线程安全，直接在调用线程中同步执行
      */
     void handleCancel(const nlohmann::json &input);
     void handleMarketData(const nlohmann::json &input);
     /**
      * @brief 处理来自交易所的回报，图中op3
+     * @note 非线程安全，直接在调用线程中同步执行
      */
     void handleResponse(const nlohmann::json &input);
 
@@ -82,6 +91,65 @@ class TradeSystem {
      * @brief 获取内部订单簿快照，返回买卖盘口价格档位。
      */
     nlohmann::json queryOrderbook() const;
+
+    // ─── MPSC 命令队列接口（线程安全） ───────────────────────
+
+    /**
+     * @brief 命令类型，用于 MPSC 队列的 variant
+     */
+    struct CmdOrder {
+        nlohmann::json input;
+    };
+    struct CmdCancel {
+        nlohmann::json input;
+    };
+    struct CmdResponse {
+        nlohmann::json input;
+    };
+    struct CmdMarketData {
+        nlohmann::json input;
+    };
+    using Command =
+        std::variant<CmdOrder, CmdCancel, CmdResponse, CmdMarketData>;
+
+    /**
+     * @brief 启动消费者线程（单线程事件循环）
+     *
+     * 启动后，所有通过 submitXxx() 投递的命令将在专用线程中
+     * 串行执行，无需外部加锁。类似 Redis 的单线程模型。
+     */
+    void startEventLoop();
+
+    /**
+     * @brief 停止消费者线程，等待队列中剩余命令处理完毕
+     */
+    void stopEventLoop();
+
+    /**
+     * @brief 线程安全地投递订单到命令队列
+     * 多个线程可同时调用，命令将在消费者线程中串行处理。
+     */
+    void submitOrder(const nlohmann::json &input);
+
+    /**
+     * @brief 线程安全地投递撤单到命令队列
+     */
+    void submitCancel(const nlohmann::json &input);
+
+    /**
+     * @brief 线程安全地投递交易所回报到命令队列
+     */
+    void submitResponse(const nlohmann::json &input);
+
+    /**
+     * @brief 线程安全地投递行情数据到命令队列
+     */
+    void submitMarketData(const nlohmann::json &input);
+
+    /**
+     * @brief 获取当前命令队列积压深度（监控用）
+     */
+    size_t queueDepth() const;
 
   private:
     RiskController riskController_;
@@ -168,6 +236,28 @@ class TradeSystem {
      * 如果是交易所前置模式，则由交易所负责推送行情数据。
      */
     void broadcastMarketData(const std::string &securityId, Market market);
+
+    // ─── MPSC 命令队列内部成员 ──────────────────────────────
+    mutable std::mutex queueMutex_;
+    std::condition_variable queueCv_;
+    std::deque<Command> commandQueue_;
+    std::atomic<bool> eventLoopRunning_{false};
+    std::thread eventLoopThread_;
+
+    /**
+     * @brief 向命令队列投递一条命令（内部通用方法）
+     */
+    void enqueueCommand(Command cmd);
+
+    /**
+     * @brief 消费者线程主循环
+     */
+    void eventLoop();
+
+    /**
+     * @brief 分发并执行一条命令
+     */
+    void dispatchCommand(Command &cmd);
 };
 
 } // namespace hdf
