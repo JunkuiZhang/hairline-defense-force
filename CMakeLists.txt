@@ -2,35 +2,23 @@ cmake_minimum_required(VERSION 3.28)
 
 set(CMAKE_CXX_STANDARD 23)
 
-set(LOCAL_THIRD_PARTY_DIR "${CMAKE_SOURCE_DIR}/third_party")
-
 project(hairline_defense_force)
 
 include_directories(include)
 include(FetchContent)
 
-# FetchContent_Declare(
-#   googletest
-#   GIT_REPOSITORY https://github.com/google/googletest.git
-#   GIT_TAG v1.17.0
-# )
 FetchContent_Declare(
   googletest
-  URL "${LOCAL_THIRD_PARTY_DIR}/googletest-1.17.0.tar.gz"
+  GIT_REPOSITORY https://github.com/google/googletest.git
+  GIT_TAG v1.17.0
 )
-set(FETCHCONTENT_UPDATES_DISCONNECTED_GOOGLETEST ON)
 FetchContent_MakeAvailable(googletest)
 
-# FetchContent_Declare(
-#   json
-#   GIT_REPOSITORY https://github.com/nlohmann/json.git
-#   GIT_TAG v3.11.3
-# )
 FetchContent_Declare(
   json
-  URL "${LOCAL_THIRD_PARTY_DIR}/json-3.11.3.tar.gz"
+  GIT_REPOSITORY https://github.com/nlohmann/json.git
+  GIT_TAG v3.11.3
 )
-set(FETCHCONTENT_UPDATES_DISCONNECTED_JSON ON)
 FetchContent_MakeAvailable(json)
 
 set(EXECUTABLE_OUTPUT_PATH ${CMAKE_SOURCE_DIR}/bin)
