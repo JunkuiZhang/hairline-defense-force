@@ -41,7 +41,8 @@ void ShardedMatchingEngine::stop() {
         sp->cv.notify_one();
     }
     for (auto &sp : shards_) {
-        if (sp->worker.joinable()) sp->worker.join();
+        if (sp->worker.joinable())
+            sp->worker.join();
     }
 }
 
@@ -74,8 +75,8 @@ void ShardedMatchingEngine::processOrder(Shard &shard, const Order &order) {
             execCallback_(exec, order.clOrderId);
     }
     if (result.remainingQty > 0) {
-        Order remaining   = order;
-        remaining.qty     = result.remainingQty;
+        Order remaining = order;
+        remaining.qty = result.remainingQty;
         shard.engine.addOrder(remaining);
     }
 }
@@ -91,7 +92,7 @@ void ShardedMatchingEngine::workerLoop(Shard &shard) {
             shard.cv.wait(lk, [&shard] {
                 return !shard.running || !shard.queue.empty();
             });
-            batch.swap(shard.queue);  // O(1) swap，最小化锁持有时间
+            batch.swap(shard.queue); // O(1) swap，最小化锁持有时间
         }
 
         // 无锁处理

@@ -41,9 +41,8 @@ class ShardedMatchingEngine {
      * @param exec  成交回报（被动方信息及成交细节）
      * @param activeOrderId  主动方订单 clOrderId
      */
-    using ExecCallback =
-        std::function<void(const OrderResponse &exec,
-                           const std::string &activeOrderId)>;
+    using ExecCallback = std::function<void(const OrderResponse &exec,
+                                            const std::string &activeOrderId)>;
 
     /**
      * @param numShards  分片数，建议 = 硬件线程数（或证券种类数，取较小值）

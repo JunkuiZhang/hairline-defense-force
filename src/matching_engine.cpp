@@ -21,15 +21,16 @@ std::string MatchingEngine::generateExecId() {
 // 直接定位该证券的 SecurityBook，无需遍历其他证券。
 // ============================================================
 void MatchingEngine::addOrder(const Order &order) {
-    if (orderIndex_.find(order.clOrderId) != orderIndex_.end()) return;
+    if (orderIndex_.find(order.clOrderId) != orderIndex_.end())
+        return;
 
     const std::string bookKey = makeBookKey(order.securityId, order.market);
     SecurityBook &sb = books_[bookKey];
 
     BookEntry entry;
-    entry.order        = order;
+    entry.order = order;
     entry.remainingQty = order.qty;
-    entry.cumQty       = 0;
+    entry.cumQty = 0;
 
     if (order.side == Side::BUY) {
         sb.bidBook[order.price].push_back(entry);
@@ -68,38 +69,43 @@ MatchingEngine::match(const Order &order,
         while (priceIt != sb.askBook.end() && remainingQty > 0) {
             const double askPrice = priceIt->first;
 
-            if (order.price < askPrice) break;
+            if (order.price < askPrice)
+                break;
             if (marketData.has_value() && marketData->askPrice > 0 &&
                 askPrice > marketData->askPrice)
                 break;
 
             PriceLevel &level = priceIt->second;
-            auto entryIt      = level.begin();
+            auto entryIt = level.begin();
             while (entryIt != level.end() && remainingQty > 0) {
-                uint32_t matchQty = std::min(remainingQty, entryIt->remainingQty);
+                uint32_t matchQty =
+                    std::min(remainingQty, entryIt->remainingQty);
 
                 // B6: 零股处理
                 if (entryIt->remainingQty >= 100 && matchQty >= 100)
                     matchQty = (matchQty / 100) * 100;
-                if (matchQty == 0) { ++entryIt; continue; }
+                if (matchQty == 0) {
+                    ++entryIt;
+                    continue;
+                }
 
                 OrderResponse exec;
-                exec.clOrderId     = entryIt->order.clOrderId;
-                exec.market        = entryIt->order.market;
-                exec.securityId    = entryIt->order.securityId;
-                exec.side          = entryIt->order.side;
-                exec.qty           = entryIt->order.qty;
-                exec.price         = entryIt->order.price;
+                exec.clOrderId = entryIt->order.clOrderId;
+                exec.market = entryIt->order.market;
+                exec.securityId = entryIt->order.securityId;
+                exec.side = entryIt->order.side;
+                exec.qty = entryIt->order.qty;
+                exec.price = entryIt->order.price;
                 exec.shareholderId = entryIt->order.shareholderId;
-                exec.execId        = generateExecId();
-                exec.execQty       = matchQty;
-                exec.execPrice     = entryIt->order.price; // B4: maker 价
-                exec.type          = OrderResponse::Type::EXECUTION;
+                exec.execId = generateExecId();
+                exec.execQty = matchQty;
+                exec.execPrice = entryIt->order.price; // B4: maker 价
+                exec.type = OrderResponse::Type::EXECUTION;
                 result.executions.emplace_back(std::move(exec));
 
                 entryIt->remainingQty -= matchQty;
-                entryIt->cumQty       += matchQty;
-                remainingQty          -= matchQty;
+                entryIt->cumQty += matchQty;
+                remainingQty -= matchQty;
 
                 if (entryIt->remainingQty == 0) {
                     orderIndex_.erase(entryIt->order.clOrderId);
@@ -108,8 +114,10 @@ MatchingEngine::match(const Order &order,
                     ++entryIt;
                 }
             }
-            if (level.empty()) priceIt = sb.askBook.erase(priceIt);
-            else ++priceIt;
+            if (level.empty())
+                priceIt = sb.askBook.erase(priceIt);
+            else
+                ++priceIt;
         }
     } else {
         // ── 卖单：与 bidBook 撮合（买方，价格降序）──
@@ -117,34 +125,39 @@ MatchingEngine::match(const Order &order,
         while (priceIt != sb.bidBook.end() && remainingQty > 0) {
             const double bidPrice = priceIt->first;
 
-            if (bidPrice < order.price) break;
+            if (bidPrice < order.price)
+                break;
             if (marketData.has_value() && marketData->bidPrice > 0 &&
                 bidPrice < marketData->bidPrice)
                 break;
 
             PriceLevel &level = priceIt->second;
-            auto entryIt      = level.begin();
+            auto entryIt = level.begin();
             while (entryIt != level.end() && remainingQty > 0) {
-                uint32_t matchQty = std::min(remainingQty, entryIt->remainingQty);
-                if (matchQty == 0) { ++entryIt; continue; }
+                uint32_t matchQty =
+                    std::min(remainingQty, entryIt->remainingQty);
+                if (matchQty == 0) {
+                    ++entryIt;
+                    continue;
+                }
 
                 OrderResponse exec;
-                exec.clOrderId     = entryIt->order.clOrderId;
-                exec.market        = entryIt->order.market;
-                exec.securityId    = entryIt->order.securityId;
-                exec.side          = entryIt->order.side;
-                exec.qty           = entryIt->order.qty;
-                exec.price         = entryIt->order.price;
+                exec.clOrderId = entryIt->order.clOrderId;
+                exec.market = entryIt->order.market;
+                exec.securityId = entryIt->order.securityId;
+                exec.side = entryIt->order.side;
+                exec.qty = entryIt->order.qty;
+                exec.price = entryIt->order.price;
                 exec.shareholderId = entryIt->order.shareholderId;
-                exec.execId        = generateExecId();
-                exec.execQty       = matchQty;
-                exec.execPrice     = entryIt->order.price; // B4: maker 价
-                exec.type          = OrderResponse::Type::EXECUTION;
+                exec.execId = generateExecId();
+                exec.execQty = matchQty;
+                exec.execPrice = entryIt->order.price; // B4: maker 价
+                exec.type = OrderResponse::Type::EXECUTION;
                 result.executions.emplace_back(std::move(exec));
 
                 entryIt->remainingQty -= matchQty;
-                entryIt->cumQty       += matchQty;
-                remainingQty          -= matchQty;
+                entryIt->cumQty += matchQty;
+                remainingQty -= matchQty;
 
                 if (entryIt->remainingQty == 0) {
                     orderIndex_.erase(entryIt->order.clOrderId);
@@ -153,8 +166,10 @@ MatchingEngine::match(const Order &order,
                     ++entryIt;
                 }
             }
-            if (level.empty()) priceIt = sb.bidBook.erase(priceIt);
-            else ++priceIt;
+            if (level.empty())
+                priceIt = sb.bidBook.erase(priceIt);
+            else
+                ++priceIt;
         }
     }
 
@@ -171,7 +186,7 @@ CancelResponse MatchingEngine::cancelOrder(const std::string &clOrderId) {
 
     auto indexIt = orderIndex_.find(clOrderId);
     if (indexIt == orderIndex_.end()) {
-        response.type       = CancelResponse::Type::REJECT;
+        response.type = CancelResponse::Type::REJECT;
         response.rejectCode = 1;
         response.rejectText = "Order not found in book";
         return response;
@@ -182,7 +197,7 @@ CancelResponse MatchingEngine::cancelOrder(const std::string &clOrderId) {
     if (bookIt == books_.end()) {
         std::cerr << "[MatchingEngine] CRITICAL: book not found for key="
                   << loc.bookKey << "\n";
-        response.type       = CancelResponse::Type::REJECT;
+        response.type = CancelResponse::Type::REJECT;
         response.rejectCode = 2;
         response.rejectText = "Order index inconsistency";
         orderIndex_.erase(indexIt);
@@ -193,34 +208,38 @@ CancelResponse MatchingEngine::cancelOrder(const std::string &clOrderId) {
     // 通用取消逻辑（模板 lambda 避免买卖方重复）
     auto doCancel = [&](auto &book) -> bool {
         auto priceIt = book.find(loc.price);
-        if (priceIt == book.end()) return false;
+        if (priceIt == book.end())
+            return false;
         PriceLevel &level = priceIt->second;
         for (auto entryIt = level.begin(); entryIt != level.end(); ++entryIt) {
-            if (entryIt->order.clOrderId != clOrderId) continue;
-            response.clOrderId     = entryIt->order.clOrderId;
-            response.market        = entryIt->order.market;
-            response.securityId    = entryIt->order.securityId;
+            if (entryIt->order.clOrderId != clOrderId)
+                continue;
+            response.clOrderId = entryIt->order.clOrderId;
+            response.market = entryIt->order.market;
+            response.securityId = entryIt->order.securityId;
             response.shareholderId = entryIt->order.shareholderId;
-            response.side          = entryIt->order.side;
-            response.qty           = entryIt->order.qty;
-            response.price         = entryIt->order.price;
-            response.cumQty        = entryIt->cumQty;
-            response.canceledQty   = entryIt->remainingQty;
-            response.type          = CancelResponse::Type::CONFIRM;
+            response.side = entryIt->order.side;
+            response.qty = entryIt->order.qty;
+            response.price = entryIt->order.price;
+            response.cumQty = entryIt->cumQty;
+            response.canceledQty = entryIt->remainingQty;
+            response.type = CancelResponse::Type::CONFIRM;
             level.erase(entryIt);
-            if (level.empty()) book.erase(priceIt);
+            if (level.empty())
+                book.erase(priceIt);
             orderIndex_.erase(indexIt);
             return true;
         }
         return false;
     };
 
-    bool ok = (loc.side == Side::BUY) ? doCancel(sb.bidBook)
-                                      : doCancel(sb.askBook);
+    bool ok =
+        (loc.side == Side::BUY) ? doCancel(sb.bidBook) : doCancel(sb.askBook);
     if (!ok) {
         std::cerr << "[MatchingEngine] CRITICAL: Order index inconsistency for "
-                     "clOrderId=" << clOrderId << "\n";
-        response.type       = CancelResponse::Type::REJECT;
+                     "clOrderId="
+                  << clOrderId << "\n";
+        response.type = CancelResponse::Type::REJECT;
         response.rejectCode = 2;
         response.rejectText = "Order index inconsistency";
         orderIndex_.erase(indexIt);
@@ -234,24 +253,29 @@ CancelResponse MatchingEngine::cancelOrder(const std::string &clOrderId) {
 void MatchingEngine::reduceOrderQty(const std::string &clOrderId,
                                     uint32_t qty) {
     auto indexIt = orderIndex_.find(clOrderId);
-    if (indexIt == orderIndex_.end()) return;
+    if (indexIt == orderIndex_.end())
+        return;
 
     const OrderLocation &loc = indexIt->second;
     auto bookIt = books_.find(loc.bookKey);
-    if (bookIt == books_.end()) return;
+    if (bookIt == books_.end())
+        return;
     SecurityBook &sb = bookIt->second;
 
     auto reduceInBook = [&](auto &book) {
         auto priceIt = book.find(loc.price);
-        if (priceIt == book.end()) return;
+        if (priceIt == book.end())
+            return;
         PriceLevel &level = priceIt->second;
         for (auto entryIt = level.begin(); entryIt != level.end(); ++entryIt) {
-            if (entryIt->order.clOrderId != clOrderId) continue;
+            if (entryIt->order.clOrderId != clOrderId)
+                continue;
             entryIt->cumQty += qty;
             if (qty >= entryIt->remainingQty) {
                 entryIt->remainingQty = 0;
                 level.erase(entryIt);
-                if (level.empty()) book.erase(priceIt);
+                if (level.empty())
+                    book.erase(priceIt);
                 orderIndex_.erase(indexIt);
             } else {
                 entryIt->remainingQty -= qty;
@@ -260,8 +284,10 @@ void MatchingEngine::reduceOrderQty(const std::string &clOrderId,
         }
     };
 
-    if (loc.side == Side::BUY) reduceInBook(sb.bidBook);
-    else                        reduceInBook(sb.askBook);
+    if (loc.side == Side::BUY)
+        reduceInBook(sb.bidBook);
+    else
+        reduceInBook(sb.askBook);
 }
 
 bool MatchingEngine::hasOrder(const std::string &clOrderId) const {
@@ -286,18 +312,30 @@ nlohmann::json MatchingEngine::getSnapshot(const std::string &securityId,
     int cumQty = 0, totalOrders = 0;
     for (const auto &[price, level] : sb.bidBook) {
         int qty = 0, cnt = 0;
-        for (const auto &e : level) { qty += (int)e.remainingQty; ++cnt; ++totalOrders; }
+        for (const auto &e : level) {
+            qty += (int)e.remainingQty;
+            ++cnt;
+            ++totalOrders;
+        }
         cumQty += qty;
-        bids.push_back({{"price", price}, {"qty", qty}, {"cumQty", cumQty},
+        bids.push_back({{"price", price},
+                        {"qty", qty},
+                        {"cumQty", cumQty},
                         {"orderCount", cnt}});
     }
     nlohmann::json asks = nlohmann::json::array();
     cumQty = 0;
     for (const auto &[price, level] : sb.askBook) {
         int qty = 0, cnt = 0;
-        for (const auto &e : level) { qty += (int)e.remainingQty; ++cnt; ++totalOrders; }
+        for (const auto &e : level) {
+            qty += (int)e.remainingQty;
+            ++cnt;
+            ++totalOrders;
+        }
         cumQty += qty;
-        asks.push_back({{"price", price}, {"qty", qty}, {"cumQty", cumQty},
+        asks.push_back({{"price", price},
+                        {"qty", qty},
+                        {"cumQty", cumQty},
                         {"orderCount", cnt}});
     }
     return {{"bids", bids}, {"asks", asks}, {"totalOrders", totalOrders}};
@@ -309,20 +347,20 @@ nlohmann::json MatchingEngine::getSnapshot(const std::string &securityId,
 // ============================================================
 nlohmann::json MatchingEngine::getSnapshot() const {
     // price -> {qty, orderCount}
-    std::map<double, std::pair<int,int>, std::greater<double>> aggBids;
-    std::map<double, std::pair<int,int>> aggAsks;
+    std::map<double, std::pair<int, int>, std::greater<double>> aggBids;
+    std::map<double, std::pair<int, int>> aggAsks;
     int totalOrders = 0;
 
     for (const auto &[key, sb] : books_) {
         for (const auto &[price, level] : sb.bidBook)
             for (const auto &e : level) {
-                aggBids[price].first  += (int)e.remainingQty;
+                aggBids[price].first += (int)e.remainingQty;
                 aggBids[price].second += 1;
                 ++totalOrders;
             }
         for (const auto &[price, level] : sb.askBook)
             for (const auto &e : level) {
-                aggAsks[price].first  += (int)e.remainingQty;
+                aggAsks[price].first += (int)e.remainingQty;
                 aggAsks[price].second += 1;
                 ++totalOrders;
             }
@@ -332,15 +370,19 @@ nlohmann::json MatchingEngine::getSnapshot() const {
     int cumQty = 0;
     for (const auto &[price, p] : aggBids) {
         cumQty += p.first;
-        bids.push_back({{"price", price}, {"qty", p.first},
-                        {"cumQty", cumQty}, {"orderCount", p.second}});
+        bids.push_back({{"price", price},
+                        {"qty", p.first},
+                        {"cumQty", cumQty},
+                        {"orderCount", p.second}});
     }
     nlohmann::json asks = nlohmann::json::array();
     cumQty = 0;
     for (const auto &[price, p] : aggAsks) {
         cumQty += p.first;
-        asks.push_back({{"price", price}, {"qty", p.first},
-                        {"cumQty", cumQty}, {"orderCount", p.second}});
+        asks.push_back({{"price", price},
+                        {"qty", p.first},
+                        {"cumQty", cumQty},
+                        {"orderCount", p.second}});
     }
     return {{"bids", bids}, {"asks", asks}, {"totalOrders", totalOrders}};
 }
@@ -353,20 +395,27 @@ MarketData MatchingEngine::getBestQuote(const std::string &securityId,
     MarketData md{0.0, 0.0};
     const std::string key = makeBookKey(securityId, market);
     auto bookIt = books_.find(key);
-    if (bookIt == books_.end()) return md;
+    if (bookIt == books_.end())
+        return md;
     const SecurityBook &sb = bookIt->second;
 
     // bidBook 降序，首个有剩余的条目即最优买价
     for (const auto &[price, level] : sb.bidBook) {
         for (const auto &entry : level) {
-            if (entry.remainingQty > 0) { md.bidPrice = price; goto foundBid; }
+            if (entry.remainingQty > 0) {
+                md.bidPrice = price;
+                goto foundBid;
+            }
         }
     }
 foundBid:
     // askBook 升序，首个有剩余的条目即最优卖价
     for (const auto &[price, level] : sb.askBook) {
         for (const auto &entry : level) {
-            if (entry.remainingQty > 0) { md.askPrice = price; goto foundAsk; }
+            if (entry.remainingQty > 0) {
+                md.askPrice = price;
+                goto foundAsk;
+            }
         }
     }
 foundAsk:
