@@ -61,7 +61,8 @@ class OrderTracker:
     """单个订单的跟踪状态"""
 
     def __init__(self, cl_order_id: str, market: str, security_id: str,
-                 side: str, price: float, qty: int, shareholder_id: str):
+                 side: str, price: float, qty: int, shareholder_id: str,
+                 target: str = "gateway"):
         self.cl_order_id = cl_order_id
         self.market = market
         self.security_id = security_id
@@ -69,6 +70,7 @@ class OrderTracker:
         self.price = price
         self.qty = qty  # 原始委托数量
         self.shareholder_id = shareholder_id
+        self.target = target  # "gateway" | "exchange"
         self.filled_qty = 0  # 已成交数量
         self.avg_price = 0.0  # 成交均价
         self.status = "已提交"  # 已提交 / 已确认 / 部分成交 / 完全成交 / 已拒绝 / 已撤单
@@ -162,10 +164,12 @@ class AppState:
         return f"ADMIN-{int(time.time())}-{self.order_counter:04d}"
 
     def track_order(self, cl_order_id: str, market: str, security_id: str,
-                    side: str, price: float, qty: int, shareholder_id: str):
+                    side: str, price: float, qty: int, shareholder_id: str,
+                    target: str = "gateway"):
         """下单时开始跟踪"""
         self.orders[cl_order_id] = OrderTracker(
-            cl_order_id, market, security_id, side, price, qty, shareholder_id
+            cl_order_id, market, security_id, side, price, qty, shareholder_id,
+            target=target,
         )
 
     def add_response(self, msg: dict):
@@ -308,6 +312,7 @@ async def submit_order(req: OrderRequest):
         state.track_order(
             cl_order_id, req.market, req.securityId,
             req.side, req.price, req.qty, req.shareholderId,
+            target=req.target,
         )
         return {"status": "submitted", "clOrderId": cl_order_id, "target": req.target}
     except ConnectionError:
@@ -394,6 +399,8 @@ async def get_market(security_id: Optional[str] = None):
         ask_levels: dict[float, int] = defaultdict(int)
 
         for tracker in state.orders.values():
+            if tracker.target != "gateway":
+                continue
             if tracker.status not in ("已确认", "部分成交", "已提交"):
                 continue
             if security_id and tracker.security_id != security_id:
