@@ -1,7 +1,8 @@
 #include "matching_engine.h"
 #include "types.h"
-#include <format>
+#include <algorithm>
 #include <iostream>
+#include <sstream>
 
 namespace hdf {
 
@@ -9,488 +10,233 @@ MatchingEngine::MatchingEngine() {}
 
 MatchingEngine::~MatchingEngine() {}
 
-// ============================================================
-// B9: execId 生成 — 为每笔成交生成唯一的 execId
-// 格式: "EXEC" + 16位数字（左补零），如 "EXEC0000000000000001"
-// ============================================================
-std::string MatchingEngine::generateExecId() {
-    const uint64_t currentId = nextExecId_++ % 10000000000000000ULL;
-    return std::format("EXEC{:016}", currentId);
+std::string MatchingEngine::makeBookKey(const std::string& market, const std::string& securityId) {
+    return to_string(market) + ":" + securityId;
 }
 
-// ============================================================
-// B2: addOrder — 将订单插入订单簿对应位置
-// 根据买卖方向插入 bidBook_（买方）或 askBook_（卖方），
-// 并建立 orderIndex_ 反向索引以支持快速查找。
-// ============================================================
 void MatchingEngine::addOrder(const Order &order) {
-    // 检查重复 clOrderId，防止索引覆盖导致旧订单不可管理
-    if (orderIndex_.find(order.clOrderId) != orderIndex_.end()) {
-        return; // 重复订单，忽略
-    }
+    std::string key = makeBookKey(to_string(order.market), order.securityId);
+    SecurityOrderBook& book = books_[key];
 
-    BookEntry entry;
-    entry.order = order;
-    entry.remainingQty = order.qty;
-    entry.cumQty = 0;
+    auto& targetMap = (order.side == Side::BUY) ? book.bids : book.asks;
 
-    if (order.side == Side::BUY) {
-        // 买方订单簿：按价格降序（std::greater），同价时间优先（push_back）
-        bidBook_[order.price].push_back(entry);
-    } else {
-        // 卖方订单簿：按价格升序（默认 std::less），同价时间优先（push_back）
-        askBook_[order.price].push_back(entry);
-    }
+    // 插入到对应价格档位的列表末尾 (时间优先)
+    targetMap[order.price].push_back(order);
+    
+    // 获取刚插入元素的迭代器
+    auto& orderList = targetMap[order.price];
+    auto it = std::prev(orderList.end());
+    
+    // 更新局部索引
+    book.orderIndex[order.clOrderId] = {order.side, order.price, it};
 
-    // 建立反向索引，用于 cancelOrder 和 reduceOrderQty 快速定位
-    OrderLocation loc;
-    loc.price = order.price;
-    loc.side = order.side;
-    orderIndex_[order.clOrderId] = loc;
+    // 更新全局索引 (关键优化)
+    globalOrderIndex_[order.clOrderId] = {key, order.side, order.price, it};
 }
 
-// ============================================================
-// B3-B6: match — 基础撮合 + 成交价算法 + 部分成交 + 零股处理
-//
-// 撮合规则：
-//   - 价格优先：买单优先匹配最低卖价，卖单优先匹配最高买价
-//   - 时间优先：同价格先挂单先成交
-//   - 成交价：以被动方（maker）的挂单价格作为成交价
-//   - 部分成交：一笔订单可匹配多个对手方，逐个消耗数量
-//   - 零股处理：买入单必须为100股整数倍，卖出单可以不是100股整数倍
-//
-// 此函数为纯匹配操作：
-//   - 不会将新订单入簿
-//   - 但会从订单簿中移除/减少已匹配的对手方订单
-//   - 返回成交结果和剩余未成交数量
-// ============================================================
-MatchingEngine::MatchResult
-MatchingEngine::match(const Order &order,
-                      const std::optional<MarketData> &marketData) {
+void MatchingEngine::removeOrderFromIndex(const std::string& clOrderId, const std::string& bookKey) {
+    // 从全局索引移除
+    globalOrderIndex_.erase(clOrderId);
 
-    MatchResult result;
-    uint32_t remainingQty = order.qty;
+    // 从局部索引移除
+    auto bookIt = books_.find(bookKey);
+    if (bookIt != books_.end()) {
+        bookIt->second.orderIndex.erase(clOrderId);
+    }
+}
 
-    if (order.side == Side::BUY) {
-        // ---- 买单：与卖方订单簿（askBook_）撮合 ----
-        // askBook_ 按价格升序排列，最低卖价在最前面
+void MatchingEngine::executeMatch(const Order& incomingOrder, 
+                                  SecurityOrderBook& book, 
+                                  const std::string& bookKey,
+                                  MatchResult& result) {
+    
+    uint32_t remainingQty = incomingOrder.qty;
+    bool isBuy = (incomingOrder.side == Side::BUY);
+    auto& opponentMap = isBuy ? book.asks : book.bids;
 
-        // 遍历卖方订单簿，从最低价格开始
-        auto priceIt = askBook_.begin();
-        while (priceIt != askBook_.end() && remainingQty > 0) {
-            double askPrice = priceIt->first;
+    // 浮点数比较容差 (虽然 map key 是 exact match，但在逻辑判断价格优劣时需小心)
+    // 这里主要依赖 map 的有序性。
+    // 买入：找 ask <= buyPrice
+    // 卖出：找 bid >= sellPrice
+    
+    auto it = isBuy ? opponentMap.begin() : opponentMap.rbegin();
+    auto endIt = isBuy ? opponentMap.end() : opponentMap.rend();
 
-            // 价格不满足：买入价 < 卖出价，无法成交，退出
-            if (order.price < askPrice) {
-                break;
-            }
+    while (remainingQty > 0 && it != endIt) {
+        double opponentPrice = it->first;
+        
+        // 价格检查
+        if (isBuy) {
+            if (opponentPrice > incomingOrder.price + 1e-9) break; // 卖价太高
+        } else {
+            if (opponentPrice < incomingOrder.price - 1e-9) break; // 买价太低
+        }
 
-            // 行情约束：如果有行情数据，成交价不能高于行情卖价
-            if (marketData.has_value()) {
-                if (marketData->askPrice > 0 &&
-                    askPrice > marketData->askPrice) {
-                    break;
-                }
-            }
+        auto& orderList = it->second;
+        
+        // 遍历该价位的所有订单
+        while (remainingQty > 0 && !orderList.empty()) {
+            Order& opponentOrder = orderList.front();
+            
+            uint32_t matchQty = std::min(remainingQty, opponentOrder.qty);
+            
+            // 构建成交回报
+            OrderResponse response;
+            response.clOrderId = opponentOrder.clOrderId;
+            response.market = opponentOrder.market;
+            response.securityId = opponentOrder.securityId;
+            response.side = opponentOrder.side;
+            response.qty = opponentOrder.qty; // 原订单数量
+            response.price = opponentPrice;
+            response.shareholderId = opponentOrder.shareholderId;
+            
+            response.type = OrderResponse::EXECUTION;
+            response.execQty = matchQty;
+            response.execPrice = opponentPrice;
+            response.execId = "EXEC_" + opponentOrder.clOrderId + "_" + incomingOrder.clOrderId; // 简单生成ID
+            
+            result.executions.push_back(response);
 
-            // 同价格内按时间优先（list 的 front 就是最早挂单）
-            auto &priceLevel = priceIt->second;
-            auto entryIt = priceLevel.begin();
-            while (entryIt != priceLevel.end() && remainingQty > 0) {
-                // 确保同一股票
-                if (entryIt->order.securityId != order.securityId) {
-                    ++entryIt;
-                    continue;
-                }
+            remainingQty -= matchQty;
+            opponentOrder.qty -= matchQty;
 
-                // 计算可成交数量
-                uint32_t matchQty =
-                    std::min(remainingQty, entryIt->remainingQty);
+            std::string oppClOrderId = opponentOrder.clOrderId;
 
-                // B6: 零股处理
-                // 买入单成交数量必须是100的整数倍（除非对手方剩余不足100股）
-                // 当对手方（卖方）剩余量不足100时，可以成交零股
-                if (entryIt->remainingQty >= 100 && matchQty >= 100) {
-                    // 对手方充足，成交量向下取整到100的整数倍
-                    matchQty = (matchQty / 100) * 100;
-                }
-                // 如果对手方剩余量 <
-                // 100（零股），则直接全部成交（零股可以不是100的倍数）
-
-                if (matchQty == 0) {
-                    ++entryIt;
-                    continue;
-                }
-
-                // B4: 成交价 = 被动方（maker）挂单价格
-                double execPrice = entryIt->order.price;
-
-                // 构建成交回报（对手方 / 被动方信息）
-                OrderResponse exec;
-                exec.clOrderId = entryIt->order.clOrderId;
-                exec.market = entryIt->order.market;
-                exec.securityId = entryIt->order.securityId;
-                exec.side = entryIt->order.side;
-                exec.qty = entryIt->order.qty;     // 原始委托数量
-                exec.price = entryIt->order.price; // 原始委托价格
-                exec.shareholderId = entryIt->order.shareholderId;
-                exec.execId = generateExecId(); // B9: 唯一成交编号
-                exec.execQty = matchQty;        // 本笔成交数量
-                exec.execPrice = execPrice;     // 成交价格
-                exec.type = OrderResponse::Type::EXECUTION;
-
-                result.executions.emplace_back(std::move(exec));
-
-                // 更新对手方订单的剩余量和累计成交量
-                entryIt->remainingQty -= matchQty;
-                entryIt->cumQty += matchQty;
-
-                // 减少主动方剩余量
-                remainingQty -= matchQty;
-
-                // 如果对手方完全成交，从订单簿和索引中移除
-                if (entryIt->remainingQty == 0) {
-                    orderIndex_.erase(entryIt->order.clOrderId);
-                    entryIt = priceLevel.erase(entryIt);
-                } else {
-                    ++entryIt;
-                }
-            }
-
-            // 如果该价格档位已无订单，删除该价格层级
-            if (priceLevel.empty()) {
-                priceIt = askBook_.erase(priceIt);
+            if (opponentOrder.qty == 0) {
+                // 完全成交：移除
+                orderList.pop_front();
+                removeOrderFromIndex(oppClOrderId, bookKey);
             } else {
-                ++priceIt;
+                // 部分成交：更新全局索引中的迭代器指向 (其实迭代器没变，只是对象内容变了)
+                // 不需要额外操作，因为 globalOrderIndex_ 存的是 iterator，指向的对象已修改
+                break; 
             }
         }
-    } else {
-        // ---- 卖单：与买方订单簿（bidBook_）撮合 ----
-        // bidBook_ 按价格降序排列，最高买价在最前面
 
-        auto priceIt = bidBook_.begin();
-        while (priceIt != bidBook_.end() && remainingQty > 0) {
-            double bidPrice = priceIt->first;
-
-            // 价格不满足：买入价 < 卖出价，无法成交，退出
-            if (bidPrice < order.price) {
-                break;
-            }
-
-            // 行情约束：如果有行情数据，成交价不能低于行情买价
-            if (marketData.has_value()) {
-                if (marketData->bidPrice > 0 &&
-                    bidPrice < marketData->bidPrice) {
-                    break;
-                }
-            }
-
-            auto &priceLevel = priceIt->second;
-            auto entryIt = priceLevel.begin();
-            while (entryIt != priceLevel.end() && remainingQty > 0) {
-                // 确保同一股票
-                if (entryIt->order.securityId != order.securityId) {
-                    ++entryIt;
-                    continue;
-                }
-
-                // 计算可成交数量
-                uint32_t matchQty =
-                    std::min(remainingQty, entryIt->remainingQty);
-
-                // B6: 零股处理（卖出主动方 vs 买入被动方）
-                // 卖出单本身可以为零股；成交后买方被动方可能残留零股，
-                // 这是正常市场行为（零股限制仅在委托时校验），无需调整。
-
-                if (matchQty == 0) {
-                    ++entryIt;
-                    continue;
-                }
-
-                // B4: 成交价 = 被动方（maker）挂单价格
-                double execPrice = entryIt->order.price;
-
-                // 构建成交回报（对手方 / 被动方信息）
-                OrderResponse exec;
-                exec.clOrderId = entryIt->order.clOrderId;
-                exec.market = entryIt->order.market;
-                exec.securityId = entryIt->order.securityId;
-                exec.side = entryIt->order.side;
-                exec.qty = entryIt->order.qty;
-                exec.price = entryIt->order.price;
-                exec.shareholderId = entryIt->order.shareholderId;
-                exec.execId = generateExecId();
-                exec.execQty = matchQty;
-                exec.execPrice = execPrice;
-                exec.type = OrderResponse::Type::EXECUTION;
-
-                result.executions.emplace_back(std::move(exec));
-
-                // 更新对手方订单的剩余量和累计成交量
-                entryIt->remainingQty -= matchQty;
-                entryIt->cumQty += matchQty;
-
-                // 减少主动方剩余量
-                remainingQty -= matchQty;
-
-                // 如果对手方完全成交，从订单簿和索引中移除
-                if (entryIt->remainingQty == 0) {
-                    orderIndex_.erase(entryIt->order.clOrderId);
-                    entryIt = priceLevel.erase(entryIt);
-                } else {
-                    ++entryIt;
-                }
-            }
-
-            // 如果该价格档位已无订单，删除该价格层级
-            if (priceLevel.empty()) {
-                priceIt = bidBook_.erase(priceIt);
+        // 清理空的价格档位
+        if (orderList.empty()) {
+            if (!isBuy) {
+                // 反向迭代器 erase 处理
+                auto current_it = it;
+                ++it; 
+                opponentMap.erase(std::next(current_it).base());
             } else {
-                ++priceIt;
+                it = opponentMap.erase(it);
             }
+        } else {
+            ++it;
         }
     }
 
     result.remainingQty = remainingQty;
+}
 
+std::optional<MatchingEngine::MatchResult>
+MatchingEngine::match(const Order &order,
+                      const std::optional<MarketData> &marketData) {
+    
+    std::string key = makeBookKey(to_string(order.market), order.securityId);
+    auto it = books_.find(key);
+    
+    MatchResult result;
+    result.remainingQty = order.qty;
+
+    if (it != books_.end()) {
+        executeMatch(order, it->second, key, result);
+    }
+
+    // 即使没有成交 (remainingQty == order.qty)，也返回结果让调用方知道状态
+    // 如果完全没撮合到，executions 为空，remainingQty 等于原数量
     return result;
 }
 
-// ============================================================
-// B7: cancelOrder — 从订单簿移除指定订单
-// 返回 CancelResponse，包含已成交累计量等信息。
-// 如果找不到订单，返回拒绝类型的 CancelResponse。
-// ============================================================
 CancelResponse MatchingEngine::cancelOrder(const std::string &clOrderId) {
     CancelResponse response;
     response.origClOrderId = clOrderId;
+    response.canceledQty = 0;
+    response.type = CancelResponse::REJECT;
+    response.rejectCode = -1;
+    response.rejectText = "Order not found";
 
-    // 通过反向索引快速定位订单
-    auto indexIt = orderIndex_.find(clOrderId);
-    if (indexIt == orderIndex_.end()) {
-        // 订单不在簿中（可能已完全成交或不存在），返回拒绝
-        response.type = CancelResponse::Type::REJECT;
-        response.rejectCode = 1;
-        response.rejectText = "Order not found in book";
+    // O(1) 查找：利用全局索引
+    auto globalIt = globalOrderIndex_.find(clOrderId);
+    if (globalIt == globalOrderIndex_.end()) {
         return response;
     }
 
-    OrderLocation loc = indexIt->second;
-
-    if (loc.side == Side::BUY) {
-        // 在买方订单簿中查找并移除
-        auto priceIt = bidBook_.find(loc.price);
-        if (priceIt != bidBook_.end()) {
-            auto &priceLevel = priceIt->second;
-            for (auto entryIt = priceLevel.begin(); entryIt != priceLevel.end();
-                 ++entryIt) {
-                if (entryIt->order.clOrderId == clOrderId) {
-                    // 填充撤单回报信息
-                    response.clOrderId = entryIt->order.clOrderId;
-                    response.market = entryIt->order.market;
-                    response.securityId = entryIt->order.securityId;
-                    response.shareholderId = entryIt->order.shareholderId;
-                    response.side = entryIt->order.side;
-                    response.qty = entryIt->order.qty;
-                    response.price = entryIt->order.price;
-                    response.cumQty = entryIt->cumQty;
-                    response.canceledQty = entryIt->remainingQty;
-                    response.type = CancelResponse::Type::CONFIRM;
-
-                    // 从订单簿中移除
-                    priceLevel.erase(entryIt);
-                    if (priceLevel.empty()) {
-                        bidBook_.erase(priceIt);
-                    }
-                    // 从反向索引中移除
-                    orderIndex_.erase(indexIt);
-                    return response;
-                }
-            }
-        }
-    } else {
-        // 在卖方订单簿中查找并移除
-        auto priceIt = askBook_.find(loc.price);
-        if (priceIt != askBook_.end()) {
-            auto &priceLevel = priceIt->second;
-            for (auto entryIt = priceLevel.begin(); entryIt != priceLevel.end();
-                 ++entryIt) {
-                if (entryIt->order.clOrderId == clOrderId) {
-                    // 填充撤单回报信息
-                    response.clOrderId = entryIt->order.clOrderId;
-                    response.market = entryIt->order.market;
-                    response.securityId = entryIt->order.securityId;
-                    response.shareholderId = entryIt->order.shareholderId;
-                    response.side = entryIt->order.side;
-                    response.qty = entryIt->order.qty;
-                    response.price = entryIt->order.price;
-                    response.cumQty = entryIt->cumQty;
-                    response.canceledQty = entryIt->remainingQty;
-                    response.type = CancelResponse::Type::CONFIRM;
-
-                    // 从订单簿中移除
-                    priceLevel.erase(entryIt);
-                    if (priceLevel.empty()) {
-                        askBook_.erase(priceIt);
-                    }
-                    // 从反向索引中移除
-                    orderIndex_.erase(indexIt);
-                    return response;
-                }
-            }
-        }
+    const GlobalLoc& loc = globalIt->second;
+    
+    // 定位到具体的 book
+    auto bookIt = books_.find(loc.bookKey);
+    if (bookIt == books_.end()) {
+        // 数据不一致，理论上不应发生
+        return response;
     }
 
-    // 理论上不应到此处（索引存在但订单簿中找不到），说明内部状态不一致
-    // 这是严重的内部错误，应当引起关注
-    std::cerr << "[MatchingEngine] CRITICAL: Order index inconsistency for "
-                 "clOrderId="
-              << clOrderId << std::endl;
-    response.type = CancelResponse::Type::REJECT;
-    response.rejectCode = 2;
-    response.rejectText = "Order index inconsistency";
-    orderIndex_.erase(indexIt);
+    SecurityOrderBook& book = bookIt->second;
+    auto& targetMap = (loc.side == Side::BUY) ? book.bids : book.asks;
+    
+    // 验证价格档位是否存在 (防御性编程)
+    auto priceIt = targetMap.find(loc.price);
+    if (priceIt == targetMap.end()) {
+        return response;
+    }
+
+    Order& targetOrder = *(loc.it);
+    
+    // 填充成功响应
+    response.type = CancelResponse::CONFIRM;
+    response.rejectCode = 0;
+    response.rejectText = "";
+    response.market = targetOrder.market;
+    response.securityId = targetOrder.securityId;
+    response.side = targetOrder.side;
+    response.qty = targetOrder.qty;
+    response.price = targetOrder.price;
+    response.cumQty = 0; // 简化处理，实际需记录累计成交
+    response.canceledQty = targetOrder.qty;
+
+    // 执行删除
+    priceIt->second.erase(loc.it);
+    if (priceIt->second.empty()) {
+        targetMap.erase(priceIt);
+    }
+
+    // 清除索引
+    removeOrderFromIndex(clOrderId, loc.bookKey);
+
     return response;
 }
 
-// ============================================================
-// B8: reduceOrderQty — 减少订单簿中指定订单的数量
-// 用于交易所主动成交后同步内部订单簿状态。
-// 若减少后数量为0，则自动从订单簿中移除该订单。
-// ============================================================
-void MatchingEngine::reduceOrderQty(const std::string &clOrderId,
-                                    uint32_t qty) {
-    // 通过反向索引快速定位订单
-    auto indexIt = orderIndex_.find(clOrderId);
-    if (indexIt == orderIndex_.end()) {
-        // 订单不在簿中，忽略（可能已经完全成交或被撤单）
-        return;
+void MatchingEngine::reduceOrderQty(const std::string &clOrderId, uint32_t qty) {
+    auto globalIt = globalOrderIndex_.find(clOrderId);
+    if (globalIt == globalOrderIndex_.end()) {
+        return; // 未找到
     }
 
-    OrderLocation loc = indexIt->second;
+    const GlobalLoc& loc = globalIt->second;
+    auto bookIt = books_.find(loc.bookKey);
+    if (bookIt == books_.end()) return;
 
-    // 定义查找和更新的 lambda，避免买卖方重复代码
-    auto reduceInBook = [&](auto &book) {
-        auto priceIt = book.find(loc.price);
-        if (priceIt == book.end()) {
-            return;
+    SecurityOrderBook& book = bookIt->second;
+    auto& targetMap = (loc.side == Side::BUY) ? book.bids : book.asks;
+    
+    auto priceIt = targetMap.find(loc.price);
+    if (priceIt == targetMap.end()) return;
+
+    Order& targetOrder = *(loc.it);
+
+    if (targetOrder.qty <= qty) {
+        // 减少后为0，相当于撤单
+        priceIt->second.erase(loc.it);
+        if (priceIt->second.empty()) {
+            targetMap.erase(priceIt);
         }
-        auto &priceLevel = priceIt->second;
-        for (auto entryIt = priceLevel.begin(); entryIt != priceLevel.end();
-             ++entryIt) {
-            if (entryIt->order.clOrderId == clOrderId) {
-                // 更新累计成交量
-                entryIt->cumQty += qty;
-
-                // 减少剩余量
-                if (qty >= entryIt->remainingQty) {
-                    // 完全消耗，从订单簿移除
-                    entryIt->remainingQty = 0;
-                    priceLevel.erase(entryIt);
-                    if (priceLevel.empty()) {
-                        book.erase(priceIt);
-                    }
-                    orderIndex_.erase(indexIt);
-                } else {
-                    entryIt->remainingQty -= qty;
-                }
-                return;
-            }
-        }
-    };
-
-    if (loc.side == Side::BUY) {
-        reduceInBook(bidBook_);
+        removeOrderFromIndex(clOrderId, loc.bookKey);
     } else {
-        reduceInBook(askBook_);
+        targetOrder.qty -= qty;
+        // 数量变化不影响迭代器位置，索引无需更新
     }
-}
-
-bool MatchingEngine::hasOrder(const std::string &clOrderId) const {
-    return orderIndex_.count(clOrderId) > 0;
-}
-
-nlohmann::json MatchingEngine::getSnapshot() const {
-    nlohmann::json result;
-
-    // 买盘：bidBook_ 已按价格降序排列（std::greater）
-    nlohmann::json bids = nlohmann::json::array();
-    int cumQty = 0;
-    for (const auto &[price, level] : bidBook_) {
-        int totalQty = 0;
-        int orderCount = 0;
-        for (const auto &entry : level) {
-            totalQty += static_cast<int>(entry.remainingQty);
-            ++orderCount;
-        }
-        cumQty += totalQty;
-        bids.push_back({
-            {"price", price},
-            {"qty", totalQty},
-            {"cumQty", cumQty},
-            {"orderCount", orderCount},
-        });
-    }
-
-    // 卖盘：askBook_ 已按价格升序排列（std::less）
-    nlohmann::json asks = nlohmann::json::array();
-    cumQty = 0;
-    for (const auto &[price, level] : askBook_) {
-        int totalQty = 0;
-        int orderCount = 0;
-        for (const auto &entry : level) {
-            totalQty += static_cast<int>(entry.remainingQty);
-            ++orderCount;
-        }
-        cumQty += totalQty;
-        asks.push_back({
-            {"price", price},
-            {"qty", totalQty},
-            {"cumQty", cumQty},
-            {"orderCount", orderCount},
-        });
-    }
-
-    result["bids"] = bids;
-    result["asks"] = asks;
-    result["totalOrders"] = static_cast<int>(orderIndex_.size());
-    return result;
-}
-
-// ============================================================
-// getBestQuote — 获取指定证券的最优买卖报价
-// 遍历买卖订单簿，找到该证券的最高买价和最低卖价。
-// 无挂单时对应价格为 0。
-// ============================================================
-MarketData MatchingEngine::getBestQuote(const std::string &securityId,
-                                        Market market) const {
-    MarketData md{0.0, 0.0};
-
-    // 最优买价：bidBook_ 按价格降序，找第一个含该证券+市场的价格档位
-    for (const auto &[price, level] : bidBook_) {
-        for (const auto &entry : level) {
-            if (entry.order.securityId == securityId &&
-                entry.order.market == market && entry.remainingQty > 0) {
-                md.bidPrice = price;
-                goto foundBid;
-            }
-        }
-    }
-foundBid:
-
-    // 最优卖价：askBook_ 按价格升序，找第一个含该证券+市场的价格档位
-    for (const auto &[price, level] : askBook_) {
-        for (const auto &entry : level) {
-            if (entry.order.securityId == securityId &&
-                entry.order.market == market && entry.remainingQty > 0) {
-                md.askPrice = price;
-                goto foundAsk;
-            }
-        }
-    }
-foundAsk:
-
-    return md;
 }
 
 } // namespace hdf
