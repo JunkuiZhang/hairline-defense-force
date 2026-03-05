@@ -2,7 +2,11 @@
 
 namespace hdf {
 
-TradeSystem::TradeSystem() { core_.setLogger(&logger_); }
+TradeSystem::TradeSystem() : cores_(1) {
+    for (auto &core : cores_) {
+        core.setLogger(&logger_);
+    }
+}
 
 TradeSystem::~TradeSystem() { stopEventLoop(); }
 
@@ -15,35 +19,97 @@ void TradeSystem::disableLogging() { logger_.close(); }
 TradeLogger &TradeSystem::logger() { return logger_; }
 
 void TradeSystem::setSendToClient(SendToClient callback) {
-    core_.setSendToClient(callback);
+    for (auto &core : cores_) {
+        core.setSendToClient(callback);
+    }
 }
 
 void TradeSystem::setSendToExchange(SendToExchange callback) {
-    core_.setSendToExchange(callback);
+    for (auto &core : cores_) {
+        core.setSendToExchange(callback);
+    }
 }
 
 void TradeSystem::setSendMarketData(SendMarketData callback) {
-    core_.setSendMarketData(callback);
+    for (auto &core : cores_) {
+        core.setSendMarketData(callback);
+    }
 }
 
+// ─── 路由 ────────────────────────────────────────────────────
+
+std::string TradeSystem::makeRouteKey(const std::string &market,
+                                      const std::string &securityId) {
+    return market + "+" + securityId;
+}
+
+SecurityCore &TradeSystem::coreFor(const std::string &market,
+                                   const std::string &securityId) {
+    size_t h = std::hash<std::string>{}(makeRouteKey(market, securityId));
+    return cores_[h % cores_.size()];
+}
+
+const SecurityCore &TradeSystem::coreFor(const std::string &market,
+                                         const std::string &securityId) const {
+    size_t h = std::hash<std::string>{}(makeRouteKey(market, securityId));
+    return cores_[h % cores_.size()];
+}
+
+// ─── 业务处理 ────────────────────────────────────────────────
+
 void TradeSystem::handleOrder(const nlohmann::json &input) {
-    core_.handleOrder(input);
+    coreFor(input.value("market", ""), input.value("securityId", ""))
+        .handleOrder(input);
 }
 
 void TradeSystem::handleCancel(const nlohmann::json &input) {
-    core_.handleCancel(input);
+    coreFor(input.value("market", ""), input.value("securityId", ""))
+        .handleCancel(input);
 }
 
 void TradeSystem::handleMarketData(const nlohmann::json &input) {
-    core_.handleMarketData(input);
+    if (!input.is_array())
+        return;
+    if (cores_.size() == 1) {
+        cores_[0].handleMarketData(input);
+        return;
+    }
+    // 按 core 分组
+    std::vector<nlohmann::json> batches(cores_.size(),
+                                        nlohmann::json::array());
+    for (const auto &item : input) {
+        std::string m = item.value("market", "");
+        std::string s = item.value("securityId", "");
+        size_t h = std::hash<std::string>{}(makeRouteKey(m, s));
+        batches[h % cores_.size()].push_back(item);
+    }
+    for (size_t i = 0; i < cores_.size(); ++i) {
+        if (!batches[i].empty()) {
+            cores_[i].handleMarketData(batches[i]);
+        }
+    }
 }
 
 void TradeSystem::handleResponse(const nlohmann::json &input) {
-    core_.handleResponse(input);
+    coreFor(input.value("market", ""), input.value("securityId", ""))
+        .handleResponse(input);
 }
 
 nlohmann::json TradeSystem::queryOrderbook() const {
-    return core_.queryOrderbook();
+    if (cores_.size() == 1) {
+        return cores_[0].queryOrderbook();
+    }
+    nlohmann::json merged;
+    merged["bids"] = nlohmann::json::array();
+    merged["asks"] = nlohmann::json::array();
+    for (const auto &core : cores_) {
+        auto snap = core.queryOrderbook();
+        for (const auto &b : snap["bids"])
+            merged["bids"].push_back(b);
+        for (const auto &a : snap["asks"])
+            merged["asks"].push_back(a);
+    }
+    return merged;
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

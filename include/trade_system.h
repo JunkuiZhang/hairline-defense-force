@@ -11,6 +11,7 @@
 #include <string>
 #include <thread>
 #include <variant>
+#include <vector>
 
 namespace hdf {
 
@@ -149,8 +150,16 @@ class TradeSystem {
     size_t queueDepth() const;
 
   private:
-    SecurityCore core_;
+    std::vector<SecurityCore> cores_;
     TradeLogger logger_;
+
+    // ─── 路由 ────────────────────────────────────────────────
+    static std::string makeRouteKey(const std::string &market,
+                                    const std::string &securityId);
+    SecurityCore &coreFor(const std::string &market,
+                          const std::string &securityId);
+    const SecurityCore &coreFor(const std::string &market,
+                                const std::string &securityId) const;
 
     // ─── MPSC 命令队列内部成员 ──────────────────────────────
     mutable std::mutex queueMutex_;
