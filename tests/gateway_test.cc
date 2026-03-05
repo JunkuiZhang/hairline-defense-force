@@ -46,8 +46,8 @@ static json makeCancel(const std::string &clOrderId,
 // ================================================================
 class GatewayTest : public testing::Test {
   protected:
-    TradeSystem gateway;               // 交易所前置
-    TradeSystem exchange;              // 纯撮合系统充当交易所
+    TradeSystem gateway{1};            // 交易所前置
+    TradeSystem exchange{1};           // 纯撮合系统充当交易所
     std::vector<json> clientResponses; // 最终发给客户端的回报
 
     void SetUp() override {
@@ -75,7 +75,7 @@ class GatewayTest : public testing::Test {
 // 用于模拟交易所拒绝的情况
 class PureGatewayTest : public testing::Test {
   protected:
-    TradeSystem system;                 // 交易所前置
+    TradeSystem system{1};              // 交易所前置
     std::vector<json> clientResponses;  // 最终发给客户端的回报
     std::vector<json> exchangeRequests; // gateway转发给交易所的请求
 

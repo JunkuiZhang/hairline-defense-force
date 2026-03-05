@@ -4,7 +4,9 @@
 namespace hdf {
 
 TradeSystem::TradeSystem(size_t numBuckets) : buckets_() {
-    const size_t N = (numBuckets > 0) ? numBuckets : 1;
+    const size_t N = (numBuckets > 0)
+                         ? numBuckets
+                         : std::max(1u, std::thread::hardware_concurrency());
     buckets_.reserve(N);
     for (size_t i = 0; i < N; ++i) {
         buckets_.push_back(std::make_unique<WorkerBucket>());

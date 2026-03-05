@@ -37,7 +37,7 @@ static json makeCancel(const std::string &clOrderId,
 // 纯撮合系统测试基类：不设置 sendToExchange
 class ExchangeTest : public testing::Test {
   protected:
-    TradeSystem system;
+    TradeSystem system{1};
     std::vector<json> clientResponses;
 
     void SetUp() override {
