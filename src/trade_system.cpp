@@ -75,8 +75,7 @@ void TradeSystem::handleMarketData(const nlohmann::json &input) {
         return;
     }
     // 按 core 分组
-    std::vector<nlohmann::json> batches(cores_.size(),
-                                        nlohmann::json::array());
+    std::vector<nlohmann::json> batches(cores_.size(), nlohmann::json::array());
     for (const auto &item : input) {
         std::string m = item.value("market", "");
         std::string s = item.value("securityId", "");
