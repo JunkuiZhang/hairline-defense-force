@@ -27,7 +27,7 @@ namespace hdf {
  **/
 class TradeSystem {
   public:
-    TradeSystem();
+    explicit TradeSystem(size_t numBuckets = 1);
     ~TradeSystem();
 
     using SendToClient = std::function<void(const nlohmann::json &)>;

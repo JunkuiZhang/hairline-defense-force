@@ -3,8 +3,8 @@
 
 namespace hdf {
 
-TradeSystem::TradeSystem() {
-    const size_t N = 1;
+TradeSystem::TradeSystem(size_t numBuckets) : buckets_() {
+    const size_t N = (numBuckets > 0) ? numBuckets : 1;
     buckets_.reserve(N);
     for (size_t i = 0; i < N; ++i) {
         buckets_.push_back(std::make_unique<WorkerBucket>());
