@@ -6,6 +6,7 @@
 #include <condition_variable>
 #include <deque>
 #include <functional>
+#include <memory>
 #include <mutex>
 #include <nlohmann/json.hpp>
 #include <string>
@@ -90,6 +91,12 @@ class TradeSystem {
      */
     nlohmann::json queryOrderbook() const;
 
+    /**
+     * @brief 获取指定证券的订单簿快照，路由到对应 WorkerBucket。
+     */
+    nlohmann::json queryOrderbook(const std::string &securityId,
+                                  Market market) const;
+
     // ─── MPSC 命令队列接口（线程安全） ───────────────────────
 
     /**
@@ -150,38 +157,33 @@ class TradeSystem {
     size_t queueDepth() const;
 
   private:
-    std::vector<SecurityCore> cores_;
+    // ─── WorkerBucket：每个 bucket 拥有独立的 SecurityCore + 任务队列 + 线程
+    struct WorkerBucket {
+        SecurityCore core;
+        std::deque<Command> taskQueue;
+        mutable std::mutex mutex;
+        std::condition_variable cv;
+        std::atomic<bool> running{false};
+        std::thread thread;
+    };
+
+    std::vector<std::unique_ptr<WorkerBucket>> buckets_;
     TradeLogger logger_;
 
     // ─── 路由 ────────────────────────────────────────────────
     static std::string makeRouteKey(const std::string &market,
                                     const std::string &securityId);
+    size_t routeIndex(const std::string &market,
+                      const std::string &securityId) const;
     SecurityCore &coreFor(const std::string &market,
                           const std::string &securityId);
     const SecurityCore &coreFor(const std::string &market,
                                 const std::string &securityId) const;
 
-    // ─── MPSC 命令队列内部成员 ──────────────────────────────
-    mutable std::mutex queueMutex_;
-    std::condition_variable queueCv_;
-    std::deque<Command> commandQueue_;
-    std::atomic<bool> eventLoopRunning_{false};
-    std::thread eventLoopThread_;
-
-    /**
-     * @brief 向命令队列投递一条命令（内部通用方法）
-     */
-    void enqueueCommand(Command cmd);
-
-    /**
-     * @brief 消费者线程主循环
-     */
-    void eventLoop();
-
-    /**
-     * @brief 分发并执行一条命令
-     */
-    void dispatchCommand(Command &cmd);
+    // ─── 每 bucket 的队列操作 ────────────────────────────────
+    void enqueueToWorker(size_t idx, Command cmd);
+    void workerLoop(WorkerBucket *bucket);
+    static void dispatchCommand(WorkerBucket &bucket, Command &cmd);
 };
 
 } // namespace hdf

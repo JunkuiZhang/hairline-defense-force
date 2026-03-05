@@ -1,10 +1,14 @@
 #include "trade_system.h"
+#include "types.h"
 
 namespace hdf {
 
-TradeSystem::TradeSystem() : cores_(1) {
-    for (auto &core : cores_) {
-        core.setLogger(&logger_);
+TradeSystem::TradeSystem() {
+    const size_t N = 1;
+    buckets_.reserve(N);
+    for (size_t i = 0; i < N; ++i) {
+        buckets_.push_back(std::make_unique<WorkerBucket>());
+        buckets_.back()->core.setLogger(&logger_);
     }
 }
 
@@ -19,20 +23,20 @@ void TradeSystem::disableLogging() { logger_.close(); }
 TradeLogger &TradeSystem::logger() { return logger_; }
 
 void TradeSystem::setSendToClient(SendToClient callback) {
-    for (auto &core : cores_) {
-        core.setSendToClient(callback);
+    for (auto &b : buckets_) {
+        b->core.setSendToClient(callback);
     }
 }
 
 void TradeSystem::setSendToExchange(SendToExchange callback) {
-    for (auto &core : cores_) {
-        core.setSendToExchange(callback);
+    for (auto &b : buckets_) {
+        b->core.setSendToExchange(callback);
     }
 }
 
 void TradeSystem::setSendMarketData(SendMarketData callback) {
-    for (auto &core : cores_) {
-        core.setSendMarketData(callback);
+    for (auto &b : buckets_) {
+        b->core.setSendMarketData(callback);
     }
 }
 
@@ -43,19 +47,23 @@ std::string TradeSystem::makeRouteKey(const std::string &market,
     return market + "+" + securityId;
 }
 
+size_t TradeSystem::routeIndex(const std::string &market,
+                               const std::string &securityId) const {
+    size_t h = std::hash<std::string>{}(makeRouteKey(market, securityId));
+    return h % buckets_.size();
+}
+
 SecurityCore &TradeSystem::coreFor(const std::string &market,
                                    const std::string &securityId) {
-    size_t h = std::hash<std::string>{}(makeRouteKey(market, securityId));
-    return cores_[h % cores_.size()];
+    return buckets_[routeIndex(market, securityId)]->core;
 }
 
 const SecurityCore &TradeSystem::coreFor(const std::string &market,
                                          const std::string &securityId) const {
-    size_t h = std::hash<std::string>{}(makeRouteKey(market, securityId));
-    return cores_[h % cores_.size()];
+    return buckets_[routeIndex(market, securityId)]->core;
 }
 
-// ─── 业务处理 ────────────────────────────────────────────────
+// ─── 同步业务处理（非线程安全，直接调用） ──────────────────────
 
 void TradeSystem::handleOrder(const nlohmann::json &input) {
     coreFor(input.value("market", ""), input.value("securityId", ""))
@@ -70,21 +78,20 @@ void TradeSystem::handleCancel(const nlohmann::json &input) {
 void TradeSystem::handleMarketData(const nlohmann::json &input) {
     if (!input.is_array())
         return;
-    if (cores_.size() == 1) {
-        cores_[0].handleMarketData(input);
+    if (buckets_.size() == 1) {
+        buckets_[0]->core.handleMarketData(input);
         return;
     }
-    // 按 core 分组
-    std::vector<nlohmann::json> batches(cores_.size(), nlohmann::json::array());
+    std::vector<nlohmann::json> batches(buckets_.size(),
+                                        nlohmann::json::array());
     for (const auto &item : input) {
         std::string m = item.value("market", "");
         std::string s = item.value("securityId", "");
-        size_t h = std::hash<std::string>{}(makeRouteKey(m, s));
-        batches[h % cores_.size()].push_back(item);
+        batches[routeIndex(m, s)].push_back(item);
     }
-    for (size_t i = 0; i < cores_.size(); ++i) {
+    for (size_t i = 0; i < buckets_.size(); ++i) {
         if (!batches[i].empty()) {
-            cores_[i].handleMarketData(batches[i]);
+            buckets_[i]->core.handleMarketData(batches[i]);
         }
     }
 }
@@ -95,114 +102,150 @@ void TradeSystem::handleResponse(const nlohmann::json &input) {
 }
 
 nlohmann::json TradeSystem::queryOrderbook() const {
-    if (cores_.size() == 1) {
-        return cores_[0].queryOrderbook();
+    if (buckets_.size() == 1) {
+        return buckets_[0]->core.queryOrderbook();
     }
     nlohmann::json merged;
     merged["bids"] = nlohmann::json::array();
     merged["asks"] = nlohmann::json::array();
-    for (const auto &core : cores_) {
-        auto snap = core.queryOrderbook();
-        for (const auto &b : snap["bids"])
-            merged["bids"].push_back(b);
-        for (const auto &a : snap["asks"])
-            merged["asks"].push_back(a);
+    for (const auto &b : buckets_) {
+        auto snap = b->core.queryOrderbook();
+        for (const auto &bid : snap["bids"])
+            merged["bids"].push_back(bid);
+        for (const auto &ask : snap["asks"])
+            merged["asks"].push_back(ask);
     }
     return merged;
 }
 
+nlohmann::json TradeSystem::queryOrderbook(const std::string &securityId,
+                                           Market market) const {
+    return coreFor(to_string(market), securityId)
+        .queryOrderbook(securityId, market);
+}
+
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// MPSC 命令队列实现
+// 每 WorkerBucket 独立队列实现
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-void TradeSystem::enqueueCommand(Command cmd) {
+void TradeSystem::enqueueToWorker(size_t idx, Command cmd) {
+    auto &bucket = *buckets_[idx];
     {
-        std::lock_guard<std::mutex> lock(queueMutex_);
-        commandQueue_.push_back(std::move(cmd));
+        std::lock_guard<std::mutex> lock(bucket.mutex);
+        bucket.taskQueue.push_back(std::move(cmd));
     }
-    queueCv_.notify_one();
+    bucket.cv.notify_one();
 }
 
 void TradeSystem::submitOrder(const nlohmann::json &input) {
-    enqueueCommand(CmdOrder{input});
+    enqueueToWorker(
+        routeIndex(input.value("market", ""), input.value("securityId", "")),
+        CmdOrder{input});
 }
 
 void TradeSystem::submitCancel(const nlohmann::json &input) {
-    enqueueCommand(CmdCancel{input});
+    enqueueToWorker(
+        routeIndex(input.value("market", ""), input.value("securityId", "")),
+        CmdCancel{input});
 }
 
 void TradeSystem::submitResponse(const nlohmann::json &input) {
-    enqueueCommand(CmdResponse{input});
+    enqueueToWorker(
+        routeIndex(input.value("market", ""), input.value("securityId", "")),
+        CmdResponse{input});
 }
 
 void TradeSystem::submitMarketData(const nlohmann::json &input) {
-    enqueueCommand(CmdMarketData{input});
+    if (!input.is_array())
+        return;
+    if (buckets_.size() == 1) {
+        enqueueToWorker(0, CmdMarketData{input});
+        return;
+    }
+    std::vector<nlohmann::json> batches(buckets_.size(),
+                                        nlohmann::json::array());
+    for (const auto &item : input) {
+        std::string m = item.value("market", "");
+        std::string s = item.value("securityId", "");
+        batches[routeIndex(m, s)].push_back(item);
+    }
+    for (size_t i = 0; i < buckets_.size(); ++i) {
+        if (!batches[i].empty()) {
+            enqueueToWorker(i, CmdMarketData{std::move(batches[i])});
+        }
+    }
 }
 
 size_t TradeSystem::queueDepth() const {
-    std::lock_guard<std::mutex> lock(queueMutex_);
-    return commandQueue_.size();
+    size_t total = 0;
+    for (const auto &b : buckets_) {
+        std::lock_guard<std::mutex> lock(b->mutex);
+        total += b->taskQueue.size();
+    }
+    return total;
 }
 
-void TradeSystem::dispatchCommand(Command &cmd) {
+void TradeSystem::dispatchCommand(WorkerBucket &bucket, Command &cmd) {
     std::visit(
-        [this](auto &c) {
+        [&bucket](auto &c) {
             using T = std::decay_t<decltype(c)>;
             if constexpr (std::is_same_v<T, CmdOrder>) {
-                handleOrder(c.input);
+                bucket.core.handleOrder(c.input);
             } else if constexpr (std::is_same_v<T, CmdCancel>) {
-                handleCancel(c.input);
+                bucket.core.handleCancel(c.input);
             } else if constexpr (std::is_same_v<T, CmdResponse>) {
-                handleResponse(c.input);
+                bucket.core.handleResponse(c.input);
             } else if constexpr (std::is_same_v<T, CmdMarketData>) {
-                handleMarketData(c.input);
+                bucket.core.handleMarketData(c.input);
             }
         },
         cmd);
 }
 
-void TradeSystem::eventLoop() {
+void TradeSystem::workerLoop(WorkerBucket *bucket) {
     while (true) {
         std::deque<Command> batch;
         {
-            std::unique_lock<std::mutex> lock(queueMutex_);
-            queueCv_.wait(lock, [this] {
-                return !commandQueue_.empty() || !eventLoopRunning_;
+            std::unique_lock<std::mutex> lock(bucket->mutex);
+            bucket->cv.wait(lock, [bucket] {
+                return !bucket->taskQueue.empty() || !bucket->running;
             });
-            // 取出所有待处理命令（批量 swap，减少锁持有时间）
-            batch.swap(commandQueue_);
+            batch.swap(bucket->taskQueue);
         }
-        // 在无锁状态下逐条处理
         for (auto &cmd : batch) {
-            dispatchCommand(cmd);
+            dispatchCommand(*bucket, cmd);
         }
-        // 队列为空且已请求停止 → 退出
-        if (!eventLoopRunning_) {
-            // 再检查一次，防止 stop 和 enqueue 同时发生遗漏
-            std::lock_guard<std::mutex> lock(queueMutex_);
-            for (auto &cmd : commandQueue_) {
-                dispatchCommand(cmd);
+        if (!bucket->running) {
+            std::lock_guard<std::mutex> lock(bucket->mutex);
+            for (auto &cmd : bucket->taskQueue) {
+                dispatchCommand(*bucket, cmd);
             }
-            commandQueue_.clear();
+            bucket->taskQueue.clear();
             break;
         }
     }
 }
 
 void TradeSystem::startEventLoop() {
-    if (eventLoopRunning_)
-        return;
-    eventLoopRunning_ = true;
-    eventLoopThread_ = std::thread(&TradeSystem::eventLoop, this);
+    for (auto &b : buckets_) {
+        if (b->running)
+            continue;
+        b->running = true;
+        b->thread = std::thread(&TradeSystem::workerLoop, this, b.get());
+    }
 }
 
 void TradeSystem::stopEventLoop() {
-    if (!eventLoopRunning_)
-        return;
-    eventLoopRunning_ = false;
-    queueCv_.notify_one();
-    if (eventLoopThread_.joinable()) {
-        eventLoopThread_.join();
+    for (auto &b : buckets_) {
+        if (!b->running)
+            continue;
+        b->running = false;
+        b->cv.notify_one();
+    }
+    for (auto &b : buckets_) {
+        if (b->thread.joinable()) {
+            b->thread.join();
+        }
     }
 }
 
