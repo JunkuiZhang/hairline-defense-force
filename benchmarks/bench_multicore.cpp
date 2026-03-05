@@ -20,7 +20,6 @@
 #include <cstdlib>
 #include <iomanip>
 #include <iostream>
-#include <mutex>
 #include <numeric>
 #include <random>
 #include <sstream>
