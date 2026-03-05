@@ -14,19 +14,19 @@
 
 ```
 ┌───────────────────────────────┐
-│      Streamlit 前端 (app.py)   │  ← 浏览器 :8501
+│      Streamlit 前端 (app.py)   │  ← 浏览器 :30000
 │   仪表盘 │ 市场行情 │ 手动下单    │
 │  手动撤单 │ 交易所监控 │ 风控日志 │
 └──────────────┬────────────────┘
-               │ REST API (HTTP :9100)
+               │ REST API (HTTP :31000)
 ┌──────────────▼────────────────┐
 │    FastAPI 后端 (server.py)    │
 │   订单跟踪  │  回报分类存储      │
 │  WebSocket 广播 │ 市场深度计算  │
 └──────────────┬────────────────┘
-               │ TCP Socket :9900 (JSON Lines)
+               │ TCP Socket :32000 (JSON Lines)
 ┌──────────────▼────────────────┐
-│  C++ AdminServer (TCP 9900)   │
+│  C++ AdminServer (TCP 32000)  │
 │  ┌──────────┐  ┌────────────┐ │
 │  │ gateway  │→ │  exchange  │ │
 │  │ (前置系统) │←│ (模拟交易所) │ │
@@ -319,13 +319,13 @@ src/
 ```bash
 # 1. 启动 C++ 后端
 cd build && ninja && cd ..
-./bin/admin_main              # 监听 TCP 9900
+./bin/admin_main              # 监听 TCP 32000
 
 # 2. 启动 Python 端
-cd admin && bash start.sh     # 自动启动 FastAPI(:9100) + Streamlit(:8501)
+cd admin && bash start.sh     # 自动启动 FastAPI(:31000) + Streamlit(:30000)
 
 # 3. 浏览器访问
-open http://localhost:8501
+open http://localhost:30000
 ```
 
 ---

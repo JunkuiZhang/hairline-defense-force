@@ -7,7 +7,7 @@ bridge.py — C++ TradeSystem TCP 桥接模块
   - 异步接收回报并通过回调分发
 
 使用方法：
-  bridge = TcpBridge("127.0.0.1", 9900)
+  bridge = TcpBridge("127.0.0.1", 32000)
   bridge.on_response = lambda msg: print(msg)
   bridge.connect()
   bridge.send_order({...})
@@ -25,7 +25,7 @@ logger = logging.getLogger(__name__)
 class TcpBridge:
     """与 C++ AdminServer 的 TCP 连接桥接"""
 
-    def __init__(self, host: str = "127.0.0.1", port: int = 9900):
+    def __init__(self, host: str = "127.0.0.1", port: int = 32000):
         self.host = host
         self.port = port
         self._reader: Optional[asyncio.StreamReader] = None

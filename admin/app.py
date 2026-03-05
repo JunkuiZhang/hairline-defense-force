@@ -21,7 +21,7 @@ import streamlit as st
 
 # ======================== 配置 ========================
 
-API_BASE = "http://127.0.0.1:9100"
+API_BASE = "http://127.0.0.1:31000"
 
 st.set_page_config(
     page_title="HDF 撮合系统管理界面",

@@ -42,7 +42,7 @@ class AdminServer {
      */
     using OnQuery = std::function<nlohmann::json(const std::string &queryType)>;
 
-    AdminServer(uint16_t port = 9900);
+    AdminServer(uint16_t port = 32000);
     ~AdminServer();
 
     /**

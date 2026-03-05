@@ -11,6 +11,6 @@ pip install -r requirements.txt
 ```
 
 启动后访问：
-- **管理界面**: http://localhost:8501
+- **管理界面**: http://localhost:30000
 
 详见：[管理界面设计文档](../docs/admin_ui_design.md)
