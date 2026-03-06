@@ -11,7 +11,6 @@
 │   ├── types.h                    # 数据结构（Order, CancelOrder, MarketData 等）
 │   ├── constants.h                # 错误码常量
 │   ├── matching_engine.h          # 撮合引擎接口
-│   ├── sharded_matching_engine.h  # 分片撮合引擎接口（实验性质，deprecated）
 │   ├── risk_controller.h          # 风控引擎接口
 │   ├── security_core.h            # 单证券核心业务单元（风控+撮合+状态管理）
 │   ├── trade_system.h             # 交易系统主控接口（多 Bucket 并行架构）
@@ -19,7 +18,6 @@
 │   └── admin_server.h             # 管理后台 HTTP 服务接口
 ├── src/                           # 实现
 │   ├── matching_engine.cpp        # 撮合引擎实现
-│   ├── sharded_matching_engine.cpp # 分片撮合引擎实现（实验性质，deprecated）
 │   ├── risk_controller.cpp        # 风控引擎实现
 │   ├── security_core.cpp          # 单证券核心业务单元实现
 │   ├── trade_system.cpp           # 交易系统主控实现（路由、WorkerBucket、MPSC 队列）
@@ -37,9 +35,8 @@
 ├── benchmarks/                    # 性能基准测试
 │   ├── benchmark.cpp              # 单线程全链路吞吐量 / 延时测试
 │   ├── bench_matching.cpp         # 撮合引擎裸性能专项测试
-│   ├── bench_concurrent.cpp       # 多线程并发扩展性测试（Mutex / MPSC）
+│   ├── bench_concurrent.cpp       # 并发扩展性测试
 │   ├── bench_multicore.cpp        # 多 Bucket 并行扩展性测试
-│   ├── bench_sharded.cpp          # 分片撮合引擎测试
 │   └── bench_network.cpp          # 网络性能测试
 ├── examples/                      # 示例程序
 │   ├── exchange.cpp               # 纯撮合模式示例
