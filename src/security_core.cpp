@@ -30,7 +30,7 @@ void SecurityCore::setLogger(TradeLogger *logger) { logger_ = logger; }
 // 流程: 解析JSON → 风控检查 → 撮合匹配 → 发送回报
 // ============================================================
 void SecurityCore::handleOrder(const nlohmann::json &input) {
-    // 1. 解析订单，格式非法则直接拒绝
+    // 解析 JSON → 委托给 struct 版本
     Order order;
     try {
         order = input.get<Order>();
@@ -45,7 +45,14 @@ void SecurityCore::handleOrder(const nlohmann::json &input) {
         }
         return;
     }
+    handleOrder(std::move(order));
+}
 
+// ============================================================
+// handleOrder (struct) —— 处理已解析的订单
+// 流程: 风控检查 → 撮合匹配 → 发送回报
+// ============================================================
+void SecurityCore::handleOrder(Order order) {
     if (logger_)
         logger_->logOrderNew(order);
 
@@ -106,7 +113,6 @@ void SecurityCore::handleOrder(const nlohmann::json &input) {
                 // 网关模式：先向上游交易所发撤单请求，等待全部回报后再统一处理
                 PendingMatch pending;
                 pending.activeOrder = order;
-                pending.activeOrderRawInput = input;
                 pending.executions = executions;
                 pending.remainingQty = matchResult.remainingQty;
                 pending.pendingCancelCount = executions.size();
@@ -182,7 +188,8 @@ void SecurityCore::handleOrder(const nlohmann::json &input) {
             // 无成交 —— 直接挂单入簿
             if (sendToExchange_) {
                 matchingEngine_.addOrder(order);
-                sendToExchange_(input);
+                nlohmann::json orderJson = order;
+                sendToExchange_(orderJson);
             } else {
                 matchingEngine_.addOrder(order);
             }
@@ -215,7 +222,10 @@ void SecurityCore::handleCancel(const nlohmann::json &input) {
         }
         return;
     }
+    handleCancel(std::move(order));
+}
 
+void SecurityCore::handleCancel(CancelOrder order) {
     if (sendToExchange_) {
         // 本地订单（撮合后留在本地簿的残单）直接本地撤销
         if (localOnlyOrders_.count(order.origClOrderId)) {
@@ -261,7 +271,14 @@ void SecurityCore::handleCancel(const nlohmann::json &input) {
             }
         } else {
             // 非本地订单：转发撤单请求到上游交易所
-            sendToExchange_(input);
+            nlohmann::json cancelJson;
+            cancelJson["clOrderId"] = order.clOrderId;
+            cancelJson["origClOrderId"] = order.origClOrderId;
+            cancelJson["market"] = to_string(order.market);
+            cancelJson["securityId"] = order.securityId;
+            cancelJson["shareholderId"] = order.shareholderId;
+            cancelJson["side"] = to_string(order.side);
+            sendToExchange_(cancelJson);
         }
     } else {
         CancelResponse result =
@@ -480,8 +497,9 @@ void SecurityCore::resolvePendingMatch(const std::string &activeOrderId) {
         pendingConfirms_[activeOrderId] = std::move(pc);
 
         if (sendToExchange_) {
-            nlohmann::json newOrder = pending.activeOrderRawInput;
-            newOrder["qty"] = totalUnfilledQty;
+            Order remaining = pending.activeOrder;
+            remaining.qty = totalUnfilledQty;
+            nlohmann::json newOrder = remaining;
             sendToExchange_(newOrder);
         }
     } else {

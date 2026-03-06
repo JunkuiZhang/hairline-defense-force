@@ -41,7 +41,9 @@ class SecurityCore {
 
     // ─── 业务处理接口 ─────────────────────────────────────
     void handleOrder(const nlohmann::json &input);
+    void handleOrder(Order order);
     void handleCancel(const nlohmann::json &input);
+    void handleCancel(CancelOrder order);
     void handleMarketData(const nlohmann::json &input);
     void handleResponse(const nlohmann::json &input);
 
@@ -69,7 +71,6 @@ class SecurityCore {
 
     struct PendingMatch {
         Order activeOrder;
-        nlohmann::json activeOrderRawInput;
         std::vector<OrderResponse> executions;
         uint32_t remainingQty = 0;
         size_t pendingCancelCount = 0;

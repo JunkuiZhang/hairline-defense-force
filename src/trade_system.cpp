@@ -1,4 +1,5 @@
 #include "trade_system.h"
+#include "constants.h"
 #include "types.h"
 
 namespace hdf {
@@ -25,6 +26,7 @@ void TradeSystem::disableLogging() { logger_.close(); }
 TradeLogger &TradeSystem::logger() { return logger_; }
 
 void TradeSystem::setSendToClient(SendToClient callback) {
+    sendToClient_ = callback;
     for (auto &b : buckets_) {
         b->core.setSendToClient(callback);
     }
@@ -140,15 +142,37 @@ void TradeSystem::enqueueToWorker(size_t idx, Command cmd) {
 }
 
 void TradeSystem::submitOrder(const nlohmann::json &input) {
-    enqueueToWorker(
-        routeIndex(input.value("market", ""), input.value("securityId", "")),
-        CmdOrder{input});
+    try {
+        Order order = input.get<Order>();
+        size_t idx = routeIndex(to_string(order.market), order.securityId);
+        enqueueToWorker(idx, CmdOrder{std::move(order)});
+    } catch (const std::exception &e) {
+        if (sendToClient_) {
+            nlohmann::json response;
+            response["clOrderId"] = input.value("clOrderId", "");
+            response["rejectCode"] = ORDER_INVALID_FORMAT_REJECT_CODE;
+            response["rejectText"] =
+                std::string(ORDER_INVALID_FORMAT_REJECT_REASON) + ": " + e.what();
+            sendToClient_(response);
+        }
+    }
 }
 
 void TradeSystem::submitCancel(const nlohmann::json &input) {
-    enqueueToWorker(
-        routeIndex(input.value("market", ""), input.value("securityId", "")),
-        CmdCancel{input});
+    try {
+        CancelOrder order = input.get<CancelOrder>();
+        size_t idx = routeIndex(to_string(order.market), order.securityId);
+        enqueueToWorker(idx, CmdCancel{std::move(order)});
+    } catch (const std::exception &e) {
+        if (sendToClient_) {
+            nlohmann::json response;
+            response["clOrderId"] = input.value("clOrderId", "");
+            response["rejectCode"] = ORDER_INVALID_FORMAT_REJECT_CODE;
+            response["rejectText"] =
+                std::string(ORDER_INVALID_FORMAT_REJECT_REASON) + ": " + e.what();
+            sendToClient_(response);
+        }
+    }
 }
 
 void TradeSystem::submitResponse(const nlohmann::json &input) {
@@ -192,9 +216,9 @@ void TradeSystem::dispatchCommand(WorkerBucket &bucket, Command &cmd) {
         [&bucket](auto &c) {
             using T = std::decay_t<decltype(c)>;
             if constexpr (std::is_same_v<T, CmdOrder>) {
-                bucket.core.handleOrder(c.input);
+                bucket.core.handleOrder(std::move(c.order));
             } else if constexpr (std::is_same_v<T, CmdCancel>) {
-                bucket.core.handleCancel(c.input);
+                bucket.core.handleCancel(std::move(c.order));
             } else if constexpr (std::is_same_v<T, CmdResponse>) {
                 bucket.core.handleResponse(c.input);
             } else if constexpr (std::is_same_v<T, CmdMarketData>) {

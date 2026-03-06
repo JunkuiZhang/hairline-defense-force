@@ -2,6 +2,7 @@
 
 #include "security_core.h"
 #include "trade_logger.h"
+#include "types.h"
 #include <atomic>
 #include <condition_variable>
 #include <deque>
@@ -103,10 +104,10 @@ class TradeSystem {
      * @brief 命令类型，用于 MPSC 队列的 variant
      */
     struct CmdOrder {
-        nlohmann::json input;
+        Order order;
     };
     struct CmdCancel {
-        nlohmann::json input;
+        CancelOrder order;
     };
     struct CmdResponse {
         nlohmann::json input;
@@ -168,6 +169,7 @@ class TradeSystem {
     };
 
     std::vector<std::unique_ptr<WorkerBucket>> buckets_;
+    SendToClient sendToClient_;
     TradeLogger logger_;
 
     // ─── 路由 ────────────────────────────────────────────────
