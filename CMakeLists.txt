@@ -32,7 +32,6 @@ add_library(trade_engine
   src/trade_system.cpp
   src/trade_logger.cpp
   src/admin_server.cpp
-  src/sharded_matching_engine.cpp
 )
 target_link_libraries(trade_engine nlohmann_json::nlohmann_json)
 target_include_directories(trade_engine PUBLIC include)
@@ -64,9 +63,6 @@ target_link_libraries(bench_concurrent trade_engine)
 # bench_network.cpp 网络 I/O 层压测（TCP 连接/RTT/broadcast）
 add_executable(bench_network benchmarks/bench_network.cpp)
 target_link_libraries(bench_network trade_engine)
-# bench_sharded.cpp 分片撮合引擎扩展性 benchmark
-add_executable(bench_sharded benchmarks/bench_sharded.cpp)
-target_link_libraries(bench_sharded trade_engine)
 # bench_multicore.cpp 多 Bucket 并行扩展性压测
 add_executable(bench_multicore benchmarks/bench_multicore.cpp)
 target_link_libraries(bench_multicore trade_engine)
