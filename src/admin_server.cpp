@@ -57,7 +57,7 @@ void AdminServer::stop() {
         acceptThread_.join();
     }
 
-    // ensure all residual clients / epoll descriptors are closed
+    // 确保所有残留的客户端连接和 epoll 描述符都被关闭
     std::lock_guard<std::mutex> lock(clientsMutex_);
     for (auto &[fd, client] : clients_) {
         ::shutdown(fd, SHUT_RDWR);
@@ -83,6 +83,7 @@ void AdminServer::broadcast(const nlohmann::json &message) {
     }
 }
 
+// 经典的多路复用实现
 void AdminServer::acceptLoop() {
     serverFd_ = ::socket(AF_INET, SOCK_STREAM, 0);
     if (serverFd_ < 0) {

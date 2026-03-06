@@ -8,7 +8,7 @@ server.py — FastAPI 后端服务
 
 启动方式：
   conda activate hdf
-  uvicorn server:app --host 0.0.0.0 --port 9100 --reload
+  uvicorn server:app --host 0.0.0.0 --port 31000 --reload
 """
 
 import asyncio
@@ -143,7 +143,7 @@ class AppState:
     """应用全局状态"""
 
     def __init__(self):
-        self.bridge = TcpBridge(host="127.0.0.1", port=9900)
+        self.bridge = TcpBridge(host="127.0.0.1", port=32000)
         self.websocket_clients: list[WebSocket] = []
         self.order_counter = 0
 

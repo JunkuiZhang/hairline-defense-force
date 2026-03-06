@@ -15,7 +15,7 @@
  *   4. gateway 处理回报 → sendToClient_ → AdminServer.broadcast → Python
  *
  * 用法：
- *   ./bin/admin_main              # 默认端口 9900
+ *   ./bin/admin_main              # 默认端口 32000
  *   ./bin/admin_main 9901         # 自定义端口
  *
  * 然后启动 Python 端：
@@ -33,7 +33,7 @@ static void signalHandler(int /*sig*/) { g_running = false; }
 
 int main(int argc, char *argv[]) {
     // 解析端口
-    uint16_t port = 9900;
+    uint16_t port = 32000;
     if (argc > 1) {
         port = static_cast<uint16_t>(std::stoi(argv[1]));
     }

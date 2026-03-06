@@ -28,6 +28,7 @@ set(LIBRARY_OUTPUT_PATH ${CMAKE_SOURCE_DIR}/lib)
 add_library(trade_engine
   src/risk_controller.cpp
   src/matching_engine.cpp
+  src/security_core.cpp
   src/trade_system.cpp
   src/trade_logger.cpp
   src/admin_server.cpp
@@ -66,6 +67,9 @@ target_link_libraries(bench_network trade_engine)
 # bench_sharded.cpp 分片撮合引擎扩展性 benchmark
 add_executable(bench_sharded benchmarks/bench_sharded.cpp)
 target_link_libraries(bench_sharded trade_engine)
+# bench_multicore.cpp 多 Bucket 并行扩展性压测
+add_executable(bench_multicore benchmarks/bench_multicore.cpp)
+target_link_libraries(bench_multicore trade_engine)
 
 # Tests
 enable_testing()
