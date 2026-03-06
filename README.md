@@ -41,7 +41,7 @@
 ├── examples/                      # 示例程序
 │   ├── exchange.cpp               # 纯撮合模式示例
 │   ├── pre_exchange.cpp           # 交易所前置模式示例
-│   ├── admin_main.cpp             # 管理后台示例（HTTP API + WebSocket）
+│   ├── admin_main.cpp             # 管理后台程序
 │   └── generate_history.cpp       # 历史数据生成工具
 ├── admin/                         # 管理后台前端（Python）
 │   ├── app.py                     # Streamlit 前端
@@ -50,6 +50,10 @@
 │   ├── protocol.py                # 通信字段定义
 │   ├── requirements.txt           # Python 依赖
 │   └── start.sh                   # 启动脚本
+├── scripts/                       # 数据生成与分析脚本
+│   ├── generate_orders.py         # 生成测试订单数据
+│   ├── analyze_history.py         # 历史成交数据分析脚本
+│   └── analyze_history.ipynb      # 数据分析结果展示
 ├── docs/                          # 文档
 │   ├── task_breakdown.md          # 项目分工表
 │   ├── how_to_contribute.md       # 贡献指南
