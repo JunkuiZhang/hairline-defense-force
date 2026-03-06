@@ -57,37 +57,131 @@
 └── CMakeLists.txt
 ```
 
+## 系统设计框架
+
+```mermaid
+flowchart LR
+	C[Client / Strategy]
+	EX[External Exchange]
+	ADM[Admin UI\nStreamlit]
+	API[Admin API\nFastAPI + WebSocket]
+
+	subgraph TS[TradeSystem]
+		direction LR
+		ROUTER[Router\nmarket+securityId hash]
+
+		subgraph B0[WorkerBucket-0]
+			SC0[SecurityCore]
+			RC0[RiskController]
+			ME0[MatchingEngine]
+			SC0 --> RC0 --> ME0
+		end
+
+		subgraph B1[WorkerBucket-1 ... N]
+			SC1[SecurityCore]
+			RC1[RiskController]
+			ME1[MatchingEngine]
+			SC1 --> RC1 --> ME1
+		end
+
+		LOG[TradeLogger\nJSONL]
+		ROUTER --> B0
+		ROUTER --> B1
+		B0 --> LOG
+		B1 --> LOG
+	end
+
+	C -->|Order / Cancel| ROUTER
+	ROUTER -->|Forward when needed| EX
+	EX -->|Exec / Cancel / Confirm| ROUTER
+	ROUTER -->|Responses| C
+
+	ADM -->|HTTP| API
+	API -->|TCP Bridge| ROUTER
+	ROUTER -->|Realtime Responses / MarketData| API
+	API -->|WebSocket Push| ADM
+```
+
+说明：
+- 前置模式下，订单先进入 `TradeSystem`，先做风控与内部撮合，再决定是否转发交易所。
+- 系统按 `market + securityId` 路由到不同 `WorkerBucket`，每个 bucket 串行处理以降低锁竞争。
+- 管理后台通过 `FastAPI` + `WebSocket` 获取实时回报与行情，通过 `TradeLogger` 落盘审计。
+
+
 ## 文档
 
 - [**项目分工表**](docs/task_breakdown.md) — 任务列表、认领表
 - [**贡献指南**](docs/how_to_contribute.md) — 如何参与开发
+- [**管理后台设计**](docs/admin_ui_design.md) — Admin 前后端设计说明
+- [**撮合引擎设计**](docs/matching_engine_development.md) — MatchingEngine 开发文档
+- [**风控模块设计**](docs/risk_controller_development.md) — RiskController 开发文档
+- [**风控优化记录**](docs/risk_controller_optimization.md) — 风控优化过程与结果
+- [**日志模块设计**](docs/trade_logger_development.md) — TradeLogger 开发文档
+- [**性能记录 v1**](docs/benchmarks/benchv1.md) — 基础版基准测试结果
+- [**性能记录 v2**](docs/benchmarks/benchv2.md) — 改进matching后的基准测试结果
+- [**性能记录 v2 (Native)**](docs/benchmarks/benchv2-native.md) — 改进matching后，在本机的基准测试结果
+- [**性能记录 v3**](docs/benchmarks/benchv3.md) — 重构后的基准测试结果
+- [**性能记录 v3 (Native)**](docs/benchmarks/benchv3-native.md) — 重构后，在本机的测试结果
 
 ## 编译与运行
 
 ### 环境要求
 
-目前我只在Linux上进行过测试，
+仅在Linux上进行过测试，
 构建时需要ninja构建工具，Ubuntu系统可以通过以下命令安装：
 
 ```bash
 sudo apt install ninja-build
 ```
 
+如果要运行ui界面，还需要python和相应的依赖，仅在Python 3.13.12上测试过：
+
+```bash
+pip install -r admin/requirements.txt
+```
+
+### 运行
+
 ### 运行测试
 
 ```bash
-cmake --build build --target unit_tests
+cmake -B build -S . -DCMAKE_BUILD_TYPE=Release -DCMAKE_EXPORT_COMPILE_COMMANDS=1
+cmake --build build --target unit_tests -j$(nproc)
+
 ./bin/unit_tests
 ```
 
-### 运行示例
+### 运行ui
+
+首先启动后台系统：
 
 ```bash
-# 纯撮合模式
-cmake --build build --target exchange
-./bin/exchange
-
-# 交易所前置模式
-cmake --build build --target pre_exchange
-./bin/pre_exchange
+-j$(nproc)
+cmake --build build --target admin_main -j$(nproc)
+./bin/admin_main
 ```
+
+然后启动前台ui：
+
+```bash
+cd admin
+./start.sh
+```
+
+然后按照提示在浏览器访问 `http://localhost:30000` 即可。
+
+## 项目交付材料
+
+### 基础目标和部分高级目标
+
+包括`2.1.1. 交易转发`、`2.1.2. 对敲风控`、`2.1.3. 模拟撮合`、`2.2.1. 行情接入`、`2.2.2. 撤单支持`，
+在`tests/requirement_test.cpp`中，每个项目书要求对应一个测试用例，确保所有要求都被覆盖。
+
+### 管理后台
+
+ui管理界面可以通过上面的运行说明启动，包含订单簿、成交回报、拒绝回报和市场数据等等内容的实时展示。详细设计说明见[管理后台设计](docs/admin_ui_design.md)。
+
+### 数据分析
+
+
+

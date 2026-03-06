@@ -60,7 +60,7 @@ bool isOpen() const;
 | `logCancelReject(origId, code, text)` | `CANCEL_REJECT` | origClOrderId, rejectCode, rejectText |
 | `logMarketData(secId, market, bid, ask)` | `MARKET_DATA` | securityId, market, bidPrice, askPrice |
 
-每条记录自动附加 `timestamp`（毫秒级 Unix 时间戳）。
+每条记录自动附加 `timestamp`。
 
 ---
 
