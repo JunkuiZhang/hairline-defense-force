@@ -158,6 +158,7 @@ cmake --build build --target unit_tests -j$(nproc)
 ```bash
 -j$(nproc)
 cmake --build build --target admin_main -j$(nproc)
+
 ./bin/admin_main
 ```
 
@@ -183,5 +184,70 @@ ui管理界面可以通过上面的运行说明启动，包含订单簿、成交
 
 ### 数据分析
 
+交易历史记录存储功能通过`TradeLogger`实现，日志以JSONL格式落盘，包含订单事件、成交事件、市场数据等。可以使用Python等工具进行后续分析。详细设计说明见[日志模块设计](docs/trade_logger_development.md)。
 
+#### 测试流程
+
+首先通过python脚本生成交易订单：
+
+```bash
+python scripts/generate_orders.py
+```
+
+订单会被写入 `data/generated_orders.jsonl`，然后运行生成的订单：
+
+```bash
+cmake --build build --target generate_history -j$(nproc)
+./bin/generate_history
+```
+
+生成的历史数据会被写入 `data/history.jsonl`，然后可以通过python脚本进行简单的分析：
+
+```bash
+python scripts/analyze_history.py
+```
+
+`scripts/analyze_history.ipynb`展示了完整的分析内容和结果。
+
+### 性能优化
+
+交易系统的性能优化主要集中在撮合引擎和并发处理上。通过逐步优化算法设计、数据结构和并发模型，显著提升了系统的吞吐量和延时表现。详细的优化过程和结果记录见[性能记录](docs/benchmarks/benchv1.md)、[性能记录 v2](docs/benchmarks/benchv2.md)和[性能记录 v3](docs/benchmarks/benchv3.md)。
+
+#### `benchv1.md`
+
+这是在matching engine优化前的性能测试结果，通过perf运行测试后，发现matching engine的性能瓶颈较为明显，原因是算法设计问题，把所有的证券都放在一个订单簿里，导致每次撮合都要遍历整个订单簿，查找符合证券id的订单成交，随着证券数量的增加，性能急剧下降。
+
+#### `benchv2.md`
+
+matching engine优化后的性能测试结果，优化后每个证券有独立的订单簿，撮合时只需访问对应证券的订单簿，性能大幅提升。
+
+然而，系统仍然是单线程的，后续的`bench_concurrent`测试了多个线程并发提交订单的性能，发现全局锁竞争严重，吞吐量随着线程数增加反而下降。
+
+#### `benchv3.md`
+
+引入了异步提交模型（MPSC 队列）和分桶并行（multi-bucket）两大优化方案，显著提升了并发性能和扩展性。通过`bench_concurrent`测试，Queue 模式在多线程场景下的吞吐量远超 Mutex 模式；通过`bench_multicore`测试，增加 bucket 数后吞吐量提升，验证了分桶并行的有效性。且订单的最大延时也得到控制，整体性能表现优于之前的版本。
+
+## 项目开发记录
+
+- 基础框架与文档初始化：
+  - [PR #1：基础框架 & 基本文档](https://github.com/JunkuiZhang/hairline-defense-force/pull/1)（[@张峻魁](https://github.com/junkuizhang)）
+- 风控引擎基础实现：
+  - [PR #3：[模块A] 实现风控引擎（对敲检测）功能](https://github.com/JunkuiZhang/hairline-defense-force/pull/3)（[@包一帆](https://github.com/LegendFan1104)）
+  - 风控引擎性能优化：
+    - [PR #11：[模块A] 风控引擎性能优化（扁平化索引）](https://github.com/JunkuiZhang/hairline-defense-force/pull/11)（[@赵俊岚](https://github.com/zjl619)）
+- 撮合引擎核心实现：
+  - [PR #13：feat: 实现撮合引擎核心功能 (模块B)](https://github.com/JunkuiZhang/hairline-defense-force/pull/13)
+  - 撮合模块部分优化：
+    - [PR #14：Feature/matching engine](https://github.com/JunkuiZhang/hairline-defense-force/pull/14)（[@汤语涵](https://github.com/Animnia)）
+  - 撮合引擎性能优化：
+    - [PR #34：修复matching引擎](https://github.com/JunkuiZhang/hairline-defense-force/pull/34)（[@李彦贝](https://github.com/KKBEIBEI)、[@张峻魁](https://github.com/junkuizhang)）
+- 行情信息接入：
+  - [PR #28：正确处理行情数据](https://github.com/JunkuiZhang/hairline-defense-force/pull/28)（[@梁家栋](https://github.com/du0729)）
+- 管理界面实现：
+  - [PR #19：增加管理页面+bug修复](https://github.com/JunkuiZhang/hairline-defense-force/pull/19)（[@张峻魁](https://github.com/junkuizhang)）
+- 数据分析实现：
+  - [PR #29：数据分析基础实现](https://github.com/JunkuiZhang/hairline-defense-force/pull/29)（[@张峻魁](https://github.com/junkuizhang)）
+- 性能测试：
+  - [PR #32：添加性能测试和几项性能改进](https://github.com/JunkuiZhang/hairline-defense-force/pull/32)（[@张峻魁](https://github.com/junkuizhang)）
+  - [PR #35：重构系统](https://github.com/JunkuiZhang/hairline-defense-force/pull/35)（[@张峻魁](https://github.com/junkuizhang)）
 
