@@ -47,7 +47,9 @@
 │   ├── app.py                     # Streamlit 前端
 │   ├── server.py                  # FastAPI 后端
 │   ├── bridge.py                  # C++ 后端桥接
-│   └── protocol.py                # 通信字段定义
+│   ├── protocol.py                # 通信字段定义
+│   ├── requirements.txt           # Python 依赖
+│   └── start.sh                   # 启动脚本
 ├── docs/                          # 文档
 │   ├── task_breakdown.md          # 项目分工表
 │   ├── how_to_contribute.md       # 贡献指南
