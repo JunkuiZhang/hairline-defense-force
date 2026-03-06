@@ -32,7 +32,6 @@ add_library(trade_engine
   src/trade_system.cpp
   src/trade_logger.cpp
   src/admin_server.cpp
-  src/sharded_matching_engine.cpp
 )
 target_link_libraries(trade_engine nlohmann_json::nlohmann_json)
 target_include_directories(trade_engine PUBLIC include)
