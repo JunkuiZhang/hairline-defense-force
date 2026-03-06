@@ -152,7 +152,8 @@ void TradeSystem::submitOrder(const nlohmann::json &input) {
             response["clOrderId"] = input.value("clOrderId", "");
             response["rejectCode"] = ORDER_INVALID_FORMAT_REJECT_CODE;
             response["rejectText"] =
-                std::string(ORDER_INVALID_FORMAT_REJECT_REASON) + ": " + e.what();
+                std::string(ORDER_INVALID_FORMAT_REJECT_REASON) + ": " +
+                e.what();
             sendToClient_(response);
         }
     }
@@ -169,7 +170,8 @@ void TradeSystem::submitCancel(const nlohmann::json &input) {
             response["clOrderId"] = input.value("clOrderId", "");
             response["rejectCode"] = ORDER_INVALID_FORMAT_REJECT_CODE;
             response["rejectText"] =
-                std::string(ORDER_INVALID_FORMAT_REJECT_REASON) + ": " + e.what();
+                std::string(ORDER_INVALID_FORMAT_REJECT_REASON) + ": " +
+                e.what();
             sendToClient_(response);
         }
     }
