@@ -44,10 +44,10 @@
 │   ├── admin_main.cpp             # 管理后台示例（HTTP API + WebSocket）
 │   └── generate_history.cpp       # 历史数据生成工具
 ├── admin/                         # 管理后台前端（Python）
-│   ├── app.py                     # Flask 应用
-│   ├── server.py                  # WebSocket 服务
+│   ├── app.py                     # Streamlit 前端
+│   ├── server.py                  # FastAPI 后端
 │   ├── bridge.py                  # C++ 后端桥接
-│   └── protocol.py                # 通信协议定义
+│   └── protocol.py                # 通信字段定义
 ├── docs/                          # 文档
 │   ├── task_breakdown.md          # 项目分工表
 │   ├── how_to_contribute.md       # 贡献指南
