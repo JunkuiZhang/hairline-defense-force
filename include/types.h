@@ -88,6 +88,16 @@ inline void from_json(const nlohmann::json &j, Order &o) {
     }
 }
 
+inline void to_json(nlohmann::json &j, const Order &o) {
+    j["clOrderId"] = o.clOrderId;
+    j["market"] = to_string(o.market);
+    j["securityId"] = o.securityId;
+    j["side"] = to_string(o.side);
+    j["price"] = o.price;
+    j["qty"] = o.qty;
+    j["shareholderId"] = o.shareholderId;
+}
+
 // 3.2 交易撤单
 struct CancelOrder {
     std::string clOrderId;
