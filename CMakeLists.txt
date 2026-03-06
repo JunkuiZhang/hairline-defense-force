@@ -81,6 +81,7 @@ add_executable(unit_tests
   tests/exchange_test.cc
   tests/gateway_test.cc
   tests/trade_logger_test.cpp
+  tests/requirement_test.cpp
 )
 target_link_libraries(unit_tests gtest_main trade_engine)
 
