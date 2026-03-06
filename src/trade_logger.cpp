@@ -35,12 +35,13 @@ bool TradeLogger::open(const std::string &filePath) {
         return false;
     }
 
+    // 先重置停止标记，再启动线程，避免 reopen 场景下新线程读到旧的 stop=true。
+    stopRequested_ = false;
+    filePath_ = filePath;
+    isOpen_ = true;
+
     // 启动后台写入线程
     writerThread_ = std::thread(&TradeLogger::writerLoop, this);
-
-    filePath_ = filePath;
-    stopRequested_ = false;
-    isOpen_ = true;
 
     std::cout << "[TradeLogger] open: " << filePath << std::endl;
     return true;
@@ -49,6 +50,9 @@ bool TradeLogger::open(const std::string &filePath) {
 void TradeLogger::close() {
     if (!isOpen_)
         return;
+
+    // 先关闭对外写入口，避免 close 期间还有新日志持续入队导致 join 等待过久。
+    isOpen_ = false;
 
     // 通知后台线程停止
     stopRequested_ = true;
@@ -60,7 +64,6 @@ void TradeLogger::close() {
     }
 
     file_.close();
-    isOpen_ = false;
     std::cout << "[TradeLogger] close: " << filePath_ << std::endl;
 }
 
@@ -80,6 +83,9 @@ void TradeLogger::enqueue(nlohmann::json record) {
 
     {
         std::lock_guard<std::mutex> lock(mutex_);
+        // 关闭流程中直接丢弃，避免与 close 的收尾形成竞争。
+        if (stopRequested_)
+            return;
         queue_.push(std::move(record));
     }
     cv_.notify_one();
