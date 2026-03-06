@@ -1,5 +1,7 @@
 # 性能测试记录
 
+![perf data](../imgs/perf.png)
+
 ## 并发性能分析
 
 ```bash
