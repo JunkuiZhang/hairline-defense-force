@@ -106,17 +106,71 @@ if page == "仪表盘":
 elif page == "市场行情":
     st.title("📈 市场行情")
 
+    # ---- 全局筛选栏 ----
+    # 先拉取两个数据源，汇总可用的市场/证券列表
+    exchange_market_raw = api_get("/api/exchange/market") or {}
+    market_data_raw = api_get("/api/market") or {}
+
+    all_markets: set[str] = set()
+    all_securities_by_market: dict[str, set[str]] = {}  # market -> {securityIds}
+
+    # 从交易所行情提取
+    for q in exchange_market_raw.get("quotes", []):
+        m = q.get("market", "")
+        s = q.get("securityId", "")
+        if m:
+            all_markets.add(m)
+        if m and s:
+            all_securities_by_market.setdefault(m, set()).add(s)
+
+    # 从前置系统订单提取
+    for m in market_data_raw.get("markets", []):
+        if m:
+            all_markets.add(m)
+    for s in market_data_raw.get("securities", []):
+        if s:
+            # 无法确定 market，放入每个已知 market（或通用）
+            for m in all_markets:
+                all_securities_by_market.setdefault(m, set()).add(s)
+            if not all_markets:
+                all_securities_by_market.setdefault("", set()).add(s)
+
+    # 全局筛选 UI
+    filter_c1, filter_c2, filter_c3 = st.columns([1, 1, 1])
+    with filter_c1:
+        market_options = ["全部"] + sorted(all_markets)
+        selected_market = st.selectbox("🏛️ 市场", market_options, key="global_market")
+    with filter_c2:
+        if selected_market != "全部":
+            secs = all_securities_by_market.get(selected_market, set())
+        else:
+            secs = set()
+            for v in all_securities_by_market.values():
+                secs.update(v)
+        sec_options = ["全部"] + sorted(secs)
+        selected_security = st.selectbox("📋 证券代码", sec_options, key="global_security")
+    with filter_c3:
+        if st.button("🔄 刷新行情", use_container_width=True):
+            st.rerun()
+
+    api_market_param = selected_market if selected_market != "全部" else None
+    api_security_param = selected_security if selected_security != "全部" else None
+
+    st.markdown("---")
     # ---- 交易所实时行情 ----
     st.subheader("🏛️ 交易所实时行情")
     st.caption("来自交易所订单簿的最优买卖报价（自动推送）")
 
-    exchange_market = api_get("/api/exchange/market")
-    if exchange_market and exchange_market.get("quotes"):
-        quotes = exchange_market["quotes"]
+    # 根据全局筛选过滤 quotes
+    ex_quotes = exchange_market_raw.get("quotes", [])
+    if api_market_param:
+        ex_quotes = [q for q in ex_quotes if q.get("market") == api_market_param]
+    if api_security_param:
+        ex_quotes = [q for q in ex_quotes if q.get("securityId") == api_security_param]
 
-        # 行情卡片
-        cols = st.columns(min(len(quotes), 4))
-        for i, q in enumerate(quotes):
+    if ex_quotes:
+        cols = st.columns(min(len(ex_quotes), 4))
+        for i, q in enumerate(ex_quotes):
             with cols[i % len(cols)]:
                 sec_id = q["securityId"]
                 bid = q["bidPrice"]
@@ -150,25 +204,17 @@ elif page == "市场行情":
     # ---- 前置订单簿 ----
     st.subheader("📊 前置系统订单簿")
 
-    # 证券筛选
-    market_data = api_get("/api/market")
+    # 使用全局筛选参数请求前置系统数据
+    params = {}
+    if api_security_param:
+        params["security_id"] = api_security_param
+    if api_market_param:
+        params["market"] = api_market_param
+    market_data = api_get("/api/market", **params)
+
     if not market_data:
         st.warning("无法获取市场数据")
     else:
-        # 证券选择
-        securities = market_data.get("securities", [])
-        filter_col1, filter_col2 = st.columns([1, 3])
-        with filter_col1:
-            sec_options = ["全部"] + securities
-            sec_filter = st.selectbox("证券代码", sec_options)
-        with filter_col2:
-            if st.button("🔄 刷新行情"):
-                st.rerun()
-
-        # 如果选了具体证券，重新请求
-        if sec_filter != "全部":
-            market_data = api_get("/api/market", security_id=sec_filter) or market_data
-
         bid_depth = market_data.get("bidDepth", [])
         ask_depth = market_data.get("askDepth", [])
         trades = market_data.get("trades", [])

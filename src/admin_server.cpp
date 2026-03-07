@@ -373,9 +373,8 @@ void AdminServer::processLine(int clientFd, const std::string &line) {
             if (onCancel_)
                 onCancel_(cancelJson);
         } else if (type == "query") {
-            std::string queryType = msg.value("queryType", "orderbook");
             if (onQuery_) {
-                nlohmann::json result = onQuery_(queryType);
+                nlohmann::json result = onQuery_(msg);
                 result["type"] = "snapshot";
                 sendToFd(clientFd, result);
             }

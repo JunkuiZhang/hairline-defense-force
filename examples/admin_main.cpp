@@ -136,17 +136,27 @@ int main(int argc, char *argv[]) {
         });
 
     adminServer.setOnQuery(
-        [&gateway, &exchange](const std::string &queryType) -> nlohmann::json {
+        [&gateway, &exchange](const nlohmann::json &queryMsg) -> nlohmann::json {
             // queryOrderbook 是 const 方法，在 eventLoop 运行时调用
             // 存在轻微的读写竞争，但对于快照查询可接受
             // 生产环境应通过 submitQuery + promise/future 模式解决
+            std::string queryType = queryMsg.value("queryType", "orderbook");
+            std::string secId = queryMsg.value("securityId", "");
+            std::string mktStr = queryMsg.value("market", "");
+
             nlohmann::json result;
             result["queryType"] = queryType;
             if (queryType == "orderbook") {
-                // 返回 gateway（前置）内部订单簿快照
-                result["gateway"] = gateway.queryOrderbook();
-                // 返回 exchange（交易所）订单簿快照
-                result["exchange"] = exchange.queryOrderbook();
+                if (!secId.empty() && !mktStr.empty()) {
+                    // 按证券+市场筛选，返回精确快照
+                    hdf::Market mkt = hdf::market_from_string(mktStr);
+                    result["gateway"] = gateway.queryOrderbook(secId, mkt);
+                    result["exchange"] = exchange.queryOrderbook(secId, mkt);
+                } else {
+                    // 返回聚合快照
+                    result["gateway"] = gateway.queryOrderbook();
+                    result["exchange"] = exchange.queryOrderbook();
+                }
             } else if (queryType == "stats") {
                 auto gwBook = gateway.queryOrderbook();
                 auto exBook = exchange.queryOrderbook();
