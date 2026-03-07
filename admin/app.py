@@ -138,23 +138,22 @@ elif page == "市场行情":
     # 全局筛选 UI
     filter_c1, filter_c2, filter_c3 = st.columns([1, 1, 1])
     with filter_c1:
-        market_options = ["全部"] + sorted(all_markets)
+        market_list = sorted(all_markets)
+        market_options = market_list if market_list else ["无"]
         selected_market = st.selectbox("🏛️ 市场", market_options, key="global_market")
     with filter_c2:
-        if selected_market != "全部":
-            secs = all_securities_by_market.get(selected_market, set())
+        if selected_market and selected_market != "无":
+            secs = sorted(all_securities_by_market.get(selected_market, set()))
         else:
-            secs = set()
-            for v in all_securities_by_market.values():
-                secs.update(v)
-        sec_options = ["全部"] + sorted(secs)
+            secs = sorted({s for v in all_securities_by_market.values() for s in v})
+        sec_options = secs if secs else ["无"]
         selected_security = st.selectbox("📋 证券代码", sec_options, key="global_security")
     with filter_c3:
         if st.button("🔄 刷新行情", use_container_width=True):
             st.rerun()
 
-    api_market_param = selected_market if selected_market != "全部" else None
-    api_security_param = selected_security if selected_security != "全部" else None
+    api_market_param = selected_market if selected_market != "无" else None
+    api_security_param = selected_security if selected_security != "无" else None
 
     st.markdown("---")
     # ---- 交易所实时行情 ----
