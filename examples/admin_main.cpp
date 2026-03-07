@@ -136,7 +136,8 @@ int main(int argc, char *argv[]) {
         });
 
     adminServer.setOnQuery(
-        [&gateway, &exchange](const nlohmann::json &queryMsg) -> nlohmann::json {
+        [&gateway,
+         &exchange](const nlohmann::json &queryMsg) -> nlohmann::json {
             // queryOrderbook 是 const 方法，在 eventLoop 运行时调用
             // 存在轻微的读写竞争，但对于快照查询可接受
             // 生产环境应通过 submitQuery + promise/future 模式解决
