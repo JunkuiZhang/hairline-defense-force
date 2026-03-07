@@ -39,8 +39,10 @@ class AdminServer {
     /**
      * @brief 收到查询请求时的回调
      * 应该返回订单簿快照等信息
+     * msg 包含 queryType, 以及可选的 securityId / market 筛选字段
      */
-    using OnQuery = std::function<nlohmann::json(const std::string &queryType)>;
+    using OnQuery =
+        std::function<nlohmann::json(const nlohmann::json &queryMsg)>;
 
     AdminServer(uint16_t port = 32000);
     ~AdminServer();

@@ -106,17 +106,70 @@ if page == "仪表盘":
 elif page == "市场行情":
     st.title("📈 市场行情")
 
+    # ---- 全局筛选栏 ----
+    # 先拉取两个数据源，汇总可用的市场/证券列表
+    exchange_market_raw = api_get("/api/exchange/market") or {}
+    market_data_raw = api_get("/api/market") or {}
+
+    all_markets: set[str] = set()
+    all_securities_by_market: dict[str, set[str]] = {}  # market -> {securityIds}
+
+    # 从交易所行情提取
+    for q in exchange_market_raw.get("quotes", []):
+        m = q.get("market", "")
+        s = q.get("securityId", "")
+        if m:
+            all_markets.add(m)
+        if m and s:
+            all_securities_by_market.setdefault(m, set()).add(s)
+
+    # 从前置系统订单提取
+    for m in market_data_raw.get("markets", []):
+        if m:
+            all_markets.add(m)
+    for s in market_data_raw.get("securities", []):
+        if s:
+            # 无法确定 market，放入每个已知 market（或通用）
+            for m in all_markets:
+                all_securities_by_market.setdefault(m, set()).add(s)
+            if not all_markets:
+                all_securities_by_market.setdefault("", set()).add(s)
+
+    # 全局筛选 UI
+    filter_c1, filter_c2, filter_c3 = st.columns([1, 1, 1])
+    with filter_c1:
+        market_list = sorted(all_markets)
+        market_options = market_list if market_list else ["无"]
+        selected_market = st.selectbox("🏛️ 市场", market_options, key="global_market")
+    with filter_c2:
+        if selected_market and selected_market != "无":
+            secs = sorted(all_securities_by_market.get(selected_market, set()))
+        else:
+            secs = sorted({s for v in all_securities_by_market.values() for s in v})
+        sec_options = secs if secs else ["无"]
+        selected_security = st.selectbox("📋 证券代码", sec_options, key="global_security")
+    with filter_c3:
+        if st.button("🔄 刷新行情", use_container_width=True):
+            st.rerun()
+
+    api_market_param = selected_market if selected_market != "无" else None
+    api_security_param = selected_security if selected_security != "无" else None
+
+    st.markdown("---")
     # ---- 交易所实时行情 ----
     st.subheader("🏛️ 交易所实时行情")
     st.caption("来自交易所订单簿的最优买卖报价（自动推送）")
 
-    exchange_market = api_get("/api/exchange/market")
-    if exchange_market and exchange_market.get("quotes"):
-        quotes = exchange_market["quotes"]
+    # 根据全局筛选过滤 quotes
+    ex_quotes = exchange_market_raw.get("quotes", [])
+    if api_market_param:
+        ex_quotes = [q for q in ex_quotes if q.get("market") == api_market_param]
+    if api_security_param:
+        ex_quotes = [q for q in ex_quotes if q.get("securityId") == api_security_param]
 
-        # 行情卡片
-        cols = st.columns(min(len(quotes), 4))
-        for i, q in enumerate(quotes):
+    if ex_quotes:
+        cols = st.columns(min(len(ex_quotes), 4))
+        for i, q in enumerate(ex_quotes):
             with cols[i % len(cols)]:
                 sec_id = q["securityId"]
                 bid = q["bidPrice"]
@@ -150,25 +203,17 @@ elif page == "市场行情":
     # ---- 前置订单簿 ----
     st.subheader("📊 前置系统订单簿")
 
-    # 证券筛选
-    market_data = api_get("/api/market")
+    # 使用全局筛选参数请求前置系统数据
+    params = {}
+    if api_security_param:
+        params["security_id"] = api_security_param
+    if api_market_param:
+        params["market"] = api_market_param
+    market_data = api_get("/api/market", **params)
+
     if not market_data:
         st.warning("无法获取市场数据")
     else:
-        # 证券选择
-        securities = market_data.get("securities", [])
-        filter_col1, filter_col2 = st.columns([1, 3])
-        with filter_col1:
-            sec_options = ["全部"] + securities
-            sec_filter = st.selectbox("证券代码", sec_options)
-        with filter_col2:
-            if st.button("🔄 刷新行情"):
-                st.rerun()
-
-        # 如果选了具体证券，重新请求
-        if sec_filter != "全部":
-            market_data = api_get("/api/market", security_id=sec_filter) or market_data
-
         bid_depth = market_data.get("bidDepth", [])
         ask_depth = market_data.get("askDepth", [])
         trades = market_data.get("trades", [])
@@ -549,12 +594,54 @@ elif page == "交易所监控":
     st.title("🏛️ 交易所监控")
     st.caption("实时监控模拟交易所（纯撮合系统）的状态和回报")
 
-    # 刷新按钮
-    if st.button("🔄 刷新"):
-        st.rerun()
+    # ---- 全局筛选栏 ----
+    ex_market_raw = api_get("/api/exchange/market") or {}
+    ex_all_markets: set[str] = set()
+    ex_secs_by_market: dict[str, set[str]] = {}
+    for q in ex_market_raw.get("quotes", []):
+        m = q.get("market", "")
+        s = q.get("securityId", "")
+        if m:
+            ex_all_markets.add(m)
+        if m and s:
+            ex_secs_by_market.setdefault(m, set()).add(s)
+    # 也从回报中提取市场和证券
+    for r in (api_get("/api/exchange/responses", limit=500) or {}).get("responses", []):
+        m = r.get("market", "")
+        s = r.get("securityId", "")
+        if m:
+            ex_all_markets.add(m)
+        if m and s:
+            ex_secs_by_market.setdefault(m, set()).add(s)
+
+    fc1, fc2, fc3 = st.columns([1, 1, 1])
+    with fc1:
+        ex_mkt_list = sorted(ex_all_markets)
+        ex_mkt_opts = ex_mkt_list if ex_mkt_list else ["无"]
+        ex_sel_market = st.selectbox("🏛️ 市场", ex_mkt_opts, key="ex_global_market")
+    with fc2:
+        if ex_sel_market and ex_sel_market != "无":
+            ex_sec_list = sorted(ex_secs_by_market.get(ex_sel_market, set()))
+        else:
+            ex_sec_list = sorted({s for v in ex_secs_by_market.values() for s in v})
+        ex_sec_opts = ex_sec_list if ex_sec_list else ["无"]
+        ex_sel_security = st.selectbox("📋 证券代码", ex_sec_opts, key="ex_global_security")
+    with fc3:
+        if st.button("🔄 刷新", use_container_width=True):
+            st.rerun()
+
+    ex_api_market = ex_sel_market if ex_sel_market != "无" else None
+    ex_api_security = ex_sel_security if ex_sel_security != "无" else None
+    ex_filter_params: dict = {}
+    if ex_api_market:
+        ex_filter_params["market"] = ex_api_market
+    if ex_api_security:
+        ex_filter_params["security_id"] = ex_api_security
+
+    st.markdown("---")
 
     # ---- 交易所统计概览 ----
-    ex_status = api_get("/api/exchange/status")
+    ex_status = api_get("/api/exchange/status", **ex_filter_params)
     if ex_status:
         st.subheader("📊 交易所统计")
         col1, col2, col3, col4 = st.columns(4)
@@ -569,7 +656,7 @@ elif page == "交易所监控":
 
     # ---- 交易所买卖盘口 ----
     st.subheader("📊 买卖盘口")
-    ex_book = api_get("/api/exchange/orderbook")
+    ex_book = api_get("/api/exchange/orderbook", **ex_filter_params)
     if ex_book:
         ex_bid_depth = ex_book.get("bidDepth", [])
         ex_ask_depth = ex_book.get("askDepth", [])
@@ -650,7 +737,7 @@ elif page == "交易所监控":
     # ---- 交易所回报流水 ----
     st.subheader("📜 交易所回报流水")
 
-    ex_responses = api_get("/api/exchange/responses", limit=100)
+    ex_responses = api_get("/api/exchange/responses", limit=100, **ex_filter_params)
     if ex_responses and ex_responses.get("responses"):
         resps = ex_responses["responses"]
 

@@ -590,7 +590,7 @@ int main(int argc, char *argv[]) {
     });
 
     server.setOnCancel([](const nlohmann::json &) {});
-    server.setOnQuery([](const std::string &) -> nlohmann::json {
+    server.setOnQuery([](const nlohmann::json &) -> nlohmann::json {
         return {{"type", "snapshot"}, {"data", "empty"}};
     });
 

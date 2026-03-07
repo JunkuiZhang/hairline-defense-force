@@ -111,12 +111,16 @@ class TcpBridge:
         }
         await self._send(msg)
 
-    async def query_orderbook(self) -> dict:
+    async def query_orderbook(self, security_id: str = "", market: str = "") -> dict:
         """请求订单簿快照，等待 C++ 端返回结果"""
         loop = asyncio.get_event_loop()
         future = loop.create_future()
         self._pending_queries["orderbook"] = future
         msg = {"type": "query", "queryType": "orderbook"}
+        if security_id:
+            msg["securityId"] = security_id
+        if market:
+            msg["market"] = market
         await self._send(msg)
         try:
             return await asyncio.wait_for(future, timeout=3.0)

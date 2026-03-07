@@ -371,7 +371,7 @@ async def get_order_detail(cl_order_id: str):
 
 
 @app.get("/api/market", summary="市场行情数据")
-async def get_market(security_id: Optional[str] = None):
+async def get_market(security_id: Optional[str] = None, market: Optional[str] = None):
     """
     返回市场深度（买卖盘口）和最近成交记录。
     优先从 C++ MatchingEngine 获取真实订单簿快照，
@@ -383,7 +383,10 @@ async def get_market(security_id: Optional[str] = None):
     # 尝试从 C++ 获取真实订单簿快照
     if state.bridge.is_connected:
         try:
-            snapshot = await state.bridge.query_orderbook()
+            snapshot = await state.bridge.query_orderbook(
+                security_id=security_id or "",
+                market=market or "",
+            )
             if snapshot:
                 # 使用交易所前置系统的订单簿
                 exchange_book = snapshot.get("gateway", {})
@@ -404,6 +407,8 @@ async def get_market(security_id: Optional[str] = None):
             if tracker.status not in ("已确认", "部分成交", "已提交"):
                 continue
             if security_id and tracker.security_id != security_id:
+                continue
+            if market and tracker.market != market:
                 continue
             remain = tracker.qty - tracker.filled_qty
             if remain <= 0:
@@ -432,6 +437,8 @@ async def get_market(security_id: Optional[str] = None):
             continue
         if security_id and r.get("securityId") != security_id:
             continue
+        if market and r.get("market") != market:
+            continue
         trades.append({
             "execId": r["execId"],
             "clOrderId": r.get("clOrderId", ""),
@@ -447,6 +454,10 @@ async def get_market(security_id: Optional[str] = None):
 
     securities = list(set(
         t.security_id for t in state.orders.values()
+        if not market or t.market == market
+    ))
+    markets = sorted(set(
+        t.market for t in state.orders.values() if t.market
     ))
 
     return {
@@ -455,6 +466,7 @@ async def get_market(security_id: Optional[str] = None):
         "trades": trades,
         "lastPrice": last_price,
         "securities": sorted(securities),
+        "markets": markets,
     }
 
 
@@ -481,25 +493,48 @@ async def get_status():
 
 
 @app.get("/api/exchange/responses", summary="交易所回报历史")
-async def get_exchange_responses(limit: int = 50):
+async def get_exchange_responses(
+    limit: int = 50,
+    market: Optional[str] = None,
+    security_id: Optional[str] = None,
+):
     """获取交易所侧的回报记录"""
-    return {"responses": state.exchange_responses[-limit:]}
+    resps = state.exchange_responses
+    if market:
+        resps = [r for r in resps if r.get("market") == market]
+    if security_id:
+        resps = [r for r in resps if r.get("securityId") == security_id]
+    return {"responses": resps[-limit:]}
 
 
 @app.get("/api/exchange/market", summary="交易所行情数据")
-async def get_exchange_market():
+async def get_exchange_market(
+    market: Optional[str] = None,
+    security_id: Optional[str] = None,
+):
     """
     获取交易所推送的最新行情数据（best bid / best ask）。
     数据来源：交易所订单簿变动时自动推送。
     """
     quotes = list(state.exchange_market_data.values())
+    if market:
+        quotes = [q for q in quotes if q.get("market") == market]
+    if security_id:
+        quotes = [q for q in quotes if q.get("securityId") == security_id]
     # 按证券代码排序
     quotes.sort(key=lambda q: q.get("securityId", ""))
-    return {"quotes": quotes}
+    # 汇总可用的市场和证券列表
+    all_quotes = list(state.exchange_market_data.values())
+    ex_markets = sorted(set(q.get("market", "") for q in all_quotes if q.get("market")))
+    ex_securities = sorted(set(q.get("securityId", "") for q in all_quotes if q.get("securityId")))
+    return {"quotes": quotes, "markets": ex_markets, "securities": ex_securities}
 
 
 @app.get("/api/exchange/orderbook", summary="交易所订单簿快照")
-async def get_exchange_orderbook(security_id: Optional[str] = None):
+async def get_exchange_orderbook(
+    security_id: Optional[str] = None,
+    market: Optional[str] = None,
+):
     """
     返回交易所（纯撮合系统）的订单簿买卖盘口深度。
     数据来源：C++ MatchingEngine 实时快照。
@@ -509,7 +544,10 @@ async def get_exchange_orderbook(security_id: Optional[str] = None):
 
     if state.bridge.is_connected:
         try:
-            snapshot = await state.bridge.query_orderbook()
+            snapshot = await state.bridge.query_orderbook(
+                security_id=security_id or "",
+                market=market or "",
+            )
             if snapshot:
                 ex_book = snapshot.get("exchange", {})
                 bid_depth = ex_book.get("bids", [])
@@ -517,18 +555,20 @@ async def get_exchange_orderbook(security_id: Optional[str] = None):
         except Exception as e:
             logger.warning(f"Failed to query exchange orderbook: {e}")
 
-    # 按 security_id 过滤（C++ 快照目前是全证券合并，如需按证券拆分可在此处理）
-    if security_id:
-        bid_depth = [b for b in bid_depth if b.get("securityId", "") == security_id]
-        ask_depth = [a for a in ask_depth if a.get("securityId", "") == security_id]
-
     return {"bidDepth": bid_depth, "askDepth": ask_depth}
 
 
 @app.get("/api/exchange/status", summary="交易所状态")
-async def get_exchange_status():
+async def get_exchange_status(
+    market: Optional[str] = None,
+    security_id: Optional[str] = None,
+):
     """获取交易所侧的统计信息"""
     resps = state.exchange_responses
+    if market:
+        resps = [r for r in resps if r.get("market") == market]
+    if security_id:
+        resps = [r for r in resps if r.get("securityId") == security_id]
     exec_count = sum(1 for r in resps if "execId" in r)
     reject_count = sum(1 for r in resps if "rejectCode" in r)
     cancel_count = sum(
