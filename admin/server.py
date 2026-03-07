@@ -493,9 +493,18 @@ async def get_status():
 
 
 @app.get("/api/exchange/responses", summary="交易所回报历史")
-async def get_exchange_responses(limit: int = 50):
+async def get_exchange_responses(
+    limit: int = 50,
+    market: Optional[str] = None,
+    security_id: Optional[str] = None,
+):
     """获取交易所侧的回报记录"""
-    return {"responses": state.exchange_responses[-limit:]}
+    resps = state.exchange_responses
+    if market:
+        resps = [r for r in resps if r.get("market") == market]
+    if security_id:
+        resps = [r for r in resps if r.get("securityId") == security_id]
+    return {"responses": resps[-limit:]}
 
 
 @app.get("/api/exchange/market", summary="交易所行情数据")
@@ -522,7 +531,10 @@ async def get_exchange_market(
 
 
 @app.get("/api/exchange/orderbook", summary="交易所订单簿快照")
-async def get_exchange_orderbook(security_id: Optional[str] = None):
+async def get_exchange_orderbook(
+    security_id: Optional[str] = None,
+    market: Optional[str] = None,
+):
     """
     返回交易所（纯撮合系统）的订单簿买卖盘口深度。
     数据来源：C++ MatchingEngine 实时快照。
@@ -532,7 +544,10 @@ async def get_exchange_orderbook(security_id: Optional[str] = None):
 
     if state.bridge.is_connected:
         try:
-            snapshot = await state.bridge.query_orderbook()
+            snapshot = await state.bridge.query_orderbook(
+                security_id=security_id or "",
+                market=market or "",
+            )
             if snapshot:
                 ex_book = snapshot.get("exchange", {})
                 bid_depth = ex_book.get("bids", [])
@@ -540,18 +555,20 @@ async def get_exchange_orderbook(security_id: Optional[str] = None):
         except Exception as e:
             logger.warning(f"Failed to query exchange orderbook: {e}")
 
-    # 按 security_id 过滤（C++ 快照目前是全证券合并，如需按证券拆分可在此处理）
-    if security_id:
-        bid_depth = [b for b in bid_depth if b.get("securityId", "") == security_id]
-        ask_depth = [a for a in ask_depth if a.get("securityId", "") == security_id]
-
     return {"bidDepth": bid_depth, "askDepth": ask_depth}
 
 
 @app.get("/api/exchange/status", summary="交易所状态")
-async def get_exchange_status():
+async def get_exchange_status(
+    market: Optional[str] = None,
+    security_id: Optional[str] = None,
+):
     """获取交易所侧的统计信息"""
     resps = state.exchange_responses
+    if market:
+        resps = [r for r in resps if r.get("market") == market]
+    if security_id:
+        resps = [r for r in resps if r.get("securityId") == security_id]
     exec_count = sum(1 for r in resps if "execId" in r)
     reject_count = sum(1 for r in resps if "rejectCode" in r)
     cancel_count = sum(
