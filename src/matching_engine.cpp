@@ -6,7 +6,20 @@
 namespace hdf {
 
 MatchingEngine::MatchingEngine() {}
-MatchingEngine::~MatchingEngine() {}
+MatchingEngine::~MatchingEngine() {
+    for (auto& [key, sb] : books_) {
+        for (auto& [price, level] : sb.bidBook) {
+            for (auto it = level.begin(); it != level.end(); ++it) {
+                it.ptr->~BookEntry();
+            }
+        }
+        for (auto& [price, level] : sb.askBook) {
+            for (auto it = level.begin(); it != level.end(); ++it) {
+                it.ptr->~BookEntry();
+            }
+        }
+    }
+}
 
 // ============================================================
 // B9: execId 生成
@@ -27,10 +40,10 @@ void MatchingEngine::addOrder(const Order &order) {
     const std::string bookKey = makeBookKey(order.securityId, order.market);
     SecurityBook &sb = books_[bookKey];
 
-    BookEntry entry;
-    entry.order = order;
-    entry.remainingQty = order.qty;
-    entry.cumQty = 0;
+    BookEntry* entry = entryPool_.allocate();
+    entry->order = order;
+    entry->remainingQty = order.qty;
+    entry->cumQty = 0;
 
     if (order.side == Side::BUY) {
         sb.bidBook[order.price].push_back(entry);
@@ -123,7 +136,9 @@ MatchingEngine::match(const Order &order,
                 // 如果对手方完全成交，从订单簿和索引中移除
                 if (entryIt->remainingQty == 0) {
                     orderIndex_.erase(entryIt->order.clOrderId);
+                    BookEntry* entryToFree = entryIt.ptr;
                     entryIt = level.erase(entryIt);
+                    entryPool_.deallocate(entryToFree);
                 } else {
                     ++entryIt;
                 }
@@ -181,7 +196,9 @@ MatchingEngine::match(const Order &order,
                 // 如果对手方完全成交，从订单簿和索引中移除
                 if (entryIt->remainingQty == 0) {
                     orderIndex_.erase(entryIt->order.clOrderId);
+                    BookEntry* entryToFree = entryIt.ptr;
                     entryIt = level.erase(entryIt);
+                    entryPool_.deallocate(entryToFree);
                 } else {
                     ++entryIt;
                 }
@@ -247,7 +264,9 @@ CancelResponse MatchingEngine::cancelOrder(const std::string &clOrderId) {
             response.cumQty = entryIt->cumQty;
             response.canceledQty = entryIt->remainingQty;
             response.type = CancelResponse::Type::CONFIRM;
+            BookEntry* entryToFree = entryIt.ptr;
             level.erase(entryIt);
+            entryPool_.deallocate(entryToFree);
             if (level.empty())
                 book.erase(priceIt);
             orderIndex_.erase(indexIt);
@@ -300,7 +319,9 @@ void MatchingEngine::reduceOrderQty(const std::string &clOrderId,
             if (qty >= entryIt->remainingQty) {
                 // 完全消耗，从订单簿移除
                 entryIt->remainingQty = 0;
+                BookEntry* entryToFree = entryIt.ptr;
                 level.erase(entryIt);
+                entryPool_.deallocate(entryToFree);
                 if (level.empty())
                     book.erase(priceIt);
                 orderIndex_.erase(indexIt);

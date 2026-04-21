@@ -8,6 +8,7 @@
 #include <string>
 #include <unordered_map>
 #include <vector>
+#include "memory_pool.h"
 
 namespace hdf {
 
@@ -121,19 +122,74 @@ class MatchingEngine {
         return to_string(market) + "+" + securityId;
     }
 
-    /**
-     * @brief 订单簿中的订单条目，记录订单信息及已成交累计量。
-     */
     struct BookEntry {
         Order order;
         uint32_t remainingQty = 0;
         uint32_t cumQty = 0;
+        BookEntry* next = nullptr;
+        BookEntry* prev = nullptr;
     };
 
     /**
-     * @brief 同一价格档位上的订单队列（时间优先）。
+     * @brief 同一价格档位上的订单队列（采用侵入式双向链表消除分配）
      */
-    using PriceLevel = std::list<BookEntry>;
+    class PriceLevel {
+    public:
+        BookEntry* head = nullptr;
+        BookEntry* tail = nullptr;
+
+        bool empty() const { return head == nullptr; }
+
+        void push_back(BookEntry* entry) {
+            entry->next = nullptr;
+            entry->prev = tail;
+            if (tail) tail->next = entry;
+            else head = entry;
+            tail = entry;
+        }
+
+        BookEntry* erase_node(BookEntry* entry) {
+            BookEntry* next = entry->next;
+            if (entry->prev) entry->prev->next = entry->next;
+            else head = entry->next;
+            if (entry->next) entry->next->prev = entry->prev;
+            else tail = entry->prev;
+            return next;
+        }
+
+        class iterator {
+        public:
+            BookEntry* ptr;
+            iterator(BookEntry* p) : ptr(p) {}
+            BookEntry& operator*() { return *ptr; }
+            BookEntry* operator->() { return ptr; }
+            iterator& operator++() { ptr = ptr->next; return *this; }
+            bool operator!=(const iterator& other) const { return ptr != other.ptr; }
+            bool operator==(const iterator& other) const { return ptr == other.ptr; }
+        };
+
+        iterator begin() { return iterator(head); }
+        iterator end() { return iterator(nullptr); }
+
+        class const_iterator {
+        public:
+            const BookEntry* ptr;
+            const_iterator(const BookEntry* p) : ptr(p) {}
+            const BookEntry& operator*() const { return *ptr; }
+            const BookEntry* operator->() const { return ptr; }
+            const_iterator& operator++() { ptr = ptr->next; return *this; }
+            bool operator!=(const const_iterator& other) const { return ptr != other.ptr; }
+            bool operator==(const const_iterator& other) const { return ptr == other.ptr; }
+        };
+
+        const_iterator begin() const { return const_iterator(head); }
+        const_iterator end() const { return const_iterator(nullptr); }
+
+        iterator erase(iterator it) {
+            return iterator(erase_node(it.ptr));
+        }
+    };
+
 
     /**
      * @brief 单个 (market, securityId) 的订单簿。
@@ -151,6 +207,11 @@ class MatchingEngine {
      * key = makeBookKey(securityId, market)
      */
     std::unordered_map<std::string, SecurityBook> books_;
+
+    /**
+     * @brief 订单对象池，消除对象生成时的分配
+     */
+    ObjectPool<BookEntry> entryPool_;
 
     /**
      * @brief 订单ID到订单簿位置的反向索引。
