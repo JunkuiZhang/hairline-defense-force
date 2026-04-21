@@ -52,7 +52,7 @@ class TradeLoggerTest : public ::testing::Test {
      */
     Order createOrder(const std::string &id = "ORD001",
                       const std::string &securityId = "600030",
-                      Side side = Side::BUY, double price = 25.50,
+                      Side side = Side::BUY, uint64_t price = 255000,
                       uint32_t qty = 1000,
                       const std::string &shareholderId = "SH001") {
         Order order;
@@ -134,11 +134,11 @@ TEST_F(TradeLoggerTest, LogWithoutOpenIsSafe) {
     EXPECT_NO_FATAL_FAILURE(logger.logOrderConfirm("ORD001"));
     EXPECT_NO_FATAL_FAILURE(logger.logOrderReject("ORD001", 1, "some reason"));
     EXPECT_NO_FATAL_FAILURE(logger.logExecution("EXEC001", "ORD001", "600030",
-                                                Side::BUY, 100, 25.5, true));
+                                                Side::BUY, 100, 255000, true));
     EXPECT_NO_FATAL_FAILURE(logger.logCancelConfirm("ORD001", 500, 200));
     EXPECT_NO_FATAL_FAILURE(logger.logCancelReject("ORD001", 2, "not found"));
     EXPECT_NO_FATAL_FAILURE(
-        logger.logMarketData("600030", Market::XSHG, 25.0, 25.5));
+        logger.logMarketData("600030", Market::XSHG, 250000, 255000));
 }
 
 // ============================================================
@@ -210,7 +210,7 @@ TEST_F(TradeLoggerTest, LogOrderReject) {
  */
 TEST_F(TradeLoggerTest, LogExecution) {
     ASSERT_TRUE(logger.open(testFile));
-    logger.logExecution("EXEC001", "ORD400", "000001", Side::BUY, 500, 15.30,
+    logger.logExecution("EXEC001", "ORD400", "000001", Side::BUY, 500, 153000,
                         true);
     logger.close();
 
@@ -233,7 +233,7 @@ TEST_F(TradeLoggerTest, LogExecution) {
  */
 TEST_F(TradeLoggerTest, LogExecutionTaker) {
     ASSERT_TRUE(logger.open(testFile));
-    logger.logExecution("EXEC002", "ORD401", "600030", Side::SELL, 300, 28.0,
+    logger.logExecution("EXEC002", "ORD401", "600030", Side::SELL, 300, 280000,
                         false);
     logger.close();
 
@@ -285,7 +285,7 @@ TEST_F(TradeLoggerTest, LogCancelReject) {
  */
 TEST_F(TradeLoggerTest, LogMarketData) {
     ASSERT_TRUE(logger.open(testFile));
-    logger.logMarketData("600519", Market::XSHG, 1795.0, 1805.0);
+    logger.logMarketData("600519", Market::XSHG, 17950000, 18050000);
     logger.close();
 
     auto records = readRecords();
@@ -356,18 +356,18 @@ TEST_F(TradeLoggerTest, TimestampsAreNonDecreasing) {
 TEST_F(TradeLoggerTest, MultipleMixedEvents) {
     ASSERT_TRUE(logger.open(testFile));
 
-    logger.logOrderNew(createOrder("M001", "600030", Side::BUY, 25.0, 1000));
+    logger.logOrderNew(createOrder("M001", "600030", Side::BUY, 250000, 1000));
     logger.logOrderConfirm("M001");
-    logger.logExecution("EXEC_M1", "M001", "600030", Side::BUY, 500, 25.0,
+    logger.logExecution("EXEC_M1", "M001", "600030", Side::BUY, 500, 250000,
                         false);
-    logger.logOrderNew(createOrder("M002", "600030", Side::SELL, 25.0, 500));
+    logger.logOrderNew(createOrder("M002", "600030", Side::SELL, 250000, 500));
     logger.logOrderConfirm("M002");
-    logger.logExecution("EXEC_M2", "M002", "600030", Side::SELL, 500, 25.0,
+    logger.logExecution("EXEC_M2", "M002", "600030", Side::SELL, 500, 250000,
                         true);
     logger.logCancelConfirm("M001", 500, 500);
     logger.logOrderReject("M003", 99, "invalid price");
     logger.logCancelReject("M004", 88, "not found");
-    logger.logMarketData("600030", Market::XSHG, 24.5, 25.5);
+    logger.logMarketData("600030", Market::XSHG, 245000, 255000);
 
     logger.close();
 
@@ -486,7 +486,7 @@ TEST_F(TradeLoggerTest, EachLineIsValidJson) {
     logger.logOrderNew(createOrder());
     logger.logOrderConfirm("V001");
     logger.logOrderReject("V002", 1, "bad");
-    logger.logExecution("E001", "V003", "600030", Side::BUY, 100, 10.0, true);
+    logger.logExecution("E001", "V003", "600030", Side::BUY, 100, 100000, true);
     logger.logCancelConfirm("V004", 100, 0);
     logger.logCancelReject("V005", 2, "no");
     logger.logMarketData("600030", Market::XSHG, 9.0, 11.0);

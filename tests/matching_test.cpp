@@ -49,7 +49,7 @@ class MatchingEngineTest : public ::testing::Test {
  * 验证当订单簿为空时，提交订单应返回 nullopt（无匹配）。
  */
 TEST_F(MatchingEngineTest, EmptyBookNoMatch) {
-    Order buyOrder = createOrder("1001", "600030", Side::BUY, 10.0, 1000);
+    Order buyOrder = createOrder("1001", "600030", Side::BUY, 100000, 1000);
     auto result = engine.match(buyOrder);
 
     EXPECT_TRUE(result.executions.empty());
@@ -62,19 +62,19 @@ TEST_F(MatchingEngineTest, EmptyBookNoMatch) {
  */
 TEST_F(MatchingEngineTest, ExactMatch) {
     // 先挂一个买单到订单簿
-    Order buyOrder = createOrder("1001", "600030", Side::BUY, 10.0, 1000);
+    Order buyOrder = createOrder("1001", "600030", Side::BUY, 100000, 1000);
     engine.addOrder(buyOrder);
 
     // 提交一个卖单进行撮合
     Order sellOrder =
-        createOrder("1002", "600030", Side::SELL, 10.0, 1000, "SH002");
+        createOrder("1002", "600030", Side::SELL, 100000, 1000, "SH002");
     auto result = engine.match(sellOrder);
 
     ASSERT_FALSE(result.executions.empty());
     EXPECT_EQ(result.executions.size(), 1);
     EXPECT_EQ(result.executions[0].clOrderId, "1001");      // 对手方订单ID
     EXPECT_EQ(result.executions[0].execQty, 1000);          // 成交数量
-    EXPECT_DOUBLE_EQ(result.executions[0].execPrice, 10.0); // 成交价 = maker价
+    EXPECT_EQ(result.executions[0].execPrice, 100000); // 成交价 = maker价
     EXPECT_EQ(result.remainingQty, 0);                      // 完全成交
 }
 
@@ -85,11 +85,11 @@ TEST_F(MatchingEngineTest, ExactMatch) {
  * 买方订单簿中应剩余500股。
  */
 TEST_F(MatchingEngineTest, SimpleMatch) {
-    Order buyOrder = createOrder("2001", "600030", Side::BUY, 10.0, 1000);
+    Order buyOrder = createOrder("2001", "600030", Side::BUY, 100000, 1000);
     engine.addOrder(buyOrder);
 
     Order sellOrder =
-        createOrder("2002", "600030", Side::SELL, 10.0, 500, "SH002");
+        createOrder("2002", "600030", Side::SELL, 100000, 500, "SH002");
     auto result = engine.match(sellOrder);
 
     ASSERT_FALSE(result.executions.empty());
@@ -106,10 +106,10 @@ TEST_F(MatchingEngineTest, SimpleMatch) {
  */
 TEST_F(MatchingEngineTest, PartialMatchWithRemainder) {
     Order sellOrder =
-        createOrder("3001", "600030", Side::SELL, 10.0, 500, "SH002");
+        createOrder("3001", "600030", Side::SELL, 100000, 500, "SH002");
     engine.addOrder(sellOrder);
 
-    Order buyOrder = createOrder("3002", "600030", Side::BUY, 10.0, 1000);
+    Order buyOrder = createOrder("3002", "600030", Side::BUY, 100000, 1000);
     auto result = engine.match(buyOrder);
 
     ASSERT_FALSE(result.executions.empty());
@@ -126,11 +126,11 @@ TEST_F(MatchingEngineTest, PartialMatchWithRemainder) {
 TEST_F(MatchingEngineTest, PriceMismatchNoMatch) {
     // 挂卖单：卖价11.0
     Order sellOrder =
-        createOrder("4001", "600030", Side::SELL, 11.0, 1000, "SH002");
+        createOrder("4001", "600030", Side::SELL, 110000, 1000, "SH002");
     engine.addOrder(sellOrder);
 
     // 提交买单：买价10.0（低于卖价11.0）
-    Order buyOrder = createOrder("4002", "600030", Side::BUY, 10.0, 1000);
+    Order buyOrder = createOrder("4002", "600030", Side::BUY, 100000, 1000);
     auto result = engine.match(buyOrder);
 
     EXPECT_TRUE(result.executions.empty()); // 不应成交
@@ -148,22 +148,22 @@ TEST_F(MatchingEngineTest, PriceMismatchNoMatch) {
 TEST_F(MatchingEngineTest, PricePriorityBuyMatchesLowestAsk) {
     // 先挂高价卖单
     Order sellHigh =
-        createOrder("5001", "600030", Side::SELL, 11.0, 500, "SH002");
+        createOrder("5001", "600030", Side::SELL, 110000, 500, "SH002");
     engine.addOrder(sellHigh);
 
     // 再挂低价卖单
     Order sellLow =
-        createOrder("5002", "600030", Side::SELL, 10.0, 500, "SH003");
+        createOrder("5002", "600030", Side::SELL, 100000, 500, "SH003");
     engine.addOrder(sellLow);
 
     // 买方以11.0的价格买500股，应该先匹配10.0的卖单
-    Order buyOrder = createOrder("5003", "600030", Side::BUY, 11.0, 500);
+    Order buyOrder = createOrder("5003", "600030", Side::BUY, 110000, 500);
     auto result = engine.match(buyOrder);
 
     ASSERT_FALSE(result.executions.empty());
     EXPECT_EQ(result.executions.size(), 1);
     EXPECT_EQ(result.executions[0].clOrderId, "5002");      // 应匹配低价卖单
-    EXPECT_DOUBLE_EQ(result.executions[0].execPrice, 10.0); // 成交价为maker价
+    EXPECT_EQ(result.executions[0].execPrice, 100000); // 成交价为maker价
     EXPECT_EQ(result.remainingQty, 0);
 }
 
@@ -174,23 +174,23 @@ TEST_F(MatchingEngineTest, PricePriorityBuyMatchesLowestAsk) {
  */
 TEST_F(MatchingEngineTest, PricePrioritySellMatchesHighestBid) {
     // 先挂低价买单
-    Order buyLow = createOrder("6001", "600030", Side::BUY, 9.0, 500);
+    Order buyLow = createOrder("6001", "600030", Side::BUY, 90000, 500);
     engine.addOrder(buyLow);
 
     // 再挂高价买单
     Order buyHigh =
-        createOrder("6002", "600030", Side::BUY, 10.0, 500, "SH002");
+        createOrder("6002", "600030", Side::BUY, 100000, 500, "SH002");
     engine.addOrder(buyHigh);
 
     // 卖方以9.0的价格卖500股，应该先匹配10.0的买单
     Order sellOrder =
-        createOrder("6003", "600030", Side::SELL, 9.0, 500, "SH003");
+        createOrder("6003", "600030", Side::SELL, 90000, 500, "SH003");
     auto result = engine.match(sellOrder);
 
     ASSERT_FALSE(result.executions.empty());
     EXPECT_EQ(result.executions.size(), 1);
     EXPECT_EQ(result.executions[0].clOrderId, "6002");      // 应匹配高价买单
-    EXPECT_DOUBLE_EQ(result.executions[0].execPrice, 10.0); // 成交价为maker价
+    EXPECT_EQ(result.executions[0].execPrice, 100000); // 成交价为maker价
     EXPECT_EQ(result.remainingQty, 0);
 }
 
@@ -206,16 +206,16 @@ TEST_F(MatchingEngineTest, PricePrioritySellMatchesHighestBid) {
 TEST_F(MatchingEngineTest, TimePrioritySamePrice) {
     // 先挂的订单
     Order sellFirst =
-        createOrder("7001", "600030", Side::SELL, 10.0, 500, "SH002");
+        createOrder("7001", "600030", Side::SELL, 100000, 500, "SH002");
     engine.addOrder(sellFirst);
 
     // 后挂的订单（同价格）
     Order sellSecond =
-        createOrder("7002", "600030", Side::SELL, 10.0, 500, "SH003");
+        createOrder("7002", "600030", Side::SELL, 100000, 500, "SH003");
     engine.addOrder(sellSecond);
 
     // 买方买500股，应该匹配先挂的7001
-    Order buyOrder = createOrder("7003", "600030", Side::BUY, 10.0, 500);
+    Order buyOrder = createOrder("7003", "600030", Side::BUY, 100000, 500);
     auto result = engine.match(buyOrder);
 
     ASSERT_FALSE(result.executions.empty());
@@ -234,14 +234,14 @@ TEST_F(MatchingEngineTest, TimePrioritySamePrice) {
  */
 TEST_F(MatchingEngineTest, MultipleMatchesPartialFill) {
     // 挂两个500股的卖单
-    Order sell1 = createOrder("8001", "600030", Side::SELL, 10.0, 500, "SH002");
+    Order sell1 = createOrder("8001", "600030", Side::SELL, 100000, 500, "SH002");
     engine.addOrder(sell1);
 
-    Order sell2 = createOrder("8002", "600030", Side::SELL, 10.0, 500, "SH003");
+    Order sell2 = createOrder("8002", "600030", Side::SELL, 100000, 500, "SH003");
     engine.addOrder(sell2);
 
     // 买方买1000股
-    Order buyOrder = createOrder("8003", "600030", Side::BUY, 10.0, 1000);
+    Order buyOrder = createOrder("8003", "600030", Side::BUY, 100000, 1000);
     auto result = engine.match(buyOrder);
 
     ASSERT_FALSE(result.executions.empty());
@@ -258,23 +258,23 @@ TEST_F(MatchingEngineTest, MultipleMatchesPartialFill) {
  */
 TEST_F(MatchingEngineTest, MultiPriceLevelMatch) {
     // 低价挂500股
-    Order sell1 = createOrder("9001", "600030", Side::SELL, 10.0, 500, "SH002");
+    Order sell1 = createOrder("9001", "600030", Side::SELL, 100000, 500, "SH002");
     engine.addOrder(sell1);
 
     // 高价挂500股
-    Order sell2 = createOrder("9002", "600030", Side::SELL, 10.5, 500, "SH003");
+    Order sell2 = createOrder("9002", "600030", Side::SELL, 105000, 500, "SH003");
     engine.addOrder(sell2);
 
     // 买方以10.5买1000股，应匹配两个价格档位
-    Order buyOrder = createOrder("9003", "600030", Side::BUY, 10.5, 1000);
+    Order buyOrder = createOrder("9003", "600030", Side::BUY, 105000, 1000);
     auto result = engine.match(buyOrder);
 
     ASSERT_FALSE(result.executions.empty());
     EXPECT_EQ(result.executions.size(), 2);
     EXPECT_EQ(result.executions[0].clOrderId, "9001"); // 先匹配低价
-    EXPECT_DOUBLE_EQ(result.executions[0].execPrice, 10.0);
+    EXPECT_EQ(result.executions[0].execPrice, 100000);
     EXPECT_EQ(result.executions[1].clOrderId, "9002"); // 再匹配高价
-    EXPECT_DOUBLE_EQ(result.executions[1].execPrice, 10.5);
+    EXPECT_EQ(result.executions[1].execPrice, 105000);
     EXPECT_EQ(result.remainingQty, 0);
 }
 
@@ -285,10 +285,10 @@ TEST_F(MatchingEngineTest, MultiPriceLevelMatch) {
  */
 TEST_F(MatchingEngineTest, LargeOrderPartialFillWithRemainder) {
     Order sell1 =
-        createOrder("10001", "600030", Side::SELL, 10.0, 300, "SH002");
+        createOrder("10001", "600030", Side::SELL, 100000, 300, "SH002");
     engine.addOrder(sell1);
 
-    Order buyOrder = createOrder("10002", "600030", Side::BUY, 10.0, 1000);
+    Order buyOrder = createOrder("10002", "600030", Side::BUY, 100000, 1000);
     auto result = engine.match(buyOrder);
 
     ASSERT_FALSE(result.executions.empty());
@@ -309,15 +309,15 @@ TEST_F(MatchingEngineTest, LargeOrderPartialFillWithRemainder) {
 TEST_F(MatchingEngineTest, MakerPriceExecution) {
     // 卖方挂单价格10.0
     Order sellOrder =
-        createOrder("11001", "600030", Side::SELL, 10.0, 500, "SH002");
+        createOrder("11001", "600030", Side::SELL, 100000, 500, "SH002");
     engine.addOrder(sellOrder);
 
     // 买方出价10.5（高于卖价）
-    Order buyOrder = createOrder("11002", "600030", Side::BUY, 10.5, 500);
+    Order buyOrder = createOrder("11002", "600030", Side::BUY, 105000, 500);
     auto result = engine.match(buyOrder);
 
     ASSERT_FALSE(result.executions.empty());
-    EXPECT_DOUBLE_EQ(result.executions[0].execPrice, 10.0); // 成交价 = maker价
+    EXPECT_EQ(result.executions[0].execPrice, 100000); // 成交价 = maker价
 }
 
 /**
@@ -325,17 +325,16 @@ TEST_F(MatchingEngineTest, MakerPriceExecution) {
  */
 TEST_F(MatchingEngineTest, MakerPriceWhenSellerIsTaker) {
     // 买方挂单价格10.5
-    Order buyOrder = createOrder("12001", "600030", Side::BUY, 10.5, 500);
+    Order buyOrder = createOrder("12001", "600030", Side::BUY, 105000, 500);
     engine.addOrder(buyOrder);
 
     // 卖方出价10.0（低于买价）
     Order sellOrder =
-        createOrder("12002", "600030", Side::SELL, 10.0, 500, "SH002");
+        createOrder("12002", "600030", Side::SELL, 100000, 500, "SH002");
     auto result = engine.match(sellOrder);
 
     ASSERT_FALSE(result.executions.empty());
-    EXPECT_DOUBLE_EQ(result.executions[0].execPrice,
-                     10.5); // 成交价 = maker买价
+    EXPECT_EQ(result.executions[0].execPrice, 105000); // 成交价 = maker买价
 }
 
 // ============================================================
@@ -350,11 +349,11 @@ TEST_F(MatchingEngineTest, MakerPriceWhenSellerIsTaker) {
 TEST_F(MatchingEngineTest, OddLotSellOrder) {
     // 卖方挂50股零股
     Order sellOrder =
-        createOrder("13001", "600030", Side::SELL, 10.0, 50, "SH002");
+        createOrder("13001", "600030", Side::SELL, 100000, 50, "SH002");
     engine.addOrder(sellOrder);
 
     // 买方买100股（100的整数倍）
-    Order buyOrder = createOrder("13002", "600030", Side::BUY, 10.0, 100);
+    Order buyOrder = createOrder("13002", "600030", Side::BUY, 100000, 100);
     auto result = engine.match(buyOrder);
 
     ASSERT_FALSE(result.executions.empty());
@@ -370,16 +369,16 @@ TEST_F(MatchingEngineTest, OddLotSellOrder) {
  */
 TEST_F(MatchingEngineTest, MixedOddAndRoundLot) {
     // 先挂50股零股
-    Order sell1 = createOrder("14001", "600030", Side::SELL, 10.0, 50, "SH002");
+    Order sell1 = createOrder("14001", "600030", Side::SELL, 100000, 50, "SH002");
     engine.addOrder(sell1);
 
     // 再挂500股整手
     Order sell2 =
-        createOrder("14002", "600030", Side::SELL, 10.0, 500, "SH003");
+        createOrder("14002", "600030", Side::SELL, 100000, 500, "SH003");
     engine.addOrder(sell2);
 
     // 买方买200股
-    Order buyOrder = createOrder("14003", "600030", Side::BUY, 10.0, 200);
+    Order buyOrder = createOrder("14003", "600030", Side::BUY, 100000, 200);
     auto result = engine.match(buyOrder);
 
     ASSERT_FALSE(result.executions.empty());
@@ -408,7 +407,7 @@ TEST_F(MatchingEngineTest, MixedOddAndRoundLot) {
  * 挂单后撤单，验证返回的 CancelResponse 信息正确。
  */
 TEST_F(MatchingEngineTest, CancelOrderSuccess) {
-    Order buyOrder = createOrder("15001", "600030", Side::BUY, 10.0, 1000);
+    Order buyOrder = createOrder("15001", "600030", Side::BUY, 100000, 1000);
     engine.addOrder(buyOrder);
 
     CancelResponse resp = engine.cancelOrder("15001");
@@ -418,7 +417,7 @@ TEST_F(MatchingEngineTest, CancelOrderSuccess) {
     EXPECT_EQ(resp.clOrderId, "15001");
     EXPECT_EQ(resp.securityId, "600030");
     EXPECT_EQ(resp.side, Side::BUY);
-    EXPECT_DOUBLE_EQ(resp.price, 10.0);
+    EXPECT_EQ(resp.price, 100000);
     EXPECT_EQ(resp.qty, 1000);
     EXPECT_EQ(resp.cumQty, 0);         // 未成交
     EXPECT_EQ(resp.canceledQty, 1000); // 全部撤销
@@ -441,14 +440,14 @@ TEST_F(MatchingEngineTest, CancelNonexistentOrder) {
  */
 TEST_F(MatchingEngineTest, CancelOrderThenNoMatch) {
     Order sellOrder =
-        createOrder("16001", "600030", Side::SELL, 10.0, 500, "SH002");
+        createOrder("16001", "600030", Side::SELL, 100000, 500, "SH002");
     engine.addOrder(sellOrder);
 
     // 撤单
     engine.cancelOrder("16001");
 
     // 再提交可匹配的买单
-    Order buyOrder = createOrder("16002", "600030", Side::BUY, 10.0, 500);
+    Order buyOrder = createOrder("16002", "600030", Side::BUY, 100000, 500);
     auto result = engine.match(buyOrder);
 
     EXPECT_TRUE(result.executions.empty()); // 撤单后不应匹配
@@ -461,12 +460,12 @@ TEST_F(MatchingEngineTest, CancelOrderThenNoMatch) {
  */
 TEST_F(MatchingEngineTest, CancelAfterPartialFill) {
     // 挂1000股买单
-    Order buyOrder = createOrder("17001", "600030", Side::BUY, 10.0, 1000);
+    Order buyOrder = createOrder("17001", "600030", Side::BUY, 100000, 1000);
     engine.addOrder(buyOrder);
 
     // 卖500股，部分成交
     Order sellOrder =
-        createOrder("17002", "600030", Side::SELL, 10.0, 500, "SH002");
+        createOrder("17002", "600030", Side::SELL, 100000, 500, "SH002");
     auto result = engine.match(sellOrder);
     ASSERT_FALSE(result.executions.empty());
     EXPECT_EQ(result.executions[0].execQty, 500);
@@ -488,7 +487,7 @@ TEST_F(MatchingEngineTest, CancelAfterPartialFill) {
  * 挂1000股，减少400股后，应只能匹配600股。
  */
 TEST_F(MatchingEngineTest, ReduceOrderQtyBasic) {
-    Order buyOrder = createOrder("18001", "600030", Side::BUY, 10.0, 1000);
+    Order buyOrder = createOrder("18001", "600030", Side::BUY, 100000, 1000);
     engine.addOrder(buyOrder);
 
     // 减少400股
@@ -496,7 +495,7 @@ TEST_F(MatchingEngineTest, ReduceOrderQtyBasic) {
 
     // 尝试匹配1000股的卖单，应只能成交600股
     Order sellOrder =
-        createOrder("18002", "600030", Side::SELL, 10.0, 1000, "SH002");
+        createOrder("18002", "600030", Side::SELL, 100000, 1000, "SH002");
     auto result = engine.match(sellOrder);
 
     ASSERT_FALSE(result.executions.empty());
@@ -511,14 +510,14 @@ TEST_F(MatchingEngineTest, ReduceOrderQtyBasic) {
  */
 TEST_F(MatchingEngineTest, ReduceOrderQtyToZero) {
     Order sellOrder =
-        createOrder("19001", "600030", Side::SELL, 10.0, 500, "SH002");
+        createOrder("19001", "600030", Side::SELL, 100000, 500, "SH002");
     engine.addOrder(sellOrder);
 
     // 减少到0
     engine.reduceOrderQty("19001", 500);
 
     // 应无法匹配
-    Order buyOrder = createOrder("19002", "600030", Side::BUY, 10.0, 500);
+    Order buyOrder = createOrder("19002", "600030", Side::BUY, 100000, 500);
     auto result = engine.match(buyOrder);
 
     EXPECT_TRUE(result.executions.empty());
@@ -544,15 +543,15 @@ TEST_F(MatchingEngineTest, ReduceNonexistentOrder) {
 TEST_F(MatchingEngineTest, UniqueExecIds) {
     // 挂两个卖单
     Order sell1 =
-        createOrder("20001", "600030", Side::SELL, 10.0, 500, "SH002");
+        createOrder("20001", "600030", Side::SELL, 100000, 500, "SH002");
     engine.addOrder(sell1);
 
     Order sell2 =
-        createOrder("20002", "600030", Side::SELL, 10.0, 500, "SH003");
+        createOrder("20002", "600030", Side::SELL, 100000, 500, "SH003");
     engine.addOrder(sell2);
 
     // 买方匹配两个
-    Order buyOrder = createOrder("20003", "600030", Side::BUY, 10.0, 1000);
+    Order buyOrder = createOrder("20003", "600030", Side::BUY, 100000, 1000);
     auto result = engine.match(buyOrder);
 
     ASSERT_FALSE(result.executions.empty());
@@ -575,18 +574,18 @@ TEST_F(MatchingEngineTest, UniqueExecIdsAcrossMatches) {
 
     // 第一次撮合
     Order sell1 =
-        createOrder("21001", "600030", Side::SELL, 10.0, 500, "SH002");
+        createOrder("21001", "600030", Side::SELL, 100000, 500, "SH002");
     engine.addOrder(sell1);
-    Order buy1 = createOrder("21002", "600030", Side::BUY, 10.0, 500);
+    Order buy1 = createOrder("21002", "600030", Side::BUY, 100000, 500);
     auto result1 = engine.match(buy1);
     ASSERT_FALSE(result1.executions.empty());
     allExecIds.insert(result1.executions[0].execId);
 
     // 第二次撮合
     Order sell2 =
-        createOrder("21003", "600030", Side::SELL, 10.0, 500, "SH003");
+        createOrder("21003", "600030", Side::SELL, 100000, 500, "SH003");
     engine.addOrder(sell2);
-    Order buy2 = createOrder("21004", "600030", Side::BUY, 10.0, 500, "SH004");
+    Order buy2 = createOrder("21004", "600030", Side::BUY, 100000, 500, "SH004");
     auto result2 = engine.match(buy2);
     ASSERT_FALSE(result2.executions.empty());
     allExecIds.insert(result2.executions[0].execId);
@@ -604,11 +603,11 @@ TEST_F(MatchingEngineTest, UniqueExecIdsAcrossMatches) {
 TEST_F(MatchingEngineTest, DifferentSecurityNoMatch) {
     // 挂600030的卖单
     Order sellOrder =
-        createOrder("22001", "600030", Side::SELL, 10.0, 500, "SH002");
+        createOrder("22001", "600030", Side::SELL, 100000, 500, "SH002");
     engine.addOrder(sellOrder);
 
     // 提交600031的买单（不同股票）
-    Order buyOrder = createOrder("22002", "600031", Side::BUY, 10.0, 500);
+    Order buyOrder = createOrder("22002", "600031", Side::BUY, 100000, 500);
     auto result = engine.match(buyOrder);
 
     EXPECT_TRUE(result.executions.empty()); // 不同股票不应匹配
@@ -626,32 +625,32 @@ TEST_F(MatchingEngineTest, DifferentSecurityNoMatch) {
 TEST_F(MatchingEngineTest, ComplexMultiLevelMatch) {
     // 挂3个不同价格的卖单
     Order sell1 =
-        createOrder("23001", "600030", Side::SELL, 10.0, 300, "SH002");
+        createOrder("23001", "600030", Side::SELL, 100000, 300, "SH002");
     engine.addOrder(sell1);
 
     Order sell2 =
-        createOrder("23002", "600030", Side::SELL, 10.5, 400, "SH003");
+        createOrder("23002", "600030", Side::SELL, 105000, 400, "SH003");
     engine.addOrder(sell2);
 
     Order sell3 =
-        createOrder("23003", "600030", Side::SELL, 11.0, 500, "SH004");
+        createOrder("23003", "600030", Side::SELL, 110000, 500, "SH004");
     engine.addOrder(sell3);
 
     // 买方以11.0买1000股
-    Order buyOrder = createOrder("23004", "600030", Side::BUY, 11.0, 1000);
+    Order buyOrder = createOrder("23004", "600030", Side::BUY, 110000, 1000);
     auto result = engine.match(buyOrder);
 
     ASSERT_FALSE(result.executions.empty());
     EXPECT_EQ(result.executions.size(), 3); // 匹配3笔
 
     // 验证价格优先：先10.0，再10.5，再11.0
-    EXPECT_DOUBLE_EQ(result.executions[0].execPrice, 10.0);
+    EXPECT_EQ(result.executions[0].execPrice, 100000);
     EXPECT_EQ(result.executions[0].execQty, 300);
 
-    EXPECT_DOUBLE_EQ(result.executions[1].execPrice, 10.5);
+    EXPECT_EQ(result.executions[1].execPrice, 105000);
     EXPECT_EQ(result.executions[1].execQty, 400);
 
-    EXPECT_DOUBLE_EQ(result.executions[2].execPrice, 11.0);
+    EXPECT_EQ(result.executions[2].execPrice, 110000);
     EXPECT_EQ(result.executions[2].execQty, 300); // 只需300股即可满足
 
     EXPECT_EQ(result.remainingQty, 0);
@@ -664,19 +663,19 @@ TEST_F(MatchingEngineTest, ComplexMultiLevelMatch) {
  */
 TEST_F(MatchingEngineTest, ConsecutiveMatchesBookState) {
     // 挂1000股买单
-    Order buy1 = createOrder("24001", "600030", Side::BUY, 10.0, 1000);
+    Order buy1 = createOrder("24001", "600030", Side::BUY, 100000, 1000);
     engine.addOrder(buy1);
 
     // 第一次卖单：成交400股
     Order sell1 =
-        createOrder("24002", "600030", Side::SELL, 10.0, 400, "SH002");
+        createOrder("24002", "600030", Side::SELL, 100000, 400, "SH002");
     auto result1 = engine.match(sell1);
     ASSERT_FALSE(result1.executions.empty());
     EXPECT_EQ(result1.executions[0].execQty, 400);
 
     // 第二次卖单：应还能匹配600股
     Order sell2 =
-        createOrder("24003", "600030", Side::SELL, 10.0, 800, "SH003");
+        createOrder("24003", "600030", Side::SELL, 100000, 800, "SH003");
     auto result2 = engine.match(sell2);
     ASSERT_FALSE(result2.executions.empty());
     EXPECT_EQ(result2.executions[0].execQty, 600); // 买单剩余600
@@ -684,7 +683,7 @@ TEST_F(MatchingEngineTest, ConsecutiveMatchesBookState) {
 
     // 第三次卖单：买单已全部成交，不应匹配
     Order sell3 =
-        createOrder("24004", "600030", Side::SELL, 10.0, 100, "SH004");
+        createOrder("24004", "600030", Side::SELL, 100000, 100, "SH004");
     auto result3 = engine.match(sell3);
     EXPECT_TRUE(result3.executions.empty());
 }
@@ -696,15 +695,15 @@ TEST_F(MatchingEngineTest, ConsecutiveMatchesBookState) {
  */
 TEST_F(MatchingEngineTest, AddMultipleOrdersThenMatch) {
     // 挂多个买单
-    engine.addOrder(createOrder("25001", "600030", Side::BUY, 10.0, 200));
+    engine.addOrder(createOrder("25001", "600030", Side::BUY, 100000, 200));
     engine.addOrder(
-        createOrder("25002", "600030", Side::BUY, 10.2, 300, "SH002"));
+        createOrder("25002", "600030", Side::BUY, 102000, 300, "SH002"));
     engine.addOrder(
-        createOrder("25003", "600030", Side::BUY, 9.8, 400, "SH003"));
+        createOrder("25003", "600030", Side::BUY, 98000, 400, "SH003"));
 
     // 卖方以9.8价格卖600股
     Order sellOrder =
-        createOrder("25004", "600030", Side::SELL, 9.8, 600, "SH004");
+        createOrder("25004", "600030", Side::SELL, 98000, 600, "SH004");
     auto result = engine.match(sellOrder);
 
     ASSERT_FALSE(result.executions.empty());
@@ -724,7 +723,7 @@ TEST_F(MatchingEngineTest, AddMultipleOrdersThenMatch) {
  */
 TEST_F(MatchingEngineTest, CancelSellOrder) {
     Order sellOrder =
-        createOrder("26001", "600030", Side::SELL, 11.0, 800, "SH002");
+        createOrder("26001", "600030", Side::SELL, 110000, 800, "SH002");
     engine.addOrder(sellOrder);
 
     CancelResponse resp = engine.cancelOrder("26001");
@@ -741,12 +740,12 @@ TEST_F(MatchingEngineTest, CancelSellOrder) {
  */
 TEST_F(MatchingEngineTest, ReduceSellOrderQty) {
     Order sellOrder =
-        createOrder("27001", "600030", Side::SELL, 10.0, 1000, "SH002");
+        createOrder("27001", "600030", Side::SELL, 100000, 1000, "SH002");
     engine.addOrder(sellOrder);
 
     engine.reduceOrderQty("27001", 300);
 
-    Order buyOrder = createOrder("27002", "600030", Side::BUY, 10.0, 1000);
+    Order buyOrder = createOrder("27002", "600030", Side::BUY, 100000, 1000);
     auto result = engine.match(buyOrder);
 
     ASSERT_FALSE(result.executions.empty());
@@ -761,11 +760,11 @@ TEST_F(MatchingEngineTest, ReduceSellOrderQty) {
  */
 TEST_F(MatchingEngineTest, FullyConsumedOrderRemoved) {
     Order sellOrder =
-        createOrder("28001", "600030", Side::SELL, 10.0, 500, "SH002");
+        createOrder("28001", "600030", Side::SELL, 100000, 500, "SH002");
     engine.addOrder(sellOrder);
 
     // 完全成交
-    Order buyOrder = createOrder("28002", "600030", Side::BUY, 10.0, 500);
+    Order buyOrder = createOrder("28002", "600030", Side::BUY, 100000, 500);
     auto result = engine.match(buyOrder);
     ASSERT_FALSE(result.executions.empty());
 
@@ -779,10 +778,10 @@ TEST_F(MatchingEngineTest, FullyConsumedOrderRemoved) {
  */
 TEST_F(MatchingEngineTest, ExecutionResponseFieldsCorrect) {
     Order sellOrder =
-        createOrder("29001", "600030", Side::SELL, 10.5, 300, "SH002");
+        createOrder("29001", "600030", Side::SELL, 105000, 300, "SH002");
     engine.addOrder(sellOrder);
 
-    Order buyOrder = createOrder("29002", "600030", Side::BUY, 10.5, 300);
+    Order buyOrder = createOrder("29002", "600030", Side::BUY, 105000, 300);
     auto result = engine.match(buyOrder);
 
     ASSERT_FALSE(result.executions.empty());
@@ -794,10 +793,10 @@ TEST_F(MatchingEngineTest, ExecutionResponseFieldsCorrect) {
     EXPECT_EQ(exec.securityId, "600030");
     EXPECT_EQ(exec.side, Side::SELL);
     EXPECT_EQ(exec.qty, 300);           // 原始委托量
-    EXPECT_DOUBLE_EQ(exec.price, 10.5); // 原始委托价
+    EXPECT_EQ(exec.price, 105000); // 原始委托价
     EXPECT_EQ(exec.shareholderId, "SH002");
     EXPECT_EQ(exec.execQty, 300);           // 成交数量
-    EXPECT_DOUBLE_EQ(exec.execPrice, 10.5); // 成交价
+    EXPECT_EQ(exec.execPrice, 105000); // 成交价
     EXPECT_FALSE(exec.execId.empty());      // execId 非空
     EXPECT_EQ(exec.type, OrderResponse::Type::EXECUTION);
 }
@@ -814,12 +813,12 @@ TEST_F(MatchingEngineTest, ExecutionResponseFieldsCorrect) {
  */
 TEST_F(MatchingEngineTest, OddLotSellTakerAgainstBuyOrder) {
     // 先挂200股买单作为挂单方
-    Order buyOrder = createOrder("30001", "600030", Side::BUY, 10.0, 200);
+    Order buyOrder = createOrder("30001", "600030", Side::BUY, 100000, 200);
     engine.addOrder(buyOrder);
 
     // 卖方提交150股作为吃单方
     Order sellOrder =
-        createOrder("30002", "600030", Side::SELL, 10.0, 150, "SH002");
+        createOrder("30002", "600030", Side::SELL, 100000, 150, "SH002");
     auto result = engine.match(sellOrder);
 
     ASSERT_FALSE(result.executions.empty());
@@ -845,8 +844,8 @@ TEST_F(MatchingEngineTest, OddLotSellTakerAgainstBuyOrder) {
  * 订单簿中只保留第一笔订单。
  */
 TEST_F(MatchingEngineTest, DuplicateClOrderIdIgnored) {
-    Order order1 = createOrder("31001", "600030", Side::BUY, 10.0, 100);
-    Order order2 = createOrder("31001", "600030", Side::BUY, 11.0, 200);
+    Order order1 = createOrder("31001", "600030", Side::BUY, 100000, 100);
+    Order order2 = createOrder("31001", "600030", Side::BUY, 110000, 200);
 
     engine.addOrder(order1);
     engine.addOrder(order2); // 重复 ID，应被忽略
@@ -855,7 +854,7 @@ TEST_F(MatchingEngineTest, DuplicateClOrderIdIgnored) {
     CancelResponse resp = engine.cancelOrder("31001");
     EXPECT_EQ(resp.type, CancelResponse::Type::CONFIRM);
     EXPECT_EQ(resp.qty, 100);           // 应为第一笔订单的数量
-    EXPECT_DOUBLE_EQ(resp.price, 10.0); // 应为第一笔订单的价格
+    EXPECT_EQ(resp.price, 100000); // 应为第一笔订单的价格
 }
 
 // ============================================================
@@ -876,7 +875,7 @@ TEST_F(MatchingEngineTest, Snapshot_EmptyBook) {
  * @brief 单个买单应出现在 bids 中
  */
 TEST_F(MatchingEngineTest, Snapshot_SingleBid) {
-    engine.addOrder(createOrder("S001", "600030", Side::BUY, 10.0, 200));
+    engine.addOrder(createOrder("S001", "600030", Side::BUY, 100000, 200));
 
     auto snap = engine.getSnapshot();
     ASSERT_EQ(snap["bids"].size(), 1u);
@@ -892,7 +891,7 @@ TEST_F(MatchingEngineTest, Snapshot_SingleBid) {
  * @brief 单个卖单应出现在 asks 中
  */
 TEST_F(MatchingEngineTest, Snapshot_SingleAsk) {
-    engine.addOrder(createOrder("S002", "600030", Side::SELL, 11.0, 300));
+    engine.addOrder(createOrder("S002", "600030", Side::SELL, 110000, 300));
 
     auto snap = engine.getSnapshot();
     EXPECT_TRUE(snap["bids"].empty());
@@ -907,9 +906,9 @@ TEST_F(MatchingEngineTest, Snapshot_SingleAsk) {
  * @brief 多档价格买盘：应按价格降序排列，cumQty 逐档累积
  */
 TEST_F(MatchingEngineTest, Snapshot_MultipleBidLevels) {
-    engine.addOrder(createOrder("S010", "600030", Side::BUY, 10.0, 100));
-    engine.addOrder(createOrder("S011", "600030", Side::BUY, 10.5, 200));
-    engine.addOrder(createOrder("S012", "600030", Side::BUY, 9.5, 300));
+    engine.addOrder(createOrder("S010", "600030", Side::BUY, 100000, 100));
+    engine.addOrder(createOrder("S011", "600030", Side::BUY, 105000, 200));
+    engine.addOrder(createOrder("S012", "600030", Side::BUY, 95000, 300));
 
     auto snap = engine.getSnapshot();
     ASSERT_EQ(snap["bids"].size(), 3u);
@@ -932,9 +931,9 @@ TEST_F(MatchingEngineTest, Snapshot_MultipleBidLevels) {
  * @brief 多档价格卖盘：应按价格升序排列，cumQty 逐档累积
  */
 TEST_F(MatchingEngineTest, Snapshot_MultipleAskLevels) {
-    engine.addOrder(createOrder("S020", "600030", Side::SELL, 11.0, 100));
-    engine.addOrder(createOrder("S021", "600030", Side::SELL, 10.5, 50));
-    engine.addOrder(createOrder("S022", "600030", Side::SELL, 12.0, 200));
+    engine.addOrder(createOrder("S020", "600030", Side::SELL, 110000, 100));
+    engine.addOrder(createOrder("S021", "600030", Side::SELL, 105000, 50));
+    engine.addOrder(createOrder("S022", "600030", Side::SELL, 120000, 200));
 
     auto snap = engine.getSnapshot();
     ASSERT_EQ(snap["asks"].size(), 3u);
@@ -957,9 +956,9 @@ TEST_F(MatchingEngineTest, Snapshot_MultipleAskLevels) {
  * @brief 同价格多笔订单应聚合为一个档位，orderCount 正确计数
  */
 TEST_F(MatchingEngineTest, Snapshot_SamePriceAggregation) {
-    engine.addOrder(createOrder("S030", "600030", Side::BUY, 10.0, 100));
-    engine.addOrder(createOrder("S031", "600030", Side::BUY, 10.0, 200));
-    engine.addOrder(createOrder("S032", "600030", Side::BUY, 10.0, 300));
+    engine.addOrder(createOrder("S030", "600030", Side::BUY, 100000, 100));
+    engine.addOrder(createOrder("S031", "600030", Side::BUY, 100000, 200));
+    engine.addOrder(createOrder("S032", "600030", Side::BUY, 100000, 300));
 
     auto snap = engine.getSnapshot();
     ASSERT_EQ(snap["bids"].size(), 1u);                // 同价合并为一档
@@ -972,9 +971,9 @@ TEST_F(MatchingEngineTest, Snapshot_SamePriceAggregation) {
  * @brief 部分成交后快照应反映剩余量
  */
 TEST_F(MatchingEngineTest, Snapshot_AfterPartialMatch) {
-    engine.addOrder(createOrder("S040", "600030", Side::SELL, 10.0, 500));
+    engine.addOrder(createOrder("S040", "600030", Side::SELL, 100000, 500));
     // 买入 200，部分成交卖单
-    Order buy = createOrder("S041", "600030", Side::BUY, 10.0, 200);
+    Order buy = createOrder("S041", "600030", Side::BUY, 100000, 200);
     engine.match(buy);
 
     auto snap = engine.getSnapshot();
@@ -988,8 +987,8 @@ TEST_F(MatchingEngineTest, Snapshot_AfterPartialMatch) {
  * @brief 撤单后快照应更新
  */
 TEST_F(MatchingEngineTest, Snapshot_AfterCancel) {
-    engine.addOrder(createOrder("S050", "600030", Side::BUY, 10.0, 100));
-    engine.addOrder(createOrder("S051", "600030", Side::BUY, 10.0, 200));
+    engine.addOrder(createOrder("S050", "600030", Side::BUY, 100000, 100));
+    engine.addOrder(createOrder("S051", "600030", Side::BUY, 100000, 200));
 
     engine.cancelOrder("S050");
 
@@ -1008,8 +1007,8 @@ TEST_F(MatchingEngineTest, Snapshot_AfterCancel) {
  * @brief 无行情数据时，买单正常撮合（基线）
  */
 TEST_F(MatchingEngineTest, MarketData_BuyNoConstraint) {
-    engine.addOrder(createOrder("M001", "600030", Side::SELL, 10.0, 100));
-    Order buy = createOrder("M002", "600030", Side::BUY, 10.0, 100);
+    engine.addOrder(createOrder("M001", "600030", Side::SELL, 100000, 100));
+    Order buy = createOrder("M002", "600030", Side::BUY, 100000, 100);
 
     auto result = engine.match(buy);
     EXPECT_EQ(result.executions.size(), 1u);
@@ -1020,13 +1019,13 @@ TEST_F(MatchingEngineTest, MarketData_BuyNoConstraint) {
  * @brief 买价 <= 行情卖价时，正常撮合不受阻
  */
 TEST_F(MatchingEngineTest, MarketData_BuyPriceBelowAsk) {
-    engine.addOrder(createOrder("M010", "600030", Side::SELL, 10.0, 100));
+    engine.addOrder(createOrder("M010", "600030", Side::SELL, 100000, 100));
 
     MarketData md;
-    md.bidPrice = 9.5;
-    md.askPrice = 10.5; // 买价 10.0 <= 行情卖价 10.5 → 正常成交
+    md.bidPrice = 95000;
+    md.askPrice = 105000; // 买价 10.0 <= 行情卖价 10.5 → 正常成交
 
-    Order buy = createOrder("M011", "600030", Side::BUY, 10.0, 100);
+    Order buy = createOrder("M011", "600030", Side::BUY, 100000, 100);
     auto result = engine.match(buy, md);
     EXPECT_EQ(result.executions.size(), 1u);
     EXPECT_EQ(result.remainingQty, 0u);
@@ -1036,13 +1035,13 @@ TEST_F(MatchingEngineTest, MarketData_BuyPriceBelowAsk) {
  * @brief 买价 > 行情卖价时，B10 约束阻止撮合
  */
 TEST_F(MatchingEngineTest, MarketData_BuyPriceExceedsAsk) {
-    engine.addOrder(createOrder("M020", "600030", Side::SELL, 10.0, 100));
+    engine.addOrder(createOrder("M020", "600030", Side::SELL, 100000, 100));
 
     MarketData md;
-    md.bidPrice = 9.0;
-    md.askPrice = 9.5; // 买价 10.0 > 行情卖价 9.5 → 被约束阻止
+    md.bidPrice = 90000;
+    md.askPrice = 95000; // 买价 10.0 > 行情卖价 9.5 → 被约束阻止
 
-    Order buy = createOrder("M021", "600030", Side::BUY, 10.0, 100);
+    Order buy = createOrder("M021", "600030", Side::BUY, 100000, 100);
     auto result = engine.match(buy, md);
     EXPECT_TRUE(result.executions.empty());
     EXPECT_EQ(result.remainingQty, 100u);
@@ -1052,13 +1051,13 @@ TEST_F(MatchingEngineTest, MarketData_BuyPriceExceedsAsk) {
  * @brief 行情卖价为 0 时，约束被忽略，正常撮合
  */
 TEST_F(MatchingEngineTest, MarketData_BuyAskPriceZero) {
-    engine.addOrder(createOrder("M030", "600030", Side::SELL, 10.0, 100));
+    engine.addOrder(createOrder("M030", "600030", Side::SELL, 100000, 100));
 
     MarketData md;
     md.bidPrice = 0;
     md.askPrice = 0; // askPrice == 0 → 约束被跳过
 
-    Order buy = createOrder("M031", "600030", Side::BUY, 10.0, 100);
+    Order buy = createOrder("M031", "600030", Side::BUY, 100000, 100);
     auto result = engine.match(buy, md);
     EXPECT_EQ(result.executions.size(), 1u);
     EXPECT_EQ(result.remainingQty, 0u);
@@ -1068,13 +1067,13 @@ TEST_F(MatchingEngineTest, MarketData_BuyAskPriceZero) {
  * @brief 卖价 >= 行情买价时，正常撮合不受阻
  */
 TEST_F(MatchingEngineTest, MarketData_SellPriceAboveBid) {
-    engine.addOrder(createOrder("M040", "600030", Side::BUY, 10.0, 100));
+    engine.addOrder(createOrder("M040", "600030", Side::BUY, 100000, 100));
 
     MarketData md;
-    md.bidPrice = 9.5; // 卖价 10.0 >= 行情买价 9.5 → 正常成交
-    md.askPrice = 10.5;
+    md.bidPrice = 95000; // 卖价 10.0 >= 行情买价 9.5 → 正常成交
+    md.askPrice = 105000;
 
-    Order sell = createOrder("M041", "600030", Side::SELL, 10.0, 100);
+    Order sell = createOrder("M041", "600030", Side::SELL, 100000, 100);
     auto result = engine.match(sell, md);
     EXPECT_EQ(result.executions.size(), 1u);
     EXPECT_EQ(result.remainingQty, 0u);
@@ -1084,13 +1083,13 @@ TEST_F(MatchingEngineTest, MarketData_SellPriceAboveBid) {
  * @brief 卖价 < 行情买价时，B10 约束阻止撮合
  */
 TEST_F(MatchingEngineTest, MarketData_SellPriceBelowBid) {
-    engine.addOrder(createOrder("M050", "600030", Side::BUY, 10.0, 100));
+    engine.addOrder(createOrder("M050", "600030", Side::BUY, 100000, 100));
 
     MarketData md;
-    md.bidPrice = 10.5; // 卖价 10.0 < 行情买价 10.5 → 被约束阻止
-    md.askPrice = 11.0;
+    md.bidPrice = 105000; // 卖价 10.0 < 行情买价 10.5 → 被约束阻止
+    md.askPrice = 110000;
 
-    Order sell = createOrder("M051", "600030", Side::SELL, 10.0, 100);
+    Order sell = createOrder("M051", "600030", Side::SELL, 100000, 100);
     auto result = engine.match(sell, md);
     EXPECT_TRUE(result.executions.empty());
     EXPECT_EQ(result.remainingQty, 100u);
@@ -1100,13 +1099,13 @@ TEST_F(MatchingEngineTest, MarketData_SellPriceBelowBid) {
  * @brief 行情买价为 0 时，约束被忽略，卖单正常撮合
  */
 TEST_F(MatchingEngineTest, MarketData_SellBidPriceZero) {
-    engine.addOrder(createOrder("M060", "600030", Side::BUY, 10.0, 100));
+    engine.addOrder(createOrder("M060", "600030", Side::BUY, 100000, 100));
 
     MarketData md;
     md.bidPrice = 0; // bidPrice == 0 → 约束被跳过
     md.askPrice = 0;
 
-    Order sell = createOrder("M061", "600030", Side::SELL, 10.0, 100);
+    Order sell = createOrder("M061", "600030", Side::SELL, 100000, 100);
     auto result = engine.match(sell, md);
     EXPECT_EQ(result.executions.size(), 1u);
     EXPECT_EQ(result.remainingQty, 0u);
@@ -1120,18 +1119,18 @@ TEST_F(MatchingEngineTest, MarketData_SellBidPriceZero) {
  * → 9.0 档正常成交，10.0 档被约束阻止
  */
 TEST_F(MatchingEngineTest, MarketData_BuyBlocksAllLevels) {
-    engine.addOrder(createOrder("M070", "600030", Side::SELL, 9.0, 100));
-    engine.addOrder(createOrder("M071", "600030", Side::SELL, 10.0, 100));
+    engine.addOrder(createOrder("M070", "600030", Side::SELL, 90000, 100));
+    engine.addOrder(createOrder("M071", "600030", Side::SELL, 100000, 100));
 
     MarketData md;
-    md.bidPrice = 8.5;
-    md.askPrice = 9.5; // 买价 10.0 > 行情卖价 9.5
+    md.bidPrice = 85000;
+    md.askPrice = 95000; // 买价 10.0 > 行情卖价 9.5
 
-    Order buy = createOrder("M072", "600030", Side::BUY, 10.0, 200);
+    Order buy = createOrder("M072", "600030", Side::BUY, 100000, 200);
     auto result = engine.match(buy, md);
     EXPECT_FALSE(result.executions.empty());
     EXPECT_EQ(result.executions.size(), 1u); // 只成交了9.0档的100股
-    EXPECT_DOUBLE_EQ(result.executions[0].execPrice, 9.0);
+    EXPECT_EQ(result.executions[0].execPrice, 90000);
     EXPECT_EQ(result.executions[0].execQty, 100);
     EXPECT_EQ(result.remainingQty, 100u);
 }
@@ -1144,18 +1143,18 @@ TEST_F(MatchingEngineTest, MarketData_BuyBlocksAllLevels) {
  * → 10.0 档正常成交，9.0 档被约束阻止
  */
 TEST_F(MatchingEngineTest, MarketData_SellBlocksAllLevels) {
-    engine.addOrder(createOrder("M070", "600030", Side::BUY, 9.0, 100));
-    engine.addOrder(createOrder("M071", "600030", Side::BUY, 10.0, 100));
+    engine.addOrder(createOrder("M070", "600030", Side::BUY, 90000, 100));
+    engine.addOrder(createOrder("M071", "600030", Side::BUY, 100000, 100));
 
     MarketData md;
-    md.bidPrice = 9.5;
-    md.askPrice = 10.5;
+    md.bidPrice = 95000;
+    md.askPrice = 105000;
 
-    Order sell = createOrder("M072", "600030", Side::SELL, 9.0, 200);
+    Order sell = createOrder("M072", "600030", Side::SELL, 90000, 200);
     auto result = engine.match(sell, md);
     EXPECT_FALSE(result.executions.empty());
     EXPECT_EQ(result.executions.size(), 1u); // 只成交了10.0档的100股
-    EXPECT_DOUBLE_EQ(result.executions[0].execPrice, 10.0);
+    EXPECT_EQ(result.executions[0].execPrice, 100000);
     EXPECT_EQ(result.executions[0].execQty, 100);
     EXPECT_EQ(result.remainingQty, 100u);
 }
@@ -1164,13 +1163,13 @@ TEST_F(MatchingEngineTest, MarketData_SellBlocksAllLevels) {
  * @brief 买价恰好等于行情卖价时（边界），不触发约束（条件为严格大于）
  */
 TEST_F(MatchingEngineTest, MarketData_BuyPriceEqualsAsk) {
-    engine.addOrder(createOrder("M080", "600030", Side::SELL, 10.0, 100));
+    engine.addOrder(createOrder("M080", "600030", Side::SELL, 100000, 100));
 
     MarketData md;
-    md.bidPrice = 9.5;
-    md.askPrice = 10.0; // 买价 10.0 == 行情卖价 10.0 → 不触发（严格 >）
+    md.bidPrice = 95000;
+    md.askPrice = 100000; // 买价 10.0 == 行情卖价 10.0 → 不触发（严格 >）
 
-    Order buy = createOrder("M081", "600030", Side::BUY, 10.0, 100);
+    Order buy = createOrder("M081", "600030", Side::BUY, 100000, 100);
     auto result = engine.match(buy, md);
     EXPECT_EQ(result.executions.size(), 1u);
     EXPECT_EQ(result.remainingQty, 0u);
@@ -1180,13 +1179,13 @@ TEST_F(MatchingEngineTest, MarketData_BuyPriceEqualsAsk) {
  * @brief 卖价恰好等于行情买价时（边界），不触发约束（条件为严格小于）
  */
 TEST_F(MatchingEngineTest, MarketData_SellPriceEqualsBid) {
-    engine.addOrder(createOrder("M090", "600030", Side::BUY, 10.0, 100));
+    engine.addOrder(createOrder("M090", "600030", Side::BUY, 100000, 100));
 
     MarketData md;
-    md.bidPrice = 10.0; // 卖价 10.0 == 行情买价 10.0 → 不触发（严格 <）
-    md.askPrice = 10.5;
+    md.bidPrice = 100000; // 卖价 10.0 == 行情买价 10.0 → 不触发（严格 <）
+    md.askPrice = 105000;
 
-    Order sell = createOrder("M091", "600030", Side::SELL, 10.0, 100);
+    Order sell = createOrder("M091", "600030", Side::SELL, 100000, 100);
     auto result = engine.match(sell, md);
     EXPECT_EQ(result.executions.size(), 1u);
     EXPECT_EQ(result.remainingQty, 0u);
@@ -1201,75 +1200,75 @@ TEST_F(MatchingEngineTest, MarketData_SellPriceEqualsBid) {
  */
 TEST_F(MatchingEngineTest, GetBestQuote_EmptyBook) {
     auto md = engine.getBestQuote("600030", Market::XSHG);
-    EXPECT_DOUBLE_EQ(md.bidPrice, 0.0);
-    EXPECT_DOUBLE_EQ(md.askPrice, 0.0);
+    EXPECT_EQ(md.bidPrice, 0);
+    EXPECT_EQ(md.askPrice, 0);
 }
 
 /**
  * @brief 仅有买盘时，askPrice 为 0
  */
 TEST_F(MatchingEngineTest, GetBestQuote_OnlyBids) {
-    engine.addOrder(createOrder("Q001", "600030", Side::BUY, 10.0, 100));
-    engine.addOrder(createOrder("Q002", "600030", Side::BUY, 9.5, 200));
+    engine.addOrder(createOrder("Q001", "600030", Side::BUY, 100000, 100));
+    engine.addOrder(createOrder("Q002", "600030", Side::BUY, 95000, 200));
 
     auto md = engine.getBestQuote("600030", Market::XSHG);
-    EXPECT_DOUBLE_EQ(md.bidPrice, 10.0);
-    EXPECT_DOUBLE_EQ(md.askPrice, 0.0);
+    EXPECT_EQ(md.bidPrice, 100000);
+    EXPECT_EQ(md.askPrice, 0);
 }
 
 /**
  * @brief 仅有卖盘时，bidPrice 为 0
  */
 TEST_F(MatchingEngineTest, GetBestQuote_OnlyAsks) {
-    engine.addOrder(createOrder("Q003", "600030", Side::SELL, 11.0, 100));
-    engine.addOrder(createOrder("Q004", "600030", Side::SELL, 12.0, 200));
+    engine.addOrder(createOrder("Q003", "600030", Side::SELL, 110000, 100));
+    engine.addOrder(createOrder("Q004", "600030", Side::SELL, 120000, 200));
 
     auto md = engine.getBestQuote("600030", Market::XSHG);
-    EXPECT_DOUBLE_EQ(md.bidPrice, 0.0);
-    EXPECT_DOUBLE_EQ(md.askPrice, 11.0);
+    EXPECT_EQ(md.bidPrice, 0);
+    EXPECT_EQ(md.askPrice, 110000);
 }
 
 /**
  * @brief 买卖盘均有时，返回最优买价和最优卖价
  */
 TEST_F(MatchingEngineTest, GetBestQuote_BothSides) {
-    engine.addOrder(createOrder("Q010", "600030", Side::BUY, 9.8, 100));
-    engine.addOrder(createOrder("Q011", "600030", Side::BUY, 10.0, 100));
-    engine.addOrder(createOrder("Q012", "600030", Side::SELL, 10.5, 100));
-    engine.addOrder(createOrder("Q013", "600030", Side::SELL, 11.0, 200));
+    engine.addOrder(createOrder("Q010", "600030", Side::BUY, 98000, 100));
+    engine.addOrder(createOrder("Q011", "600030", Side::BUY, 100000, 100));
+    engine.addOrder(createOrder("Q012", "600030", Side::SELL, 105000, 100));
+    engine.addOrder(createOrder("Q013", "600030", Side::SELL, 110000, 200));
 
     auto md = engine.getBestQuote("600030", Market::XSHG);
-    EXPECT_DOUBLE_EQ(md.bidPrice, 10.0); // 最高买价
-    EXPECT_DOUBLE_EQ(md.askPrice, 10.5); // 最低卖价
+    EXPECT_EQ(md.bidPrice, 100000); // 最高买价
+    EXPECT_EQ(md.askPrice, 105000); // 最低卖价
 }
 
 /**
  * @brief 不同证券互不干扰
  */
 TEST_F(MatchingEngineTest, GetBestQuote_DifferentSecurities) {
-    engine.addOrder(createOrder("Q020", "600030", Side::BUY, 10.0, 100));
-    engine.addOrder(createOrder("Q021", "600030", Side::SELL, 11.0, 100));
-    engine.addOrder(createOrder("Q022", "000001", Side::BUY, 15.0, 100));
-    engine.addOrder(createOrder("Q023", "000001", Side::SELL, 16.0, 100));
+    engine.addOrder(createOrder("Q020", "600030", Side::BUY, 100000, 100));
+    engine.addOrder(createOrder("Q021", "600030", Side::SELL, 110000, 100));
+    engine.addOrder(createOrder("Q022", "000001", Side::BUY, 150000, 100));
+    engine.addOrder(createOrder("Q023", "000001", Side::SELL, 160000, 100));
 
     auto md1 = engine.getBestQuote("600030", Market::XSHG);
-    EXPECT_DOUBLE_EQ(md1.bidPrice, 10.0);
-    EXPECT_DOUBLE_EQ(md1.askPrice, 11.0);
+    EXPECT_EQ(md1.bidPrice, 100000);
+    EXPECT_EQ(md1.askPrice, 110000);
 
     auto md2 = engine.getBestQuote("000001", Market::XSHG);
-    EXPECT_DOUBLE_EQ(md2.bidPrice, 15.0);
-    EXPECT_DOUBLE_EQ(md2.askPrice, 16.0);
+    EXPECT_EQ(md2.bidPrice, 150000);
+    EXPECT_EQ(md2.askPrice, 160000);
 }
 
 /**
  * @brief 查询不存在的证券返回 0/0
  */
 TEST_F(MatchingEngineTest, GetBestQuote_NonexistentSecurity) {
-    engine.addOrder(createOrder("Q030", "600030", Side::BUY, 10.0, 100));
+    engine.addOrder(createOrder("Q030", "600030", Side::BUY, 100000, 100));
 
     auto md = engine.getBestQuote("999999", Market::XSHG);
-    EXPECT_DOUBLE_EQ(md.bidPrice, 0.0);
-    EXPECT_DOUBLE_EQ(md.askPrice, 0.0);
+    EXPECT_EQ(md.bidPrice, 0);
+    EXPECT_EQ(md.askPrice, 0);
 }
 
 /**
@@ -1282,7 +1281,7 @@ TEST_F(MatchingEngineTest, GetBestQuote_DifferentMarkets) {
     shBuy.market = Market::XSHG;
     shBuy.securityId = "600030";
     shBuy.side = Side::BUY;
-    shBuy.price = 10.0;
+    shBuy.price = 100000;
     shBuy.qty = 100;
     shBuy.shareholderId = "SH001";
     engine.addOrder(shBuy);
@@ -1292,7 +1291,7 @@ TEST_F(MatchingEngineTest, GetBestQuote_DifferentMarkets) {
     shSell.market = Market::XSHG;
     shSell.securityId = "600030";
     shSell.side = Side::SELL;
-    shSell.price = 11.0;
+    shSell.price = 110000;
     shSell.qty = 100;
     shSell.shareholderId = "SH002";
     engine.addOrder(shSell);
@@ -1303,7 +1302,7 @@ TEST_F(MatchingEngineTest, GetBestQuote_DifferentMarkets) {
     szBuy.market = Market::XSHE;
     szBuy.securityId = "600030";
     szBuy.side = Side::BUY;
-    szBuy.price = 20.0;
+    szBuy.price = 200000;
     szBuy.qty = 100;
     szBuy.shareholderId = "SH003";
     engine.addOrder(szBuy);
@@ -1313,55 +1312,55 @@ TEST_F(MatchingEngineTest, GetBestQuote_DifferentMarkets) {
     szSell.market = Market::XSHE;
     szSell.securityId = "600030";
     szSell.side = Side::SELL;
-    szSell.price = 22.0;
+    szSell.price = 220000;
     szSell.qty = 100;
     szSell.shareholderId = "SH004";
     engine.addOrder(szSell);
 
     // 上交所：bid=10, ask=11
     auto mdSH = engine.getBestQuote("600030", Market::XSHG);
-    EXPECT_DOUBLE_EQ(mdSH.bidPrice, 10.0);
-    EXPECT_DOUBLE_EQ(mdSH.askPrice, 11.0);
+    EXPECT_EQ(mdSH.bidPrice, 100000);
+    EXPECT_EQ(mdSH.askPrice, 110000);
 
     // 深交所：bid=20, ask=22
     auto mdSZ = engine.getBestQuote("600030", Market::XSHE);
-    EXPECT_DOUBLE_EQ(mdSZ.bidPrice, 20.0);
-    EXPECT_DOUBLE_EQ(mdSZ.askPrice, 22.0);
+    EXPECT_EQ(mdSZ.bidPrice, 200000);
+    EXPECT_EQ(mdSZ.askPrice, 220000);
 }
 
 /**
  * @brief 撤单后 getBestQuote 反映新的最优价
  */
 TEST_F(MatchingEngineTest, GetBestQuote_AfterCancel) {
-    engine.addOrder(createOrder("Q050", "600030", Side::BUY, 10.0, 100));
-    engine.addOrder(createOrder("Q051", "600030", Side::BUY, 9.5, 100));
+    engine.addOrder(createOrder("Q050", "600030", Side::BUY, 100000, 100));
+    engine.addOrder(createOrder("Q051", "600030", Side::BUY, 95000, 100));
 
     auto md1 = engine.getBestQuote("600030", Market::XSHG);
-    EXPECT_DOUBLE_EQ(md1.bidPrice, 10.0);
+    EXPECT_EQ(md1.bidPrice, 100000);
 
     // 撤掉最优买单
     engine.cancelOrder("Q050");
 
     auto md2 = engine.getBestQuote("600030", Market::XSHG);
-    EXPECT_DOUBLE_EQ(md2.bidPrice, 9.5);
+    EXPECT_EQ(md2.bidPrice, 95000);
 }
 
 /**
  * @brief 成交消耗后 getBestQuote 反映变化
  */
 TEST_F(MatchingEngineTest, GetBestQuote_AfterMatch) {
-    engine.addOrder(createOrder("Q060", "600030", Side::SELL, 10.0, 100));
-    engine.addOrder(createOrder("Q061", "600030", Side::SELL, 11.0, 100));
+    engine.addOrder(createOrder("Q060", "600030", Side::SELL, 100000, 100));
+    engine.addOrder(createOrder("Q061", "600030", Side::SELL, 110000, 100));
 
     auto md1 = engine.getBestQuote("600030", Market::XSHG);
-    EXPECT_DOUBLE_EQ(md1.askPrice, 10.0);
+    EXPECT_EQ(md1.askPrice, 100000);
 
     // 买单吃掉最优卖单
-    Order buy = createOrder("Q062", "600030", Side::BUY, 10.0, 100);
+    Order buy = createOrder("Q062", "600030", Side::BUY, 100000, 100);
     engine.match(buy, std::nullopt);
 
     auto md2 = engine.getBestQuote("600030", Market::XSHG);
-    EXPECT_DOUBLE_EQ(md2.askPrice, 11.0);
+    EXPECT_EQ(md2.askPrice, 110000);
 }
 
 /**
@@ -1369,28 +1368,28 @@ TEST_F(MatchingEngineTest, GetBestQuote_AfterMatch) {
  * （部分减少不移除订单，完全减少后切换到下一档）
  */
 TEST_F(MatchingEngineTest, GetBestQuote_AfterReduce) {
-    engine.addOrder(createOrder("Q070", "600030", Side::BUY, 10.0, 200));
-    engine.addOrder(createOrder("Q071", "600030", Side::BUY, 9.0, 100));
+    engine.addOrder(createOrder("Q070", "600030", Side::BUY, 100000, 200));
+    engine.addOrder(createOrder("Q071", "600030", Side::BUY, 90000, 100));
 
     // 部分减少，最优买价不变
     engine.reduceOrderQty("Q070", 100);
     auto md1 = engine.getBestQuote("600030", Market::XSHG);
-    EXPECT_DOUBLE_EQ(md1.bidPrice, 10.0);
+    EXPECT_EQ(md1.bidPrice, 100000);
 
     // 完全减少，最优买价切换到下一档
     engine.reduceOrderQty("Q070", 100);
     auto md2 = engine.getBestQuote("600030", Market::XSHG);
-    EXPECT_DOUBLE_EQ(md2.bidPrice, 9.0);
+    EXPECT_EQ(md2.bidPrice, 90000);
 }
 
 /**
  * @brief 同价多笔订单时 getBestQuote 返回该价格（不受数量影响）
  */
 TEST_F(MatchingEngineTest, GetBestQuote_MultipleSamePrice) {
-    engine.addOrder(createOrder("Q080", "600030", Side::BUY, 10.0, 100));
-    engine.addOrder(createOrder("Q081", "600030", Side::BUY, 10.0, 200));
-    engine.addOrder(createOrder("Q082", "600030", Side::BUY, 10.0, 300));
+    engine.addOrder(createOrder("Q080", "600030", Side::BUY, 100000, 100));
+    engine.addOrder(createOrder("Q081", "600030", Side::BUY, 100000, 200));
+    engine.addOrder(createOrder("Q082", "600030", Side::BUY, 100000, 300));
 
     auto md = engine.getBestQuote("600030", Market::XSHG);
-    EXPECT_DOUBLE_EQ(md.bidPrice, 10.0);
+    EXPECT_EQ(md.bidPrice, 100000);
 }

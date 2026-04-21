@@ -61,7 +61,7 @@ struct Order {
     Market market;
     std::string securityId;
     Side side;
-    double price;
+    uint64_t price;
     uint32_t qty;
     std::string shareholderId;
 };
@@ -71,14 +71,16 @@ inline void from_json(const nlohmann::json &j, Order &o) {
     o.market = market_from_string(j.at("market").get<std::string>());
     j.at("securityId").get_to(o.securityId);
     o.side = side_from_string(j.at("side").get<std::string>());
-    j.at("price").get_to(o.price);
+    double p;
+    j.at("price").get_to(p);
+
+    if (p <= 0.0) {
+        throw std::invalid_argument("price must be positive, got: " + std::to_string(p));
+    }
+    
+    o.price = static_cast<uint64_t>(std::round(p * 10000.0));
     j.at("qty").get_to(o.qty);
     j.at("shareholderId").get_to(o.shareholderId);
-
-    if (o.price <= 0) {
-        throw std::invalid_argument("price must be positive, got: " +
-                                    std::to_string(o.price));
-    }
     if (o.qty == 0) {
         throw std::invalid_argument("qty must be positive");
     }
@@ -93,7 +95,7 @@ inline void to_json(nlohmann::json &j, const Order &o) {
     j["market"] = to_string(o.market);
     j["securityId"] = o.securityId;
     j["side"] = to_string(o.side);
-    j["price"] = o.price;
+    j["price"] = static_cast<double>(o.price) / 10000.0;
     j["qty"] = o.qty;
     j["shareholderId"] = o.shareholderId;
 }
@@ -120,8 +122,8 @@ inline void from_json(const nlohmann::json &j, CancelOrder &o) {
 // 3.3 行情信息
 // 对于某个市场、某个证券代码的最新行情数据
 struct MarketData {
-    double bidPrice;
-    double askPrice;
+    uint64_t bidPrice;
+    uint64_t askPrice;
 };
 
 // 3.4 - 3.8 输出结构体（可以统一也可以分开）
@@ -131,7 +133,7 @@ struct OrderResponse {
     std::string securityId;
     Side side;
     uint32_t qty;
-    double price;
+    uint64_t price;
     std::string shareholderId;
 
     // 拒绝信息
@@ -141,7 +143,7 @@ struct OrderResponse {
     // 成交信息
     std::string execId;
     uint32_t execQty = 0;
-    double execPrice = 0.0;
+    uint64_t execPrice = 0;
 
     // 类型
     enum Type { CONFIRM, REJECT, EXECUTION } type;
@@ -157,7 +159,7 @@ struct CancelResponse {
 
     // 确认信息
     uint32_t qty = 0;
-    double price = 0.0;
+    uint64_t price = 0;
     uint32_t cumQty = 0;
     uint32_t canceledQty = 0;
 

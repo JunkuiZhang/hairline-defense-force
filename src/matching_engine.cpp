@@ -89,7 +89,7 @@ MatchingEngine::match(const Order &order,
         // ── 买单：与 askBook 撮合（卖方，价格升序）──
         auto priceIt = sb.askBook.begin();
         while (priceIt != sb.askBook.end() && remainingQty > 0) {
-            const double askPrice = priceIt->first;
+            const uint64_t askPrice = priceIt->first;
 
             // 价格不满足：买入价 < 卖出价，无法成交，退出
             if (order.price < askPrice)
@@ -153,7 +153,7 @@ MatchingEngine::match(const Order &order,
         // ── 卖单：与 bidBook 撮合（买方，价格降序）──
         auto priceIt = sb.bidBook.begin();
         while (priceIt != sb.bidBook.end() && remainingQty > 0) {
-            const double bidPrice = priceIt->first;
+            const uint64_t bidPrice = priceIt->first;
 
             // 价格不满足：买入价 < 卖出价，无法成交，退出
             if (bidPrice < order.price)
@@ -366,7 +366,7 @@ nlohmann::json MatchingEngine::getSnapshot(const std::string &securityId,
             ++totalOrders;
         }
         cumQty += qty;
-        bids.push_back({{"price", price},
+        bids.push_back({{"price", static_cast<double>(price) / 10000.0},
                         {"qty", qty},
                         {"cumQty", cumQty},
                         {"orderCount", cnt}});
@@ -381,7 +381,7 @@ nlohmann::json MatchingEngine::getSnapshot(const std::string &securityId,
             ++totalOrders;
         }
         cumQty += qty;
-        asks.push_back({{"price", price},
+        asks.push_back({{"price", static_cast<double>(price) / 10000.0},
                         {"qty", qty},
                         {"cumQty", cumQty},
                         {"orderCount", cnt}});
@@ -395,8 +395,8 @@ nlohmann::json MatchingEngine::getSnapshot(const std::string &securityId,
 // ============================================================
 nlohmann::json MatchingEngine::getSnapshot() const {
     // price -> {qty, orderCount}
-    std::map<double, std::pair<int, int>, std::greater<double>> aggBids;
-    std::map<double, std::pair<int, int>> aggAsks;
+    std::map<uint64_t, std::pair<int, int>, std::greater<uint64_t>> aggBids;
+    std::map<uint64_t, std::pair<int, int>> aggAsks;
     int totalOrders = 0;
 
     for (const auto &[key, sb] : books_) {
@@ -418,7 +418,7 @@ nlohmann::json MatchingEngine::getSnapshot() const {
     int cumQty = 0;
     for (const auto &[price, p] : aggBids) {
         cumQty += p.first;
-        bids.push_back({{"price", price},
+        bids.push_back({{"price", static_cast<double>(price) / 10000.0},
                         {"qty", p.first},
                         {"cumQty", cumQty},
                         {"orderCount", p.second}});
@@ -427,7 +427,7 @@ nlohmann::json MatchingEngine::getSnapshot() const {
     cumQty = 0;
     for (const auto &[price, p] : aggAsks) {
         cumQty += p.first;
-        asks.push_back({{"price", price},
+        asks.push_back({{"price", static_cast<double>(price) / 10000.0},
                         {"qty", p.first},
                         {"cumQty", cumQty},
                         {"orderCount", p.second}});
@@ -440,7 +440,7 @@ nlohmann::json MatchingEngine::getSnapshot() const {
 // ============================================================
 MarketData MatchingEngine::getBestQuote(const std::string &securityId,
                                         Market market) const {
-    MarketData md{0.0, 0.0};
+    MarketData md{0, 0};
     const std::string key = makeBookKey(securityId, market);
     auto bookIt = books_.find(key);
     if (bookIt == books_.end())

@@ -70,13 +70,13 @@ class TradeLogger {
                         const std::string &rejectText);
     void logExecution(const std::string &execId, const std::string &clOrderId,
                       const std::string &securityId, Side side,
-                      uint32_t execQty, double execPrice, bool isMaker);
+                      uint32_t execQty, uint64_t execPrice, bool isMaker);
     void logCancelConfirm(const std::string &origClOrderId,
                           uint32_t canceledQty, uint32_t cumQty);
     void logCancelReject(const std::string &origClOrderId, int32_t rejectCode,
                          const std::string &rejectText);
     void logMarketData(const std::string &securityId, Market market,
-                       double bidPrice, double askPrice);
+                       uint64_t bidPrice, uint64_t askPrice);
 
   private:
     /**

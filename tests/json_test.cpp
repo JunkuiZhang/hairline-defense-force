@@ -19,7 +19,7 @@ TEST(OrderFromJson, ValidOrder) {
     EXPECT_EQ(order.market, Market::XSHG);
     EXPECT_EQ(order.securityId, "600030");
     EXPECT_EQ(order.side, Side::BUY);
-    EXPECT_DOUBLE_EQ(order.price, 10.5);
+    EXPECT_EQ(order.price, 105000);
     EXPECT_EQ(order.qty, 1000);
     EXPECT_EQ(order.shareholderId, "SH001");
 }

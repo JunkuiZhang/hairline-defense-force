@@ -165,7 +165,7 @@ void TradeLogger::logOrderReject(const std::string &clOrderId,
 void TradeLogger::logExecution(const std::string &execId,
                                const std::string &clOrderId,
                                const std::string &securityId, Side side,
-                               uint32_t execQty, double execPrice,
+                               uint32_t execQty, uint64_t execPrice,
                                bool isMaker) {
     if (!isOpen_)
         return;
@@ -177,7 +177,7 @@ void TradeLogger::logExecution(const std::string &execId,
     record["securityId"] = securityId;
     record["side"] = to_string(side);
     record["execQty"] = execQty;
-    record["execPrice"] = execPrice;
+    record["execPrice"] = static_cast<double>(execPrice) / 10000.0;
     record["isMaker"] = isMaker;
     enqueue(std::move(record));
 }
@@ -210,7 +210,7 @@ void TradeLogger::logCancelReject(const std::string &origClOrderId,
 }
 
 void TradeLogger::logMarketData(const std::string &securityId, Market market,
-                                double bidPrice, double askPrice) {
+                                uint64_t bidPrice, uint64_t askPrice) {
     if (!isOpen_)
         return;
 
@@ -218,8 +218,8 @@ void TradeLogger::logMarketData(const std::string &securityId, Market market,
     record["event"] = "MARKET_DATA";
     record["securityId"] = securityId;
     record["market"] = to_string(market);
-    record["bidPrice"] = bidPrice;
-    record["askPrice"] = askPrice;
+    record["bidPrice"] = static_cast<double>(bidPrice) / 10000.0;
+    record["askPrice"] = static_cast<double>(askPrice) / 10000.0;
     enqueue(std::move(record));
 }
 

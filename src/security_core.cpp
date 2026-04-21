@@ -68,7 +68,7 @@ void SecurityCore::handleOrder(Order order) {
             response["securityId"] = order.securityId;
             response["side"] = to_string(order.side);
             response["qty"] = order.qty;
-            response["price"] = order.price;
+            response["price"] = static_cast<double>(order.price) / 10000.0;
             response["shareholderId"] = order.shareholderId;
             response["rejectCode"] = ORDER_CROSS_TRADE_REJECT_CODE;
             response["rejectText"] = ORDER_CROSS_TRADE_REJECT_REASON;
@@ -88,7 +88,7 @@ void SecurityCore::handleOrder(Order order) {
             response["securityId"] = order.securityId;
             response["side"] = to_string(order.side);
             response["qty"] = order.qty;
-            response["price"] = order.price;
+            response["price"] = static_cast<double>(order.price) / 10000.0;
             response["shareholderId"] = order.shareholderId;
             sendToClient_(response);
             if (logger_)
@@ -149,11 +149,11 @@ void SecurityCore::handleOrder(Order order) {
                         passiveResponse["securityId"] = exec.securityId;
                         passiveResponse["side"] = to_string(exec.side);
                         passiveResponse["qty"] = exec.qty;
-                        passiveResponse["price"] = exec.price;
+                        passiveResponse["price"] = static_cast<double>(exec.price) / 10000.0;
                         passiveResponse["shareholderId"] = exec.shareholderId;
                         passiveResponse["execId"] = exec.execId;
                         passiveResponse["execQty"] = exec.execQty;
-                        passiveResponse["execPrice"] = exec.execPrice;
+                        passiveResponse["execPrice"] = static_cast<double>(exec.execPrice) / 10000.0;
                         sendToClient_(passiveResponse);
 
                         nlohmann::json activeResponse;
@@ -162,11 +162,11 @@ void SecurityCore::handleOrder(Order order) {
                         activeResponse["securityId"] = order.securityId;
                         activeResponse["side"] = to_string(order.side);
                         activeResponse["qty"] = order.qty;
-                        activeResponse["price"] = order.price;
+                        activeResponse["price"] = static_cast<double>(order.price) / 10000.0;
                         activeResponse["shareholderId"] = order.shareholderId;
                         activeResponse["execId"] = exec.execId;
                         activeResponse["execQty"] = exec.execQty;
-                        activeResponse["execPrice"] = exec.execPrice;
+                        activeResponse["execPrice"] = static_cast<double>(exec.execPrice) / 10000.0;
                         sendToClient_(activeResponse);
                     }
                     if (logger_)
@@ -263,7 +263,7 @@ void SecurityCore::handleCancel(CancelOrder order) {
                     response["shareholderId"] = result.shareholderId;
                     response["side"] = to_string(result.side);
                     response["qty"] = result.qty;
-                    response["price"] = result.price;
+                    response["price"] = static_cast<double>(result.price) / 10000.0;
                     response["cumQty"] = result.cumQty;
                     response["canceledQty"] = result.canceledQty;
                     sendToClient_(response);
@@ -313,7 +313,7 @@ void SecurityCore::handleCancel(CancelOrder order) {
                 response["shareholderId"] = result.shareholderId;
                 response["side"] = to_string(result.side);
                 response["qty"] = result.qty;
-                response["price"] = result.price;
+                response["price"] = static_cast<double>(result.price) / 10000.0;
                 response["cumQty"] = result.cumQty;
                 response["canceledQty"] = result.canceledQty;
                 sendToClient_(response);
@@ -338,8 +338,8 @@ void SecurityCore::handleMarketData(const nlohmann::json &input) {
             std::string securityId = item.at("securityId").get<std::string>();
             Market market = market_from_string(marketStr);
             MarketData md;
-            md.bidPrice = item.at("bidPrice").get<double>();
-            md.askPrice = item.at("askPrice").get<double>();
+            md.bidPrice = static_cast<uint64_t>(std::round(item.at("bidPrice").get<double>() * 10000.0));
+            md.askPrice = static_cast<uint64_t>(std::round(item.at("askPrice").get<double>() * 10000.0));
             const std::string marketKey = to_string(market) + "+" + securityId;
             latestMarketData_[marketKey] = md;
 
@@ -373,7 +373,7 @@ void SecurityCore::handleResponse(const nlohmann::json &input) {
             logger_->logExecution(input.value("execId", ""), clOrderId,
                                   input.value("securityId", ""),
                                   side_from_string(input.value("side", "B")),
-                                  execQty, input.value("execPrice", 0.0),
+                                  execQty, static_cast<uint64_t>(std::round(input.value("execPrice", 0.0) * 10000.0)),
                                   false);
         // —— 情况2: 撤单回报 ——
     } else if (input.contains("origClOrderId")) {
@@ -536,7 +536,7 @@ void SecurityCore::sendConfirmAndExecReports(
     confirm["securityId"] = activeOrder.securityId;
     confirm["side"] = to_string(activeOrder.side);
     confirm["qty"] = activeOrder.qty;
-    confirm["price"] = activeOrder.price;
+    confirm["price"] = static_cast<double>(activeOrder.price) / 10000.0;
     confirm["shareholderId"] = activeOrder.shareholderId;
     sendToClient_(confirm);
 
@@ -547,11 +547,11 @@ void SecurityCore::sendConfirmAndExecReports(
         passiveResponse["securityId"] = exec.securityId;
         passiveResponse["side"] = to_string(exec.side);
         passiveResponse["qty"] = exec.qty;
-        passiveResponse["price"] = exec.price;
+        passiveResponse["price"] = static_cast<double>(exec.price) / 10000.0;
         passiveResponse["shareholderId"] = exec.shareholderId;
         passiveResponse["execId"] = exec.execId;
         passiveResponse["execQty"] = exec.execQty;
-        passiveResponse["execPrice"] = exec.execPrice;
+        passiveResponse["execPrice"] = static_cast<double>(exec.execPrice) / 10000.0;
         sendToClient_(passiveResponse);
 
         if (logger_)
@@ -565,11 +565,11 @@ void SecurityCore::sendConfirmAndExecReports(
         activeResponse["securityId"] = activeOrder.securityId;
         activeResponse["side"] = to_string(activeOrder.side);
         activeResponse["qty"] = activeOrder.qty;
-        activeResponse["price"] = activeOrder.price;
+        activeResponse["price"] = static_cast<double>(activeOrder.price) / 10000.0;
         activeResponse["shareholderId"] = activeOrder.shareholderId;
         activeResponse["execId"] = exec.execId;
         activeResponse["execQty"] = exec.execQty;
-        activeResponse["execPrice"] = exec.execPrice;
+        activeResponse["execPrice"] = static_cast<double>(exec.execPrice) / 10000.0;
         sendToClient_(activeResponse);
 
         if (logger_)
@@ -601,8 +601,8 @@ void SecurityCore::broadcastMarketData(const std::string &securityId,
     nlohmann::json data = nlohmann::json::array();
     data.push_back({{"market", to_string(market)},
                     {"securityId", securityId},
-                    {"bidPrice", md.bidPrice},
-                    {"askPrice", md.askPrice}});
+                    {"bidPrice", static_cast<double>(md.bidPrice) / 10000.0},
+                    {"askPrice", static_cast<double>(md.askPrice) / 10000.0}});
     sendMarketData_(data);
 }
 

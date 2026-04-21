@@ -198,8 +198,8 @@ class MatchingEngine {
      * 只存放同一证券的订单，撮合时无需跳过不相关条目。
      */
     struct SecurityBook {
-        std::map<double, PriceLevel, std::greater<double>> bidBook;
-        std::map<double, PriceLevel> askBook;
+        std::map<uint64_t, PriceLevel, std::greater<uint64_t>> bidBook;
+        std::map<uint64_t, PriceLevel> askBook;
     };
 
     /**
@@ -218,7 +218,7 @@ class MatchingEngine {
      */
     struct OrderLocation {
         std::string bookKey; // 所属 SecurityBook 的 key
-        double price;
+        uint64_t price;
         Side side;
     };
     std::unordered_map<std::string, OrderLocation> orderIndex_;
