@@ -12,6 +12,7 @@
  *   ./bin/bench_multicore --buckets 1,2,4,8 --securities 100
  */
 
+#include "perf_counter.h"
 #include "trade_system.h"
 #include <algorithm>
 #include <atomic>
@@ -158,6 +159,11 @@ struct RoundResult {
 static RoundResult runRound(const Config &cfg, int numBuckets) {
     hdf::TradeSystem system(numBuckets);
 
+    hdf::PerfCounter cache_miss_counter(PERF_TYPE_HARDWARE,
+                                        PERF_COUNT_HW_CACHE_MISSES);
+    hdf::PerfCounter page_fault_counter(PERF_TYPE_SOFTWARE,
+                                        PERF_COUNT_SW_PAGE_FAULTS);
+
     std::atomic<size_t> matchedCount{0};
     std::atomic<size_t> rejectedCount{0};
 
@@ -223,6 +229,8 @@ static RoundResult runRound(const Config &cfg, int numBuckets) {
     std::vector<std::thread> threads;
     threads.reserve(cfg.numProducers);
 
+    cache_miss_counter.start();
+    page_fault_counter.start();
     for (int t = 0; t < cfg.numProducers; ++t) {
         threads.emplace_back([&, t]() {
             auto &orders = producerOrders[t];
@@ -253,6 +261,8 @@ static RoundResult runRound(const Config &cfg, int numBuckets) {
     }
 
     system.stopEventLoop();
+    cache_miss_counter.stop();
+    page_fault_counter.stop();
     auto wallEnd = Clock::now();
     double elapsed_s =
         duration_cast<microseconds>(wallEnd - wallStart).count() / 1e6;
@@ -270,6 +280,15 @@ static RoundResult runRound(const Config &cfg, int numBuckets) {
                 (timings[i].first_response_ns - timings[i].submit_ns) / 1000.0);
         }
     }
+
+    long long misses = cache_miss_counter.read_value();
+    long long faults = page_fault_counter.read_value();
+
+    std::cout << "--- Performance Metrics ---\n";
+    std::cout << "Total Orders : " << actualTotal << "\n";
+    std::cout << "Cache Misses : " << misses << " (Avg "
+              << (double)misses / actualTotal << " per order)\n";
+    std::cout << "Page Faults  : " << faults << "\n";
 
     RoundResult r;
     r.numBuckets = numBuckets;
