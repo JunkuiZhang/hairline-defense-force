@@ -1,11 +1,19 @@
 #pragma once
 
+#include "fixed_string.h"
 #include <cstdint>
 #include <nlohmann/json.hpp>
 #include <stdexcept>
 #include <string>
 
 namespace hdf {
+
+// ── 定长字符串类型别名 ────────────────────────────────────────
+using OrderId       = FixedString<24>;  // clOrderId, origClOrderId
+using SecurityId    = FixedString<8>;   // securityId (e.g. "600030")
+using ShareholderId = FixedString<16>;  // shareholderId (e.g. "SH001")
+using ExecId        = FixedString<24>;  // execId (e.g. "EXEC0000000000000001")
+using BookKey       = FixedString<16>;  // "XSHG+600030"
 
 enum class Side { BUY, SELL, UNKNOWN };
 
@@ -57,19 +65,19 @@ inline Market market_from_string(const std::string &s) {
 
 // 3.1 交易订单
 struct Order {
-    std::string clOrderId;
+    OrderId clOrderId;
     Market market;
-    std::string securityId;
+    SecurityId securityId;
     Side side;
     uint64_t price;
     uint32_t qty;
-    std::string shareholderId;
+    ShareholderId shareholderId;
 };
 
 inline void from_json(const nlohmann::json &j, Order &o) {
-    j.at("clOrderId").get_to(o.clOrderId);
+    o.clOrderId = j.at("clOrderId").get<std::string>();
     o.market = market_from_string(j.at("market").get<std::string>());
-    j.at("securityId").get_to(o.securityId);
+    o.securityId = j.at("securityId").get<std::string>();
     o.side = side_from_string(j.at("side").get<std::string>());
     double p;
     j.at("price").get_to(p);
@@ -80,7 +88,7 @@ inline void from_json(const nlohmann::json &j, Order &o) {
     
     o.price = static_cast<uint64_t>(std::round(p * 10000.0));
     j.at("qty").get_to(o.qty);
-    j.at("shareholderId").get_to(o.shareholderId);
+    o.shareholderId = j.at("shareholderId").get<std::string>();
     if (o.qty == 0) {
         throw std::invalid_argument("qty must be positive");
     }
@@ -91,31 +99,31 @@ inline void from_json(const nlohmann::json &j, Order &o) {
 }
 
 inline void to_json(nlohmann::json &j, const Order &o) {
-    j["clOrderId"] = o.clOrderId;
+    j["clOrderId"] = std::string(o.clOrderId);
     j["market"] = to_string(o.market);
-    j["securityId"] = o.securityId;
+    j["securityId"] = std::string(o.securityId);
     j["side"] = to_string(o.side);
     j["price"] = static_cast<double>(o.price) / 10000.0;
     j["qty"] = o.qty;
-    j["shareholderId"] = o.shareholderId;
+    j["shareholderId"] = std::string(o.shareholderId);
 }
 
 // 3.2 交易撤单
 struct CancelOrder {
-    std::string clOrderId;
-    std::string origClOrderId;
+    OrderId clOrderId;
+    OrderId origClOrderId;
     Market market;
-    std::string securityId;
-    std::string shareholderId;
+    SecurityId securityId;
+    ShareholderId shareholderId;
     Side side;
 };
 
 inline void from_json(const nlohmann::json &j, CancelOrder &o) {
-    j.at("clOrderId").get_to(o.clOrderId);
-    j.at("origClOrderId").get_to(o.origClOrderId);
+    o.clOrderId = j.at("clOrderId").get<std::string>();
+    o.origClOrderId = j.at("origClOrderId").get<std::string>();
     o.market = market_from_string(j.at("market").get<std::string>());
-    j.at("securityId").get_to(o.securityId);
-    j.at("shareholderId").get_to(o.shareholderId);
+    o.securityId = j.at("securityId").get<std::string>();
+    o.shareholderId = j.at("shareholderId").get<std::string>();
     o.side = side_from_string(j.at("side").get<std::string>());
 }
 
@@ -128,20 +136,20 @@ struct MarketData {
 
 // 3.4 - 3.8 输出结构体（可以统一也可以分开）
 struct OrderResponse {
-    std::string clOrderId;
+    OrderId clOrderId;
     Market market;
-    std::string securityId;
+    SecurityId securityId;
     Side side;
     uint32_t qty;
     uint64_t price;
-    std::string shareholderId;
+    ShareholderId shareholderId;
 
     // 拒绝信息
     int32_t rejectCode = 0;
     std::string rejectText;
 
     // 成交信息
-    std::string execId;
+    ExecId execId;
     uint32_t execQty = 0;
     uint64_t execPrice = 0;
 
@@ -150,11 +158,11 @@ struct OrderResponse {
 };
 
 struct CancelResponse {
-    std::string clOrderId;
-    std::string origClOrderId;
+    OrderId clOrderId;
+    OrderId origClOrderId;
     Market market;
-    std::string securityId;
-    std::string shareholderId;
+    SecurityId securityId;
+    ShareholderId shareholderId;
     Side side;
 
     // 确认信息
