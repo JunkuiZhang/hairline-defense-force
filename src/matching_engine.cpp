@@ -2,19 +2,20 @@
 #include "types.h"
 #include <format>
 #include <iostream>
+#include <map>
 
 namespace hdf {
 
 MatchingEngine::MatchingEngine() {}
 MatchingEngine::~MatchingEngine() {
     for (auto& [key, sb] : books_) {
-        for (auto& [price, level] : sb.bidBook) {
-            for (auto it = level.begin(); it != level.end(); ++it) {
+        for (auto& bucket : sb.bidBook) {
+            for (auto it = bucket.level.begin(); it != bucket.level.end(); ++it) {
                 it.ptr->~BookEntry();
             }
         }
-        for (auto& [price, level] : sb.askBook) {
-            for (auto it = level.begin(); it != level.end(); ++it) {
+        for (auto& bucket : sb.askBook) {
+            for (auto it = bucket.level.begin(); it != bucket.level.end(); ++it) {
                 it.ptr->~BookEntry();
             }
         }
@@ -89,7 +90,7 @@ MatchingEngine::match(const Order &order,
         // ── 买单：与 askBook 撮合（卖方，价格升序）──
         auto priceIt = sb.askBook.begin();
         while (priceIt != sb.askBook.end() && remainingQty > 0) {
-            const uint64_t askPrice = priceIt->first;
+            const uint64_t askPrice = priceIt->price;
 
             // 价格不满足：买入价 < 卖出价，无法成交，退出
             if (order.price < askPrice)
@@ -100,7 +101,7 @@ MatchingEngine::match(const Order &order,
                 askPrice > marketData->askPrice)
                 break;
 
-            PriceLevel &level = priceIt->second;
+            PriceLevel &level = priceIt->level;
             auto entryIt = level.begin();
             while (entryIt != level.end() && remainingQty > 0) {
                 uint32_t matchQty =
@@ -153,7 +154,7 @@ MatchingEngine::match(const Order &order,
         // ── 卖单：与 bidBook 撮合（买方，价格降序）──
         auto priceIt = sb.bidBook.begin();
         while (priceIt != sb.bidBook.end() && remainingQty > 0) {
-            const uint64_t bidPrice = priceIt->first;
+            const uint64_t bidPrice = priceIt->price;
 
             // 价格不满足：买入价 < 卖出价，无法成交，退出
             if (bidPrice < order.price)
@@ -164,7 +165,7 @@ MatchingEngine::match(const Order &order,
                 bidPrice < marketData->bidPrice)
                 break;
 
-            PriceLevel &level = priceIt->second;
+            PriceLevel &level = priceIt->level;
             auto entryIt = level.begin();
             while (entryIt != level.end() && remainingQty > 0) {
                 uint32_t matchQty =
@@ -250,7 +251,7 @@ CancelResponse MatchingEngine::cancelOrder(const std::string &clOrderId) {
         auto priceIt = book.find(loc.price);
         if (priceIt == book.end())
             return false;
-        PriceLevel &level = priceIt->second;
+        PriceLevel &level = priceIt->level;
         for (auto entryIt = level.begin(); entryIt != level.end(); ++entryIt) {
             if (entryIt->order.clOrderId != clOrderId)
                 continue;
@@ -309,7 +310,7 @@ void MatchingEngine::reduceOrderQty(const std::string &clOrderId,
         auto priceIt = book.find(loc.price);
         if (priceIt == book.end())
             return;
-        PriceLevel &level = priceIt->second;
+        PriceLevel &level = priceIt->level;
         for (auto entryIt = level.begin(); entryIt != level.end(); ++entryIt) {
             if (entryIt->order.clOrderId != clOrderId)
                 continue;
@@ -358,30 +359,30 @@ nlohmann::json MatchingEngine::getSnapshot(const std::string &securityId,
 
     nlohmann::json bids = nlohmann::json::array();
     int cumQty = 0, totalOrders = 0;
-    for (const auto &[price, level] : sb.bidBook) {
+    for (const auto &bucket : sb.bidBook) {
         int qty = 0, cnt = 0;
-        for (const auto &e : level) {
+        for (const auto &e : bucket.level) {
             qty += (int)e.remainingQty;
             ++cnt;
             ++totalOrders;
         }
         cumQty += qty;
-        bids.push_back({{"price", static_cast<double>(price) / 10000.0},
+        bids.push_back({{"price", static_cast<double>(bucket.price) / 10000.0},
                         {"qty", qty},
                         {"cumQty", cumQty},
                         {"orderCount", cnt}});
     }
     nlohmann::json asks = nlohmann::json::array();
     cumQty = 0;
-    for (const auto &[price, level] : sb.askBook) {
+    for (const auto &bucket : sb.askBook) {
         int qty = 0, cnt = 0;
-        for (const auto &e : level) {
+        for (const auto &e : bucket.level) {
             qty += (int)e.remainingQty;
             ++cnt;
             ++totalOrders;
         }
         cumQty += qty;
-        asks.push_back({{"price", static_cast<double>(price) / 10000.0},
+        asks.push_back({{"price", static_cast<double>(bucket.price) / 10000.0},
                         {"qty", qty},
                         {"cumQty", cumQty},
                         {"orderCount", cnt}});
@@ -400,16 +401,16 @@ nlohmann::json MatchingEngine::getSnapshot() const {
     int totalOrders = 0;
 
     for (const auto &[key, sb] : books_) {
-        for (const auto &[price, level] : sb.bidBook)
-            for (const auto &e : level) {
-                aggBids[price].first += (int)e.remainingQty;
-                aggBids[price].second += 1;
+        for (const auto &bucket : sb.bidBook)
+            for (const auto &e : bucket.level) {
+                aggBids[bucket.price].first += (int)e.remainingQty;
+                aggBids[bucket.price].second += 1;
                 ++totalOrders;
             }
-        for (const auto &[price, level] : sb.askBook)
-            for (const auto &e : level) {
-                aggAsks[price].first += (int)e.remainingQty;
-                aggAsks[price].second += 1;
+        for (const auto &bucket : sb.askBook)
+            for (const auto &e : bucket.level) {
+                aggAsks[bucket.price].first += (int)e.remainingQty;
+                aggAsks[bucket.price].second += 1;
                 ++totalOrders;
             }
     }
@@ -447,13 +448,13 @@ MarketData MatchingEngine::getBestQuote(const std::string &securityId,
         return md;
     const SecurityBook &sb = bookIt->second;
 
-    // bidBook 降序，首个价格层即为最优买价（空层级已在撮合时清除）
+    // bidBook 降序，front 即为最优买价（空层级已在撮合时清除）
     if (!sb.bidBook.empty())
-        md.bidPrice = sb.bidBook.begin()->first;
+        md.bidPrice = sb.bidBook.front().price;
 
-    // askBook 升序，首个价格层即为最优卖价
+    // askBook 升序，front 即为最优卖价
     if (!sb.askBook.empty())
-        md.askPrice = sb.askBook.begin()->first;
+        md.askPrice = sb.askBook.front().price;
 
     return md;
 }

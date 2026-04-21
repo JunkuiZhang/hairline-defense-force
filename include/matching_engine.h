@@ -1,9 +1,8 @@
 #pragma once
 
 #include "types.h"
+#include <algorithm>
 #include <cstdint>
-#include <list>
-#include <map>
 #include <optional>
 #include <string>
 #include <unordered_map>
@@ -190,16 +189,100 @@ class MatchingEngine {
         }
     };
 
+    /**
+     * @brief 价格桶：价格 + 该价格档的订单链表。
+     */
+    struct PriceBucket {
+        uint64_t price;
+        PriceLevel level;
+    };
+
+    /**
+     * @brief 扁平化订单簿：使用 sorted vector 替代 std::map。
+     *
+     * 买盘降序排列（最优买价在 front），卖盘升序排列（最优卖价在 front）。
+     * 撮合时从 front 顺序扫描，天然 cache-friendly。
+     *
+     * @tparam Descending true = 降序（买盘），false = 升序（卖盘）
+     */
+    template <bool Descending>
+    class FlatBook {
+    public:
+        std::vector<PriceBucket> buckets_;
+
+        bool empty() const { return buckets_.empty(); }
+        size_t size() const { return buckets_.size(); }
+
+        // 返回 front（最优价格端）
+        PriceBucket& front() { return buckets_.front(); }
+        const PriceBucket& front() const { return buckets_.front(); }
+
+        using iterator = typename std::vector<PriceBucket>::iterator;
+        using const_iterator = typename std::vector<PriceBucket>::const_iterator;
+
+        iterator begin() { return buckets_.begin(); }
+        iterator end() { return buckets_.end(); }
+        const_iterator begin() const { return buckets_.begin(); }
+        const_iterator end() const { return buckets_.end(); }
+        iterator erase(iterator it) { return buckets_.erase(it); }
+
+        /**
+         * @brief 查找指定价格的 PriceLevel，找不到返回 end()。
+         * 二分查找 O(log N)。
+         */
+        iterator find(uint64_t price) {
+            auto it = lowerBound(price);
+            if (it != buckets_.end() && it->price == price)
+                return it;
+            return buckets_.end();
+        }
+
+        /**
+         * @brief 获取或创建指定价格的 PriceLevel。
+         * 二分查找定位插入点，不存在则原地 insert。
+         */
+        PriceLevel& operator[](uint64_t price) {
+            auto it = lowerBound(price);
+            if (it != buckets_.end() && it->price == price)
+                return it->level;
+            auto inserted = buckets_.insert(it, PriceBucket{price, {}});
+            return inserted->level;
+        }
+
+    private:
+        /**
+         * @brief lower_bound：找到第一个 "不优于" price 的位置。
+         * Descending 模式下：找第一个 <= price 的位置（降序，越大越优）
+         * Ascending 模式下：找第一个 >= price 的位置（升序，越小越优）
+         */
+        iterator lowerBound(uint64_t price) {
+            if constexpr (Descending) {
+                // 降序：我们要找第一个 bucket.price <= price
+                return std::lower_bound(
+                    buckets_.begin(), buckets_.end(), price,
+                    [](const PriceBucket& b, uint64_t p) {
+                        return b.price > p; // skip while bucket is more optimal
+                    });
+            } else {
+                // 升序：我们要找第一个 bucket.price >= price
+                return std::lower_bound(
+                    buckets_.begin(), buckets_.end(), price,
+                    [](const PriceBucket& b, uint64_t p) {
+                        return b.price < p;
+                    });
+            }
+        }
+    };
 
     /**
      * @brief 单个 (market, securityId) 的订单簿。
      *
-     * bidBook 按价格降序，askBook 按价格升序。
+     * bidBook 按价格降序（sorted vector），askBook 按价格升序（sorted vector）。
      * 只存放同一证券的订单，撮合时无需跳过不相关条目。
      */
     struct SecurityBook {
-        std::map<uint64_t, PriceLevel, std::greater<uint64_t>> bidBook;
-        std::map<uint64_t, PriceLevel> askBook;
+        FlatBook<true>  bidBook;  // 降序：最优买价在 front
+        FlatBook<false> askBook;  // 升序：最优卖价在 front
     };
 
     /**
