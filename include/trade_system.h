@@ -4,12 +4,10 @@
 #include "trade_logger.h"
 #include "types.h"
 #include <atomic>
-#include <condition_variable>
-#include <deque>
 #include <functional>
 #include <memory>
-#include <mutex>
 #include <nlohmann/json.hpp>
+#include "mpsc_queue.h"
 #include <string>
 #include <thread>
 #include <variant>
@@ -161,9 +159,7 @@ class TradeSystem {
     // ─── WorkerBucket：每个 bucket 拥有独立的 SecurityCore + 任务队列 + 线程
     struct WorkerBucket {
         SecurityCore core;
-        std::deque<Command> taskQueue;
-        mutable std::mutex mutex;
-        std::condition_variable cv;
+        MPSCQueue<Command, 65536> taskQueue;
         std::atomic<bool> running{false};
         std::thread thread;
     };
