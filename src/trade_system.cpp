@@ -2,6 +2,7 @@
 #include "constants.h"
 #include "types.h"
 #include "utils.h"
+#include <emmintrin.h>
 
 namespace hdf {
 
@@ -146,11 +147,14 @@ nlohmann::json TradeSystem::queryOrderbook(const std::string &securityId,
 
 void TradeSystem::enqueueToWorker(size_t idx, Command cmd) {
     auto &bucket = *buckets_[idx];
-    {
-        std::lock_guard<std::mutex> lock(bucket.mutex);
-        bucket.taskQueue.push_back(std::move(cmd));
+    // {
+    //     std::lock_guard<std::mutex> lock(bucket.mutex);
+    //     bucket.taskQueue.push_back(std::move(cmd));
+    // }
+    // bucket.cv.notify_one();
+    while (!bucket.taskQueue.push(std::move(cmd))) {
+        _mm_pause();
     }
-    bucket.cv.notify_one();
 }
 
 void TradeSystem::submitOrder(const nlohmann::json &input) {
@@ -219,7 +223,7 @@ void TradeSystem::submitMarketData(const nlohmann::json &input) {
 size_t TradeSystem::queueDepth() const {
     size_t total = 0;
     for (const auto &b : buckets_) {
-        std::lock_guard<std::mutex> lock(b->mutex);
+        // std::lock_guard<std::mutex> lock(b->mutex);
         total += b->taskQueue.size();
     }
     return total;
@@ -247,26 +251,50 @@ void TradeSystem::workerLoop(WorkerBucket *bucket) {
         hdf::pin_to_core(bucket->coreId);
     }
 
+    constexpr int max_spins = 256;
+    int idle_spins = 0;
+
     while (true) {
-        std::deque<Command> batch;
-        {
-            std::unique_lock<std::mutex> lock(bucket->mutex);
-            bucket->cv.wait(lock, [bucket] {
-                return !bucket->taskQueue.empty() || !bucket->running;
-            });
-            batch.swap(bucket->taskQueue);
-        }
-        for (auto &cmd : batch) {
+        // std::deque<Command> batch;
+        // {
+        //     std::unique_lock<std::mutex> lock(bucket->mutex);
+        //     bucket->cv.wait(lock, [bucket] {
+        //         return !bucket->taskQueue.empty() || !bucket->running;
+        //     });
+        //     batch.swap(bucket->taskQueue);
+        // }
+        // for (auto &cmd : batch) {
+        //     dispatchCommand(*bucket, cmd);
+        // }
+        Command cmd;
+        if (bucket->taskQueue.pop(cmd)) {
             dispatchCommand(*bucket, cmd);
-        }
-        if (!bucket->running) {
-            std::lock_guard<std::mutex> lock(bucket->mutex);
-            for (auto &cmd : bucket->taskQueue) {
+            idle_spins = 0; // 重置
+            while (bucket->taskQueue.pop(cmd)) {
                 dispatchCommand(*bucket, cmd);
             }
-            bucket->taskQueue.clear();
-            break;
+        } else {
+            if (!bucket->running.load(std::memory_order_relaxed))
+                break;
+            if (++idle_spins < max_spins) {
+                _mm_pause();
+            } else {
+                std::this_thread::yield();
+                idle_spins = max_spins / 2;
+            }
         }
+        // if (!bucket->running) {
+        //     std::lock_guard<std::mutex> lock(bucket->mutex);
+        //     for (auto &cmd : bucket->taskQueue) {
+        //         dispatchCommand(*bucket, cmd);
+        //     }
+        //     bucket->taskQueue.clear();
+        //     break;
+        // }
+    }
+    Command cmd;
+    while (bucket->taskQueue.pop(cmd)) {
+        dispatchCommand(*bucket, cmd);
     }
 }
 
@@ -284,7 +312,7 @@ void TradeSystem::stopEventLoop() {
         if (!b->running)
             continue;
         b->running = false;
-        b->cv.notify_one();
+        // b->cv.notify_one();
     }
     for (auto &b : buckets_) {
         if (b->thread.joinable()) {

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "security_core.h"
+#include "spsc.h"
 #include "trade_logger.h"
 #include "types.h"
 #include <atomic>
@@ -162,9 +163,10 @@ class TradeSystem {
     // ─── WorkerBucket：每个 bucket 拥有独立的 SecurityCore + 任务队列 + 线程
     struct WorkerBucket {
         SecurityCore core;
-        std::deque<Command> taskQueue;
-        mutable std::mutex mutex;
-        std::condition_variable cv;
+        // std::deque<Command> taskQueue;
+        // mutable std::mutex mutex;
+        // std::condition_variable cv;
+        hdf::SpscQueue<Command, 4096> taskQueue;
         std::atomic<bool> running{false};
         std::thread thread;
         int coreId = -1;
