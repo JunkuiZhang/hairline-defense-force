@@ -1,6 +1,7 @@
 #include "trade_system.h"
 #include "constants.h"
 #include "types.h"
+#include "utils.h"
 
 namespace hdf {
 
@@ -12,6 +13,17 @@ TradeSystem::TradeSystem(size_t numBuckets) : buckets_() {
     for (size_t i = 0; i < N; ++i) {
         buckets_.push_back(std::make_unique<WorkerBucket>());
         buckets_.back()->core.setLogger(&logger_);
+    }
+}
+
+TradeSystem::TradeSystem(const std::vector<int> &cores) {
+    size_t numBuckets = cores.empty() ? 1 : cores.size();
+
+    for (size_t i = 0; i < numBuckets; ++i) {
+        auto bucket = std::make_unique<WorkerBucket>();
+        // 记录 Core ID
+        bucket->coreId = cores.empty() ? -1 : cores[i];
+        buckets_.push_back(std::move(bucket));
     }
 }
 
@@ -231,6 +243,10 @@ void TradeSystem::dispatchCommand(WorkerBucket &bucket, Command &cmd) {
 }
 
 void TradeSystem::workerLoop(WorkerBucket *bucket) {
+    if (bucket->coreId >= 0) {
+        hdf::pin_to_core(bucket->coreId);
+    }
+
     while (true) {
         std::deque<Command> batch;
         {

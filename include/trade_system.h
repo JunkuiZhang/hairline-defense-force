@@ -29,6 +29,7 @@ namespace hdf {
 class TradeSystem {
   public:
     explicit TradeSystem(size_t numBuckets = 0);
+    explicit TradeSystem(const std::vector<int> &cores);
     ~TradeSystem();
 
     using SendToClient = std::function<void(const nlohmann::json &)>;
@@ -166,6 +167,7 @@ class TradeSystem {
         std::condition_variable cv;
         std::atomic<bool> running{false};
         std::thread thread;
+        int coreId = -1;
     };
 
     std::vector<std::unique_ptr<WorkerBucket>> buckets_;
