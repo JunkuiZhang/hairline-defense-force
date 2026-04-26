@@ -190,11 +190,20 @@ int main(int argc, char *argv[]) {
     size_t matchedCount = 0;
     size_t rejectedCount = 0;
 
-    system.setSendToClient([&](const nlohmann::json &resp) {
-        if (resp.contains("execId"))
-            ++matchedCount;
-        else if (resp.contains("rejectCode"))
-            ++rejectedCount;
+    system.setSendToClient([&](const hdf::ClientReport &report) {
+        std::visit(
+            [&](const auto &r) {
+                using T = std::decay_t<decltype(r)>;
+                if constexpr (std::is_same_v<T, hdf::OrderResponse>) {
+                    if (!r.execId.empty())
+                        ++matchedCount;
+                    else if (r.rejectCode != 0)
+                        ++rejectedCount;
+                } else if constexpr (std::is_same_v<T, hdf::CancelResponse>) {
+                    // cancel responses not counted here
+                }
+            },
+            report);
     });
 
     if (cfg.enableLogging) {

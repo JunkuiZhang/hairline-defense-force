@@ -128,43 +128,43 @@ void TradeLogger::logOrderNew(const Order &order) {
 
     nlohmann::json record;
     record["event"] = "ORDER_NEW";
-    record["clOrderId"] = order.clOrderId;
+    record["clOrderId"] = order.clOrderId.str();
     record["market"] = to_string(order.market);
-    record["securityId"] = order.securityId;
+    record["securityId"] = order.securityId.str();
     record["side"] = to_string(order.side);
     record["price"] = order.price;
     record["qty"] = order.qty;
-    record["shareholderId"] = order.shareholderId;
+    record["shareholderId"] = order.shareholderId.str();
     enqueue(std::move(record));
 }
 
-void TradeLogger::logOrderConfirm(const std::string &clOrderId) {
+void TradeLogger::logOrderConfirm(std::string_view clOrderId) {
     if (!isOpen_)
         return;
 
     nlohmann::json record;
     record["event"] = "ORDER_CONFIRM";
-    record["clOrderId"] = clOrderId;
+    record["clOrderId"] = std::string(clOrderId);
     enqueue(std::move(record));
 }
 
-void TradeLogger::logOrderReject(const std::string &clOrderId,
+void TradeLogger::logOrderReject(std::string_view clOrderId,
                                  int32_t rejectCode,
-                                 const std::string &rejectText) {
+                                 std::string_view rejectText) {
     if (!isOpen_)
         return;
 
     nlohmann::json record;
     record["event"] = "ORDER_REJECT";
-    record["clOrderId"] = clOrderId;
+    record["clOrderId"] = std::string(clOrderId);
     record["rejectCode"] = rejectCode;
-    record["rejectText"] = rejectText;
+    record["rejectText"] = std::string(rejectText);
     enqueue(std::move(record));
 }
 
-void TradeLogger::logExecution(const std::string &execId,
-                               const std::string &clOrderId,
-                               const std::string &securityId, Side side,
+void TradeLogger::logExecution(std::string_view execId,
+                               std::string_view clOrderId,
+                               std::string_view securityId, Side side,
                                uint32_t execQty, double execPrice,
                                bool isMaker) {
     if (!isOpen_)
@@ -172,9 +172,9 @@ void TradeLogger::logExecution(const std::string &execId,
 
     nlohmann::json record;
     record["event"] = "EXECUTION";
-    record["execId"] = execId;
-    record["clOrderId"] = clOrderId;
-    record["securityId"] = securityId;
+    record["execId"] = std::string(execId);
+    record["clOrderId"] = std::string(clOrderId);
+    record["securityId"] = std::string(securityId);
     record["side"] = to_string(side);
     record["execQty"] = execQty;
     record["execPrice"] = execPrice;
@@ -182,41 +182,41 @@ void TradeLogger::logExecution(const std::string &execId,
     enqueue(std::move(record));
 }
 
-void TradeLogger::logCancelConfirm(const std::string &origClOrderId,
+void TradeLogger::logCancelConfirm(std::string_view origClOrderId,
                                    uint32_t canceledQty, uint32_t cumQty) {
     if (!isOpen_)
         return;
 
     nlohmann::json record;
     record["event"] = "CANCEL_CONFIRM";
-    record["origClOrderId"] = origClOrderId;
+    record["origClOrderId"] = std::string(origClOrderId);
     record["canceledQty"] = canceledQty;
     record["cumQty"] = cumQty;
     enqueue(std::move(record));
 }
 
-void TradeLogger::logCancelReject(const std::string &origClOrderId,
+void TradeLogger::logCancelReject(std::string_view origClOrderId,
                                   int32_t rejectCode,
-                                  const std::string &rejectText) {
+                                  std::string_view rejectText) {
     if (!isOpen_)
         return;
 
     nlohmann::json record;
     record["event"] = "CANCEL_REJECT";
-    record["origClOrderId"] = origClOrderId;
+    record["origClOrderId"] = std::string(origClOrderId);
     record["rejectCode"] = rejectCode;
-    record["rejectText"] = rejectText;
+    record["rejectText"] = std::string(rejectText);
     enqueue(std::move(record));
 }
 
-void TradeLogger::logMarketData(const std::string &securityId, Market market,
+void TradeLogger::logMarketData(std::string_view securityId, Market market,
                                 double bidPrice, double askPrice) {
     if (!isOpen_)
         return;
 
     nlohmann::json record;
     record["event"] = "MARKET_DATA";
-    record["securityId"] = securityId;
+    record["securityId"] = std::string(securityId);
     record["market"] = to_string(market);
     record["bidPrice"] = bidPrice;
     record["askPrice"] = askPrice;

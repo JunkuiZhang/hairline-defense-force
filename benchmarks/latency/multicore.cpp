@@ -61,9 +61,9 @@ static Config parseArgs(int argc, char *argv[]) {
     return cfg;
 }
 
-// ── 订单生成 ─────────────────────────────────────────────────
-static std::vector<nlohmann::json> generateOrders(const Config &cfg, int count,
-                                                  int idOffset, int seed) {
+// ── 订单生成（直接构造 struct，零 JSON）──────────────────────
+static std::vector<hdf::Order> generateOrders(const Config &cfg, int count,
+                                              int idOffset, int seed) {
     std::mt19937 rng(seed);
     std::uniform_int_distribution<int> secDist(0, cfg.numSecurities - 1);
     std::uniform_int_distribution<int> shDist(0, cfg.numShareholders - 1);
@@ -85,18 +85,18 @@ static std::vector<nlohmann::json> generateOrders(const Config &cfg, int count,
         shareholders[i] = oss.str();
     }
 
-    std::vector<nlohmann::json> orders;
+    std::vector<hdf::Order> orders;
     orders.reserve(count);
     for (int i = 0; i < count; ++i) {
-        nlohmann::json j;
-        j["clOrderId"] = "M" + std::to_string(idOffset + i);
-        j["market"] = "XSHG";
-        j["securityId"] = securities[secDist(rng)];
-        j["side"] = sideDist(rng) == 0 ? "B" : "S";
-        j["price"] = std::round(priceDist(rng) * 100.0) / 100.0;
-        j["qty"] = qtyDist(rng) * 100;
-        j["shareholderId"] = shareholders[shDist(rng)];
-        orders.push_back(std::move(j));
+        hdf::Order o;
+        o.clOrderId = "M" + std::to_string(idOffset + i);
+        o.market = hdf::Market::XSHG;
+        o.securityId = securities[secDist(rng)];
+        o.side = sideDist(rng) == 0 ? hdf::Side::BUY : hdf::Side::SELL;
+        o.price = std::round(priceDist(rng) * 100.0) / 100.0;
+        o.qty = qtyDist(rng) * 100;
+        o.shareholderId = shareholders[shDist(rng)];
+        orders.push_back(o);
     }
     return orders;
 }
@@ -163,21 +163,30 @@ static RoundResult runRound(const Config &cfg, int numBuckets, bool isPinned) {
     };
     std::vector<OrderTiming> timings(actualTotal);
 
-    auto parseIdx = [&](const std::string &id) -> int {
-        if (id.size() < 2 || id[0] != 'M')
+    auto parseIdx = [&](const hdf::OrderId &id) -> int {
+        if (id.empty() || id.data[0] != 'M')
             return -1;
         int x = std::atoi(id.c_str() + 1);
         int idx = x - cfg.warmupOrders;
         return (idx >= 0 && idx < actualTotal) ? idx : -1;
     };
 
-    system.setSendToClient([&](const nlohmann::json &resp) {
-        if (resp.contains("execId"))
-            matchedCount.fetch_add(1, std::memory_order_relaxed);
-        else if (resp.contains("rejectCode"))
-            rejectedCount.fetch_add(1, std::memory_order_relaxed);
-
-        std::string orderId = resp.value("clOrderId", "");
+    system.setSendToClient([&](const hdf::ClientReport &report) {
+        hdf::OrderId orderId;
+        std::visit(
+            [&](const auto &r) {
+                using T = std::decay_t<decltype(r)>;
+                if constexpr (std::is_same_v<T, hdf::OrderResponse>) {
+                    if (!r.execId.empty())
+                        matchedCount.fetch_add(1, std::memory_order_relaxed);
+                    else if (r.rejectCode != 0)
+                        rejectedCount.fetch_add(1, std::memory_order_relaxed);
+                    orderId = r.clOrderId;
+                } else {
+                    orderId = r.clOrderId;
+                }
+            },
+            report);
         int idx = parseIdx(orderId);
         if (idx >= 0 && timings[idx].first_response_cycles == 0) {
             timings[idx].first_response_cycles = hdf::rdtscp_lfence();
@@ -186,7 +195,7 @@ static RoundResult runRound(const Config &cfg, int numBuckets, bool isPinned) {
 
     auto warmupOrders = generateOrders(cfg, cfg.warmupOrders, 0, 9999);
     for (auto &order : warmupOrders) {
-        system.handleOrder(order);
+        system.handleOrder(nlohmann::json(order));
     }
     matchedCount = 0;
     rejectedCount = 0;

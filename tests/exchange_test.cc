@@ -42,7 +42,9 @@ class ExchangeTest : public testing::Test {
 
     void SetUp() override {
         system.setSendToClient(
-            [this](const json &resp) { clientResponses.push_back(resp); });
+            [this](const ClientReport &report) {
+                clientResponses.push_back(to_json_report(report));
+            });
         // 不设置 sendToExchange → 纯撮合模式
     }
 };

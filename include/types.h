@@ -1,9 +1,12 @@
 #pragma once
 
+#include "fixed_str.h"
 #include <cstdint>
 #include <nlohmann/json.hpp>
 #include <stdexcept>
 #include <string>
+#include <variant>
+#include <vector>
 
 namespace hdf {
 
@@ -17,7 +20,7 @@ inline std::string to_string(Side s) {
         return "S";
     case Side::UNKNOWN:
     default:
-        throw std::runtime_error("Invalid Side value");
+        return "?";
     }
 }
 
@@ -41,7 +44,7 @@ inline std::string to_string(Market m) {
         return "BJSE";
     case Market::UNKNOWN:
     default:
-        throw std::runtime_error("Invalid Market value");
+        return "?";
     }
 }
 
@@ -55,25 +58,53 @@ inline Market market_from_string(const std::string &s) {
     throw std::invalid_argument("Invalid market: " + s);
 }
 
+// ─── 常用定长字符串类型别名 ─────────────────────────────
+
+using OrderId = FixedStr<24>;
+using SecurityId = FixedStr<12>;
+using ShareholderId = FixedStr<16>;
+using ExecIdStr = FixedStr<24>;
+using RejectText = FixedStr<128>;
+using BookKey = FixedStr<24>; // "XSHG+600030"
+
+// ─── 路由 key 生成 ─────────────────────────────────────
+
+inline BookKey makeRouteKey(Market market, const SecurityId &securityId) {
+    BookKey key(to_string(market));
+    key.append("+");
+    key.append(std::string_view(securityId));
+    return key;
+}
+
+inline BookKey makeRouteKey(const std::string &market,
+                            const SecurityId &securityId) {
+    BookKey key(market);
+    key.append("+");
+    key.append(std::string_view(securityId));
+    return key;
+}
+
+// ============================================================
 // 3.1 交易订单
+// ============================================================
 struct Order {
-    std::string clOrderId;
+    OrderId clOrderId;
     Market market;
-    std::string securityId;
+    SecurityId securityId;
     Side side;
     double price;
     uint32_t qty;
-    std::string shareholderId;
+    ShareholderId shareholderId;
 };
 
 inline void from_json(const nlohmann::json &j, Order &o) {
-    j.at("clOrderId").get_to(o.clOrderId);
+    o.clOrderId = j.at("clOrderId").get<std::string>();
     o.market = market_from_string(j.at("market").get<std::string>());
-    j.at("securityId").get_to(o.securityId);
+    o.securityId = j.at("securityId").get<std::string>();
     o.side = side_from_string(j.at("side").get<std::string>());
     j.at("price").get_to(o.price);
     j.at("qty").get_to(o.qty);
-    j.at("shareholderId").get_to(o.shareholderId);
+    o.shareholderId = j.at("shareholderId").get<std::string>();
 
     if (o.price <= 0) {
         throw std::invalid_argument("price must be positive, got: " +
@@ -89,57 +120,81 @@ inline void from_json(const nlohmann::json &j, Order &o) {
 }
 
 inline void to_json(nlohmann::json &j, const Order &o) {
-    j["clOrderId"] = o.clOrderId;
+    j["clOrderId"] = o.clOrderId.str();
     j["market"] = to_string(o.market);
-    j["securityId"] = o.securityId;
+    j["securityId"] = o.securityId.str();
     j["side"] = to_string(o.side);
     j["price"] = o.price;
     j["qty"] = o.qty;
-    j["shareholderId"] = o.shareholderId;
+    j["shareholderId"] = o.shareholderId.str();
 }
 
+// ============================================================
 // 3.2 交易撤单
+// ============================================================
 struct CancelOrder {
-    std::string clOrderId;
-    std::string origClOrderId;
+    OrderId clOrderId;
+    OrderId origClOrderId;
     Market market;
-    std::string securityId;
-    std::string shareholderId;
+    SecurityId securityId;
+    ShareholderId shareholderId;
     Side side;
 };
 
 inline void from_json(const nlohmann::json &j, CancelOrder &o) {
-    j.at("clOrderId").get_to(o.clOrderId);
-    j.at("origClOrderId").get_to(o.origClOrderId);
+    o.clOrderId = j.at("clOrderId").get<std::string>();
+    o.origClOrderId = j.at("origClOrderId").get<std::string>();
     o.market = market_from_string(j.at("market").get<std::string>());
-    j.at("securityId").get_to(o.securityId);
-    j.at("shareholderId").get_to(o.shareholderId);
+    o.securityId = j.at("securityId").get<std::string>();
+    o.shareholderId = j.at("shareholderId").get<std::string>();
     o.side = side_from_string(j.at("side").get<std::string>());
 }
 
+inline void to_json(nlohmann::json &j, const CancelOrder &o) {
+    j["clOrderId"] = o.clOrderId.str();
+    j["origClOrderId"] = o.origClOrderId.str();
+    j["market"] = to_string(o.market);
+    j["securityId"] = o.securityId.str();
+    j["shareholderId"] = o.shareholderId.str();
+    j["side"] = to_string(o.side);
+}
+
+// ============================================================
 // 3.3 行情信息
-// 对于某个市场、某个证券代码的最新行情数据
+// ============================================================
 struct MarketData {
     double bidPrice;
     double askPrice;
 };
 
-// 3.4 - 3.8 输出结构体（可以统一也可以分开）
-struct OrderResponse {
-    std::string clOrderId;
+// ============================================================
+// 行情条目（用于推送和队列传递）
+// ============================================================
+struct MarketDataItem {
     Market market;
-    std::string securityId;
+    SecurityId securityId;
+    double bidPrice;
+    double askPrice;
+};
+
+// ============================================================
+// 3.4 - 3.8 输出结构体
+// ============================================================
+struct OrderResponse {
+    OrderId clOrderId;
+    Market market;
+    SecurityId securityId;
     Side side;
     uint32_t qty;
     double price;
-    std::string shareholderId;
+    ShareholderId shareholderId;
 
     // 拒绝信息
     int32_t rejectCode = 0;
-    std::string rejectText;
+    RejectText rejectText;
 
     // 成交信息
-    std::string execId;
+    ExecIdStr execId;
     uint32_t execQty = 0;
     double execPrice = 0.0;
 
@@ -147,12 +202,31 @@ struct OrderResponse {
     enum Type { CONFIRM, REJECT, EXECUTION } type;
 };
 
+inline void to_json(nlohmann::json &j, const OrderResponse &o) {
+    j["clOrderId"] = o.clOrderId.str();
+    j["market"] = to_string(o.market);
+    j["securityId"] = o.securityId.str();
+    j["side"] = to_string(o.side);
+    j["qty"] = o.qty;
+    j["price"] = o.price;
+    j["shareholderId"] = o.shareholderId.str();
+    if (o.rejectCode != 0) {
+        j["rejectCode"] = o.rejectCode;
+        j["rejectText"] = o.rejectText.str();
+    }
+    if (!o.execId.empty()) {
+        j["execId"] = o.execId.str();
+        j["execQty"] = o.execQty;
+        j["execPrice"] = o.execPrice;
+    }
+}
+
 struct CancelResponse {
-    std::string clOrderId;
-    std::string origClOrderId;
+    OrderId clOrderId;
+    OrderId origClOrderId;
     Market market;
-    std::string securityId;
-    std::string shareholderId;
+    SecurityId securityId;
+    ShareholderId shareholderId;
     Side side;
 
     // 确认信息
@@ -163,9 +237,130 @@ struct CancelResponse {
 
     // 拒绝信息
     int32_t rejectCode = 0;
-    std::string rejectText;
+    RejectText rejectText;
 
     enum Type { CONFIRM, REJECT } type;
 };
+
+inline void to_json(nlohmann::json &j, const CancelResponse &o) {
+    j["clOrderId"] = o.clOrderId.str();
+    j["origClOrderId"] = o.origClOrderId.str();
+    j["market"] = to_string(o.market);
+    j["securityId"] = o.securityId.str();
+    j["shareholderId"] = o.shareholderId.str();
+    j["side"] = to_string(o.side);
+    if (o.rejectCode != 0) {
+        j["rejectCode"] = o.rejectCode;
+        j["rejectText"] = o.rejectText.str();
+    } else {
+        j["qty"] = o.qty;
+        j["price"] = o.price;
+        j["cumQty"] = o.cumQty;
+        j["canceledQty"] = o.canceledQty;
+    }
+}
+
+// ============================================================
+// 交易所回报（op3: 从交易所返回的数据）
+// ============================================================
+struct ExchangeReport {
+    OrderId clOrderId;
+    Market market;
+    SecurityId securityId;
+    Side side;
+    uint32_t qty = 0;
+    double price = 0.0;
+    ShareholderId shareholderId;
+    OrderId origClOrderId; // 撤单回报时有值
+
+    // 成交信息
+    ExecIdStr execId;
+    uint32_t execQty = 0;
+    double execPrice = 0.0;
+
+    // 拒绝信息
+    int32_t rejectCode = 0;
+    RejectText rejectText;
+
+    // 确认信息
+    uint32_t cumQty = 0;
+    uint32_t canceledQty = 0;
+};
+
+inline void from_json(const nlohmann::json &j, ExchangeReport &r) {
+    r.clOrderId = j.value("clOrderId", "");
+    if (j.contains("market"))
+        r.market = market_from_string(j["market"].get<std::string>());
+    r.securityId = j.value("securityId", "");
+    if (j.contains("side"))
+        r.side = side_from_string(j["side"].get<std::string>());
+    r.qty = j.value("qty", 0u);
+    r.price = j.value("price", 0.0);
+    r.shareholderId = j.value("shareholderId", "");
+    r.origClOrderId = j.value("origClOrderId", "");
+    r.execId = j.value("execId", "");
+    r.execQty = j.value("execQty", 0u);
+    r.execPrice = j.value("execPrice", 0.0);
+    r.rejectCode = j.value("rejectCode", 0);
+    r.rejectText = j.value("rejectText", "");
+    r.cumQty = j.value("cumQty", 0u);
+    r.canceledQty = j.value("canceledQty", 0u);
+}
+
+inline void to_json(nlohmann::json &j, const ExchangeReport &r) {
+    j["clOrderId"] = r.clOrderId.str();
+    j["market"] = to_string(r.market);
+    j["securityId"] = r.securityId.str();
+    j["side"] = to_string(r.side);
+    if (r.qty > 0)
+        j["qty"] = r.qty;
+    if (r.price > 0)
+        j["price"] = r.price;
+    if (!r.shareholderId.empty())
+        j["shareholderId"] = r.shareholderId.str();
+    if (!r.origClOrderId.empty())
+        j["origClOrderId"] = r.origClOrderId.str();
+    if (!r.execId.empty()) {
+        j["execId"] = r.execId.str();
+        j["execQty"] = r.execQty;
+        j["execPrice"] = r.execPrice;
+    }
+    if (r.rejectCode != 0) {
+        j["rejectCode"] = r.rejectCode;
+        j["rejectText"] = r.rejectText.str();
+    }
+    if (r.cumQty > 0)
+        j["cumQty"] = r.cumQty;
+    if (r.canceledQty > 0)
+        j["canceledQty"] = r.canceledQty;
+}
+
+// ============================================================
+// 回调类型别名
+// ============================================================
+using ClientReport = std::variant<OrderResponse, CancelResponse>;
+using ExchangeRequest = std::variant<Order, CancelOrder>;
+
+/// 将 ClientReport variant 转为 JSON（供边界使用）
+inline nlohmann::json to_json_report(const ClientReport &report) {
+    return std::visit(
+        [](const auto &r) -> nlohmann::json {
+            nlohmann::json j;
+            to_json(j, r);
+            return j;
+        },
+        report);
+}
+
+/// 将 ExchangeRequest variant 转为 JSON（供边界使用）
+inline nlohmann::json to_json_request(const ExchangeRequest &req) {
+    return std::visit(
+        [](const auto &r) -> nlohmann::json {
+            nlohmann::json j;
+            to_json(j, r);
+            return j;
+        },
+        req);
+}
 
 } // namespace hdf

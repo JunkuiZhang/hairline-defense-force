@@ -43,7 +43,7 @@ int main(int argc, char *argv[]) {
     // 统计计数器
     int orderCount = 0, cancelCount = 0, errorCount = 0;
 
-    system.setSendToClient([](const nlohmann::json &output) {});
+    system.setSendToClient([](const hdf::ClientReport &) {});
 
     // 逐行读取并处理
     std::string line;

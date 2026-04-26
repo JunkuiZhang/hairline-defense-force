@@ -281,7 +281,7 @@ static void benchCancel(const Config &cfg) {
         secIds[i] = makeSecId(i);
 
     int total = cfg.warmup + cfg.numOrders;
-    std::vector<std::string> orderIds;
+    std::vector<hdf::OrderId> orderIds;
     orderIds.reserve(total);
     for (int i = 0; i < total; ++i) {
         auto side = sideDist(rng) == 0 ? hdf::Side::BUY : hdf::Side::SELL;

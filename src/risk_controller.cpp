@@ -61,7 +61,7 @@ void RiskController::onOrderAccepted(const Order &order) {
     }
 }
 
-void RiskController::onOrderCanceled(const std::string &origClOrderId) {
+void RiskController::onOrderCanceled(const OrderId &origClOrderId) {
     // 查找待撤销订单是否存在
     auto it = orderMap_.find(origClOrderId);
     if (it == orderMap_.end()) {
@@ -106,7 +106,7 @@ void RiskController::onOrderCanceled(const std::string &origClOrderId) {
     orderMap_.erase(it);
 }
 
-void RiskController::onOrderExecuted(const std::string &clOrderId,
+void RiskController::onOrderExecuted(const OrderId &clOrderId,
                                      uint32_t execQty) {
     // 查找发生交易的订单
     auto it = orderMap_.find(clOrderId);
@@ -155,12 +155,13 @@ void RiskController::onOrderExecuted(const std::string &clOrderId,
 }
 
 // 辅助函数实现：生成组合键
-std::string RiskController::makeKey(const std::string &shareholderId,
+std::string RiskController::makeKey(const ShareholderId &shareholderId,
                                     Market market,
-                                    const std::string &securityId) {
+                                    const SecurityId &securityId) {
     // 简单拼接，使用下划线分隔，确保唯一性
     // Market 枚举转 int，保证 key 的紧凑和唯一
-    return shareholderId + "_" + std::to_string((int)market) + "_" + securityId;
+    return shareholderId.str() + "_" + std::to_string((int)market) + "_" +
+           securityId.str();
 }
 
 } // namespace hdf

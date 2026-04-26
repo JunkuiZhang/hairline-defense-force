@@ -171,21 +171,31 @@ static RoundResult runRound(const Config &cfg, int numBuckets) {
     };
     std::vector<OrderTiming> timings(actualTotal);
 
-    auto parseIdx = [&](const std::string &id) -> int {
-        if (id.size() < 2 || id[0] != 'M')
+    auto parseIdx = [&](const hdf::OrderId &id) -> int {
+        if (id.empty() || id.data[0] != 'M')
             return -1;
         int x = std::atoi(id.c_str() + 1);
         int idx = x - cfg.warmupOrders;
         return (idx >= 0 && idx < actualTotal) ? idx : -1;
     };
 
-    system.setSendToClient([&](const nlohmann::json &resp) {
-        if (resp.contains("execId"))
-            matchedCount.fetch_add(1, std::memory_order_relaxed);
-        else if (resp.contains("rejectCode"))
-            rejectedCount.fetch_add(1, std::memory_order_relaxed);
+    system.setSendToClient([&](const hdf::ClientReport &report) {
+        hdf::OrderId orderId;
+        std::visit(
+            [&](const auto &r) {
+                using T = std::decay_t<decltype(r)>;
+                if constexpr (std::is_same_v<T, hdf::OrderResponse>) {
+                    if (!r.execId.empty())
+                        matchedCount.fetch_add(1, std::memory_order_relaxed);
+                    else if (r.rejectCode != 0)
+                        rejectedCount.fetch_add(1, std::memory_order_relaxed);
+                    orderId = r.clOrderId;
+                } else {
+                    orderId = r.clOrderId;
+                }
+            },
+            report);
 
-        std::string orderId = resp.value("clOrderId", "");
         int idx = parseIdx(orderId);
         if (idx >= 0 && timings[idx].first_response_ns == 0) {
             timings[idx].first_response_ns =

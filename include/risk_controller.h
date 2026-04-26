@@ -51,7 +51,7 @@ class RiskController {
      *
      * @param origClOrderId 原始订单的客户订单ID。
      */
-    void onOrderCanceled(const std::string &origClOrderId);
+    void onOrderCanceled(const OrderId &origClOrderId);
 
     /**
      * @brief 订单成交时的回调。
@@ -61,17 +61,17 @@ class RiskController {
      * @param clOrderId 客户订单ID。
      * @param execQty 成交数量。
      */
-    void onOrderExecuted(const std::string &clOrderId, uint32_t execQty);
+    void onOrderExecuted(const OrderId &clOrderId, uint32_t execQty);
 
   private:
     /**
      * @brief 订单详细信息，用于内部维护状态。
      */
     struct OrderInfo {
-        std::string clOrderId;     // 客户订单ID
-        std::string shareholderId; // 股东ID
+        OrderId clOrderId;         // 客户订单ID
+        ShareholderId shareholderId; // 股东ID
         Market market;             // 交易市场
-        std::string securityId;    // 股票代码
+        SecurityId securityId;     // 股票代码
         Side side;                 // 买卖方向
         double price;              // 订单价格
         uint32_t remainingQty;     // 剩余未成交数量
@@ -79,8 +79,8 @@ class RiskController {
 
     // 辅助函数：生成组合键
     // Key: shareholderId + market + securityId
-    std::string makeKey(const std::string &shareholderId, Market market,
-                        const std::string &securityId);
+    std::string makeKey(const ShareholderId &shareholderId, Market market,
+                        const SecurityId &securityId);
 
     // 组合键 -> 该方向的总挂单数量
     // 只有买单会存入 buySide_，卖单存入 sellSide_
@@ -90,7 +90,7 @@ class RiskController {
 
     // orderId -> 订单详细信息，用于快速查找订单归属
     // 用于撤单和成交时快速定位订单
-    std::unordered_map<std::string, OrderInfo> orderMap_;
+    std::unordered_map<OrderId, OrderInfo> orderMap_;
 };
 
 } // namespace hdf

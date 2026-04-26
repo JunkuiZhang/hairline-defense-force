@@ -57,7 +57,7 @@ class MatchingEngine {
     /**
      * @brief 从内部订单簿中移除订单。
      */
-    CancelResponse cancelOrder(const std::string &clOrderId);
+    CancelResponse cancelOrder(const OrderId &clOrderId);
 
     /**
      * @brief 减少订单簿中指定订单的数量。
@@ -67,7 +67,7 @@ class MatchingEngine {
      * @param clOrderId 订单的唯一编号。
      * @param qty 要减少的数量。
      */
-    void reduceOrderQty(const std::string &clOrderId, uint32_t qty);
+    void reduceOrderQty(const OrderId &clOrderId, uint32_t qty);
 
     /**
      * @brief 查询指定订单是否仍在订单簿中。
@@ -75,7 +75,7 @@ class MatchingEngine {
      * @param clOrderId 订单的唯一编号。
      * @return true 如果订单仍在订单簿中。
      */
-    bool hasOrder(const std::string &clOrderId) const;
+    bool hasOrder(const OrderId &clOrderId) const;
 
     /**
      * @brief 获取所有证券的订单簿快照，返回买卖盘口的价格档位信息（聚合）。
@@ -94,7 +94,7 @@ class MatchingEngine {
      * @param market 市场
      * @return nlohmann::json 包含 bids 和 asks 数组的 JSON 对象。
      */
-    nlohmann::json getSnapshot(const std::string &securityId,
+    nlohmann::json getSnapshot(const SecurityId &securityId,
                                Market market) const;
 
     /**
@@ -106,7 +106,7 @@ class MatchingEngine {
      * @param market 市场（如 XSHG、XHKG）
      * @return MarketData 包含 bidPrice 和 askPrice
      */
-    MarketData getBestQuote(const std::string &securityId, Market market) const;
+    MarketData getBestQuote(const SecurityId &securityId, Market market) const;
 
   private:
     /**
@@ -116,9 +116,8 @@ class MatchingEngine {
      * 每个 (market, securityId) 对应一个独立的 SecurityBook，
      * 保证不同市场或不同证券的订单完全隔离，撮合时无需 securityId 比较。
      */
-    static std::string makeBookKey(const std::string &securityId,
-                                   Market market) {
-        return to_string(market) + "+" + securityId;
+    static BookKey makeBookKey(const SecurityId &securityId, Market market) {
+        return makeRouteKey(market, securityId);
     }
 
     /**
@@ -150,23 +149,23 @@ class MatchingEngine {
      * @brief 所有证券+市场的订单簿集合。
      * key = makeBookKey(securityId, market)
      */
-    std::unordered_map<std::string, SecurityBook> books_;
+    std::unordered_map<BookKey, SecurityBook> books_;
 
     /**
      * @brief 订单ID到订单簿位置的反向索引。
      */
     struct OrderLocation {
-        std::string bookKey; // 所属 SecurityBook 的 key
+        BookKey bookKey; // 所属 SecurityBook 的 key
         double price;
         Side side;
     };
-    std::unordered_map<std::string, OrderLocation> orderIndex_;
+    std::unordered_map<OrderId, OrderLocation> orderIndex_;
 
     /**
      * @brief 全局成交编号计数器。
      */
     uint64_t nextExecId_ = 1;
-    std::string generateExecId();
+    ExecIdStr generateExecId();
 };
 
 } // namespace hdf

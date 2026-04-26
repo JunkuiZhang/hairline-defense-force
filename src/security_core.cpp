@@ -26,8 +26,7 @@ void SecurityCore::setSendMarketData(SendMarketData callback) {
 void SecurityCore::setLogger(TradeLogger *logger) { logger_ = logger; }
 
 // ============================================================
-// handleOrder —— 处理新订单
-// 流程: 解析JSON → 风控检查 → 撮合匹配 → 发送回报
+// handleOrder —— 处理新订单（JSON 入口，仅做解析）
 // ============================================================
 void SecurityCore::handleOrder(const nlohmann::json &input) {
     // 解析 JSON → 委托给 struct 版本
@@ -36,12 +35,15 @@ void SecurityCore::handleOrder(const nlohmann::json &input) {
         order = input.get<Order>();
     } catch (const std::exception &e) {
         if (sendToClient_) {
-            nlohmann::json response;
-            response["clOrderId"] = input.value("clOrderId", "");
-            response["rejectCode"] = ORDER_INVALID_FORMAT_REJECT_CODE;
-            response["rejectText"] =
-                ORDER_INVALID_FORMAT_REJECT_REASON + ": " + e.what();
-            sendToClient_(response);
+            OrderResponse resp;
+            resp.clOrderId = input.value("clOrderId", "");
+            resp.rejectCode = ORDER_INVALID_FORMAT_REJECT_CODE;
+            std::string msg =
+                std::string(ORDER_INVALID_FORMAT_REJECT_REASON) + ": " +
+                e.what();
+            resp.rejectText = msg;
+            resp.type = OrderResponse::REJECT;
+            sendToClient_(resp);
         }
         return;
     }
@@ -62,43 +64,45 @@ void SecurityCore::handleOrder(Order order) {
     // 自成交（同一股东在同一证券的买卖对冲）→ 拒绝
     if (riskResult == RiskController::RiskCheckResult::CROSS_TRADE) {
         if (sendToClient_) {
-            nlohmann::json response;
-            response["clOrderId"] = order.clOrderId;
-            response["market"] = to_string(order.market);
-            response["securityId"] = order.securityId;
-            response["side"] = to_string(order.side);
-            response["qty"] = order.qty;
-            response["price"] = order.price;
-            response["shareholderId"] = order.shareholderId;
-            response["rejectCode"] = ORDER_CROSS_TRADE_REJECT_CODE;
-            response["rejectText"] = ORDER_CROSS_TRADE_REJECT_REASON;
-            sendToClient_(response);
+            OrderResponse resp;
+            resp.clOrderId = order.clOrderId;
+            resp.market = order.market;
+            resp.securityId = order.securityId;
+            resp.side = order.side;
+            resp.qty = order.qty;
+            resp.price = order.price;
+            resp.shareholderId = order.shareholderId;
+            resp.rejectCode = ORDER_CROSS_TRADE_REJECT_CODE;
+            resp.rejectText = ORDER_CROSS_TRADE_REJECT_REASON;
+            resp.type = OrderResponse::REJECT;
+            sendToClient_(resp);
         }
         if (logger_)
-            logger_->logOrderReject(order.clOrderId,
+            logger_->logOrderReject(order.clOrderId.str(),
                                     ORDER_CROSS_TRADE_REJECT_CODE,
                                     ORDER_CROSS_TRADE_REJECT_REASON);
     } else {
         // 风控通过，进入撮合流程
         // 纯交易所模式（无上游交易所）：直接回报确认
         if (!sendToExchange_ && sendToClient_) {
-            nlohmann::json response;
-            response["clOrderId"] = order.clOrderId;
-            response["market"] = to_string(order.market);
-            response["securityId"] = order.securityId;
-            response["side"] = to_string(order.side);
-            response["qty"] = order.qty;
-            response["price"] = order.price;
-            response["shareholderId"] = order.shareholderId;
-            sendToClient_(response);
+            OrderResponse resp;
+            resp.clOrderId = order.clOrderId;
+            resp.market = order.market;
+            resp.securityId = order.securityId;
+            resp.side = order.side;
+            resp.qty = order.qty;
+            resp.price = order.price;
+            resp.shareholderId = order.shareholderId;
+            resp.type = OrderResponse::CONFIRM;
+            sendToClient_(resp);
             if (logger_)
-                logger_->logOrderConfirm(order.clOrderId);
+                logger_->logOrderConfirm(order.clOrderId.str());
         }
 
         // 3. 查找该证券最新行情，供撮合引擎参考
         std::optional<MarketData> marketData;
         const std::string marketKey =
-            to_string(order.market) + "+" + order.securityId;
+            to_string(order.market) + "+" + order.securityId.str();
         auto marketIt = latestMarketData_.find(marketKey);
         if (marketIt != latestMarketData_.end()) {
             marketData = marketIt->second;
@@ -122,14 +126,13 @@ void SecurityCore::handleOrder(Order order) {
                 for (const auto &exec : executions) {
                     cancelToActiveOrder_[exec.clOrderId] = order.clOrderId;
 
-                    nlohmann::json cancelRequest;
-                    cancelRequest["clOrderId"] = "";
-                    cancelRequest["origClOrderId"] = exec.clOrderId;
-                    cancelRequest["market"] = to_string(exec.market);
-                    cancelRequest["securityId"] = exec.securityId;
-                    cancelRequest["shareholderId"] = exec.shareholderId;
-                    cancelRequest["side"] = to_string(exec.side);
-                    sendToExchange_(cancelRequest);
+                    CancelOrder cancelReq;
+                    cancelReq.origClOrderId = exec.clOrderId;
+                    cancelReq.market = exec.market;
+                    cancelReq.securityId = exec.securityId;
+                    cancelReq.shareholderId = exec.shareholderId;
+                    cancelReq.side = exec.side;
+                    sendToExchange_(cancelReq);
                 }
             } else {
                 // 交易所模式：直接成交，推送成交回报给客户端
@@ -139,40 +142,34 @@ void SecurityCore::handleOrder(Order order) {
                                                     exec.execQty);
                     if (logger_)
                         logger_->logExecution(
-                            exec.execId, exec.clOrderId, exec.securityId,
-                            exec.side, exec.execQty, exec.execPrice, true);
+                            exec.execId.str(), exec.clOrderId.str(),
+                            exec.securityId.str(), exec.side, exec.execQty,
+                            exec.execPrice, true);
                     totalExecQty += exec.execQty;
                     if (sendToClient_) {
-                        nlohmann::json passiveResponse;
-                        passiveResponse["clOrderId"] = exec.clOrderId;
-                        passiveResponse["market"] = to_string(exec.market);
-                        passiveResponse["securityId"] = exec.securityId;
-                        passiveResponse["side"] = to_string(exec.side);
-                        passiveResponse["qty"] = exec.qty;
-                        passiveResponse["price"] = exec.price;
-                        passiveResponse["shareholderId"] = exec.shareholderId;
-                        passiveResponse["execId"] = exec.execId;
-                        passiveResponse["execQty"] = exec.execQty;
-                        passiveResponse["execPrice"] = exec.execPrice;
-                        sendToClient_(passiveResponse);
+                        // 被动方成交回报
+                        sendToClient_(exec);
 
-                        nlohmann::json activeResponse;
-                        activeResponse["clOrderId"] = order.clOrderId;
-                        activeResponse["market"] = to_string(order.market);
-                        activeResponse["securityId"] = order.securityId;
-                        activeResponse["side"] = to_string(order.side);
-                        activeResponse["qty"] = order.qty;
-                        activeResponse["price"] = order.price;
-                        activeResponse["shareholderId"] = order.shareholderId;
-                        activeResponse["execId"] = exec.execId;
-                        activeResponse["execQty"] = exec.execQty;
-                        activeResponse["execPrice"] = exec.execPrice;
-                        sendToClient_(activeResponse);
+                        // 主动方成交回报
+                        OrderResponse activeResp;
+                        activeResp.clOrderId = order.clOrderId;
+                        activeResp.market = order.market;
+                        activeResp.securityId = order.securityId;
+                        activeResp.side = order.side;
+                        activeResp.qty = order.qty;
+                        activeResp.price = order.price;
+                        activeResp.shareholderId = order.shareholderId;
+                        activeResp.execId = exec.execId;
+                        activeResp.execQty = exec.execQty;
+                        activeResp.execPrice = exec.execPrice;
+                        activeResp.type = OrderResponse::EXECUTION;
+                        sendToClient_(activeResp);
                     }
                     if (logger_)
                         logger_->logExecution(
-                            exec.execId, order.clOrderId, order.securityId,
-                            order.side, exec.execQty, exec.execPrice, false);
+                            exec.execId.str(), order.clOrderId.str(),
+                            order.securityId.str(), order.side, exec.execQty,
+                            exec.execPrice, false);
                 }
                 riskController_.onOrderExecuted(order.clOrderId, totalExecQty);
 
@@ -188,8 +185,7 @@ void SecurityCore::handleOrder(Order order) {
             // 无成交 —— 直接挂单入簿
             if (sendToExchange_) {
                 matchingEngine_.addOrder(order);
-                nlohmann::json orderJson = order;
-                sendToExchange_(orderJson);
+                sendToExchange_(order);
             } else {
                 matchingEngine_.addOrder(order);
             }
@@ -203,8 +199,7 @@ void SecurityCore::handleOrder(Order order) {
 }
 
 // ============================================================
-// handleCancel —— 处理撤单请求
-// 网关模式下区分 本地订单 和 已报交易所订单 两种路径
+// handleCancel —— 处理撤单请求（JSON 入口）
 // ============================================================
 void SecurityCore::handleCancel(const nlohmann::json &input) {
     CancelOrder order;
@@ -212,13 +207,16 @@ void SecurityCore::handleCancel(const nlohmann::json &input) {
         order = input.get<CancelOrder>();
     } catch (const std::exception &e) {
         if (sendToClient_) {
-            nlohmann::json response;
-            response["clOrderId"] = input.value("clOrderId", "");
-            response["origClOrderId"] = input.value("origClOrderId", "");
-            response["rejectCode"] = ORDER_INVALID_FORMAT_REJECT_CODE;
-            response["rejectText"] =
-                ORDER_INVALID_FORMAT_REJECT_REASON + ": " + e.what();
-            sendToClient_(response);
+            CancelResponse resp;
+            resp.clOrderId = input.value("clOrderId", "");
+            resp.origClOrderId = input.value("origClOrderId", "");
+            resp.rejectCode = ORDER_INVALID_FORMAT_REJECT_CODE;
+            std::string msg =
+                std::string(ORDER_INVALID_FORMAT_REJECT_REASON) + ": " +
+                e.what();
+            resp.rejectText = msg;
+            resp.type = CancelResponse::REJECT;
+            sendToClient_(resp);
         }
         return;
     }
@@ -234,89 +232,46 @@ void SecurityCore::handleCancel(CancelOrder order) {
                 matchingEngine_.cancelOrder(order.origClOrderId);
             if (result.type == CancelResponse::Type::REJECT) {
                 if (logger_)
-                    logger_->logCancelReject(order.origClOrderId,
+                    logger_->logCancelReject(order.origClOrderId.str(),
                                              result.rejectCode,
-                                             result.rejectText);
+                                             result.rejectText.str());
                 if (sendToClient_) {
-                    nlohmann::json response;
-                    response["clOrderId"] = order.clOrderId;
-                    response["origClOrderId"] = order.origClOrderId;
-                    response["market"] = to_string(order.market);
-                    response["securityId"] = order.securityId;
-                    response["shareholderId"] = order.shareholderId;
-                    response["side"] = to_string(order.side);
-                    response["rejectCode"] = result.rejectCode;
-                    response["rejectText"] = result.rejectText;
-                    sendToClient_(response);
+                    result.clOrderId = order.clOrderId;
+                    sendToClient_(result);
                 }
             } else {
                 riskController_.onOrderCanceled(order.origClOrderId);
                 if (logger_)
-                    logger_->logCancelConfirm(
-                        order.origClOrderId, result.canceledQty, result.cumQty);
+                    logger_->logCancelConfirm(order.origClOrderId.str(),
+                                              result.canceledQty,
+                                              result.cumQty);
                 if (sendToClient_) {
-                    nlohmann::json response;
-                    response["clOrderId"] = result.clOrderId;
-                    response["origClOrderId"] = result.origClOrderId;
-                    response["market"] = to_string(result.market);
-                    response["securityId"] = result.securityId;
-                    response["shareholderId"] = result.shareholderId;
-                    response["side"] = to_string(result.side);
-                    response["qty"] = result.qty;
-                    response["price"] = result.price;
-                    response["cumQty"] = result.cumQty;
-                    response["canceledQty"] = result.canceledQty;
-                    sendToClient_(response);
+                    sendToClient_(result);
                 }
             }
         } else {
             // 非本地订单：转发撤单请求到上游交易所
-            nlohmann::json cancelJson;
-            cancelJson["clOrderId"] = order.clOrderId;
-            cancelJson["origClOrderId"] = order.origClOrderId;
-            cancelJson["market"] = to_string(order.market);
-            cancelJson["securityId"] = order.securityId;
-            cancelJson["shareholderId"] = order.shareholderId;
-            cancelJson["side"] = to_string(order.side);
-            sendToExchange_(cancelJson);
+            sendToExchange_(order);
         }
     } else {
         CancelResponse result =
             matchingEngine_.cancelOrder(order.origClOrderId);
         if (result.type == CancelResponse::Type::REJECT) {
             if (logger_)
-                logger_->logCancelReject(order.origClOrderId, result.rejectCode,
-                                         result.rejectText);
+                logger_->logCancelReject(order.origClOrderId.str(),
+                                         result.rejectCode,
+                                         result.rejectText.str());
             if (sendToClient_) {
-                nlohmann::json response;
-                response["clOrderId"] = order.clOrderId;
-                response["origClOrderId"] = order.origClOrderId;
-                response["market"] = to_string(order.market);
-                response["securityId"] = order.securityId;
-                response["shareholderId"] = order.shareholderId;
-                response["side"] = to_string(order.side);
-                response["rejectCode"] = result.rejectCode;
-                response["rejectText"] = result.rejectText;
-                sendToClient_(response);
+                result.clOrderId = order.clOrderId;
+                sendToClient_(result);
             }
         } else {
             riskController_.onOrderCanceled(order.origClOrderId);
             if (logger_)
-                logger_->logCancelConfirm(order.origClOrderId,
+                logger_->logCancelConfirm(order.origClOrderId.str(),
                                           result.canceledQty, result.cumQty);
             if (sendToClient_) {
-                nlohmann::json response;
-                response["clOrderId"] = result.clOrderId;
-                response["origClOrderId"] = result.origClOrderId;
-                response["market"] = to_string(result.market);
-                response["securityId"] = result.securityId;
-                response["shareholderId"] = result.shareholderId;
-                response["side"] = to_string(result.side);
-                response["qty"] = result.qty;
-                response["price"] = result.price;
-                response["cumQty"] = result.cumQty;
-                response["canceledQty"] = result.canceledQty;
-                sendToClient_(response);
+                sendToClient_(result);
             }
             broadcastMarketData(order.securityId, order.market);
         }
@@ -327,28 +282,18 @@ void SecurityCore::handleCancel(CancelOrder order) {
 // handleMarketData —— 处理行情数据更新
 // 缓存每个证券的最新买一/卖一价，供撮合时参考
 // ============================================================
-void SecurityCore::handleMarketData(const nlohmann::json &input) {
-    if (!input.is_array()) {
-        return;
-    }
+void SecurityCore::handleMarketData(const std::vector<MarketDataItem> &items) {
+    for (const auto &item : items) {
+        MarketData md;
+        md.bidPrice = item.bidPrice;
+        md.askPrice = item.askPrice;
+        const std::string marketKey =
+            to_string(item.market) + "+" + item.securityId.str();
+        latestMarketData_[marketKey] = md;
 
-    for (const auto &item : input) {
-        try {
-            std::string marketStr = item.at("market").get<std::string>();
-            std::string securityId = item.at("securityId").get<std::string>();
-            Market market = market_from_string(marketStr);
-            MarketData md;
-            md.bidPrice = item.at("bidPrice").get<double>();
-            md.askPrice = item.at("askPrice").get<double>();
-            const std::string marketKey = to_string(market) + "+" + securityId;
-            latestMarketData_[marketKey] = md;
-
-            if (logger_)
-                logger_->logMarketData(securityId, market, md.bidPrice,
-                                       md.askPrice);
-        } catch (const std::exception &) {
-            continue;
-        }
+        if (logger_)
+            logger_->logMarketData(item.securityId.str(), item.market,
+                                   item.bidPrice, item.askPrice);
     }
 }
 
@@ -359,30 +304,38 @@ void SecurityCore::handleMarketData(const nlohmann::json &input) {
 //   2. 含 origClOrderId → 撤单回报（可能属于 PendingMatch 流程）
 //   3. 其他           → 普通确认回报（可能触发 PendingConfirm）
 // ============================================================
-void SecurityCore::handleResponse(const nlohmann::json &input) {
+void SecurityCore::handleResponse(const ExchangeReport &report) {
     // —— 情况1: 成交回报 ——
-    if (input.contains("execId")) {
+    if (!report.execId.empty()) {
         if (sendToClient_) {
-            sendToClient_(input);
+            OrderResponse resp;
+            resp.clOrderId = report.clOrderId;
+            resp.market = report.market;
+            resp.securityId = report.securityId;
+            resp.side = report.side;
+            resp.qty = report.qty;
+            resp.price = report.price;
+            resp.shareholderId = report.shareholderId;
+            resp.execId = report.execId;
+            resp.execQty = report.execQty;
+            resp.execPrice = report.execPrice;
+            resp.type = OrderResponse::EXECUTION;
+            sendToClient_(resp);
         }
-        std::string clOrderId = input["clOrderId"].get<std::string>();
-        uint32_t execQty = input["execQty"].get<uint32_t>();
-        matchingEngine_.reduceOrderQty(clOrderId, execQty);
-        riskController_.onOrderExecuted(clOrderId, execQty);
+        matchingEngine_.reduceOrderQty(report.clOrderId, report.execQty);
+        riskController_.onOrderExecuted(report.clOrderId, report.execQty);
         if (logger_)
-            logger_->logExecution(input.value("execId", ""), clOrderId,
-                                  input.value("securityId", ""),
-                                  side_from_string(input.value("side", "B")),
-                                  execQty, input.value("execPrice", 0.0),
-                                  false);
+            logger_->logExecution(report.execId.str(), report.clOrderId.str(),
+                                  report.securityId.str(), report.side,
+                                  report.execQty, report.execPrice, false);
         // —— 情况2: 撤单回报 ——
-    } else if (input.contains("origClOrderId")) {
-        std::string origClOrderId = input["origClOrderId"].get<std::string>();
+    } else if (!report.origClOrderId.empty()) {
+        OrderId origClOrderId = report.origClOrderId;
 
         // 检查是否属于 PendingMatch 流程（网关撮合后发起的撤单）
         auto reverseIt = cancelToActiveOrder_.find(origClOrderId);
         if (reverseIt != cancelToActiveOrder_.end()) {
-            std::string activeOrderId = reverseIt->second;
+            OrderId activeOrderId = reverseIt->second;
             cancelToActiveOrder_.erase(reverseIt);
 
             auto it = pendingMatches_.find(activeOrderId);
@@ -392,7 +345,7 @@ void SecurityCore::handleResponse(const nlohmann::json &input) {
             auto &pending = it->second;
 
             // 统计撤单结果：成功/被拒
-            if (input.contains("rejectCode")) {
+            if (report.rejectCode != 0) {
                 pending.rejectedIds.insert(origClOrderId);
             } else {
                 pending.confirmedIds.insert(origClOrderId);
@@ -405,29 +358,51 @@ void SecurityCore::handleResponse(const nlohmann::json &input) {
             }
         } else {
             // 普通撤单回报（非 PendingMatch 流程）
-            if (input.contains("rejectCode")) {
+            if (report.rejectCode != 0) {
                 if (logger_)
-                    logger_->logCancelReject(origClOrderId,
-                                             input.value("rejectCode", 0),
-                                             input.value("rejectText", ""));
+                    logger_->logCancelReject(origClOrderId.str(),
+                                             report.rejectCode,
+                                             report.rejectText.str());
                 if (sendToClient_) {
-                    sendToClient_(input);
+                    CancelResponse resp;
+                    resp.origClOrderId = origClOrderId;
+                    resp.clOrderId = report.clOrderId;
+                    resp.market = report.market;
+                    resp.securityId = report.securityId;
+                    resp.shareholderId = report.shareholderId;
+                    resp.side = report.side;
+                    resp.rejectCode = report.rejectCode;
+                    resp.rejectText = report.rejectText;
+                    resp.type = CancelResponse::REJECT;
+                    sendToClient_(resp);
                 }
             } else {
                 riskController_.onOrderCanceled(origClOrderId);
                 matchingEngine_.cancelOrder(origClOrderId);
                 if (logger_)
-                    logger_->logCancelConfirm(origClOrderId,
-                                              input.value("canceledQty", 0u),
-                                              input.value("cumQty", 0u));
+                    logger_->logCancelConfirm(origClOrderId.str(),
+                                              report.canceledQty,
+                                              report.cumQty);
                 if (sendToClient_) {
-                    sendToClient_(input);
+                    CancelResponse resp;
+                    resp.origClOrderId = origClOrderId;
+                    resp.clOrderId = report.clOrderId;
+                    resp.market = report.market;
+                    resp.securityId = report.securityId;
+                    resp.shareholderId = report.shareholderId;
+                    resp.side = report.side;
+                    resp.qty = report.qty;
+                    resp.price = report.price;
+                    resp.cumQty = report.cumQty;
+                    resp.canceledQty = report.canceledQty;
+                    resp.type = CancelResponse::CONFIRM;
+                    sendToClient_(resp);
                 }
             }
         }
         // —— 情况3: 普通确认回报 ——
     } else {
-        std::string clOrderId = input.value("clOrderId", "");
+        OrderId clOrderId = report.clOrderId;
         // 检查是否有对应的 PendingConfirm（网关撮合后重新报单的确认）
         auto confirmIt = pendingConfirms_.find(clOrderId);
         if (confirmIt != pendingConfirms_.end()) {
@@ -436,7 +411,16 @@ void SecurityCore::handleResponse(const nlohmann::json &input) {
             sendConfirmAndExecReports(pc.activeOrder, pc.confirmedExecutions);
         } else {
             if (sendToClient_) {
-                sendToClient_(input);
+                OrderResponse resp;
+                resp.clOrderId = report.clOrderId;
+                resp.market = report.market;
+                resp.securityId = report.securityId;
+                resp.side = report.side;
+                resp.qty = report.qty;
+                resp.price = report.price;
+                resp.shareholderId = report.shareholderId;
+                resp.type = OrderResponse::CONFIRM;
+                sendToClient_(resp);
             }
         }
     }
@@ -444,12 +428,8 @@ void SecurityCore::handleResponse(const nlohmann::json &input) {
 
 // ============================================================
 // resolvePendingMatch —— 网关撮合结算
-// 所有被动方撤单回报收齐后调用：
-//   - 撤单成功的 → 确认成交
-//   - 撤单被拒的 → 成交失败，数量归还
-//   - 剩余 + 失败数量 → 重新挂单并报交易所
 // ============================================================
-void SecurityCore::resolvePendingMatch(const std::string &activeOrderId) {
+void SecurityCore::resolvePendingMatch(const OrderId &activeOrderId) {
     auto it = pendingMatches_.find(activeOrderId);
     if (it == pendingMatches_.end())
         return;
@@ -499,8 +479,7 @@ void SecurityCore::resolvePendingMatch(const std::string &activeOrderId) {
         if (sendToExchange_) {
             Order remaining = pending.activeOrder;
             remaining.qty = totalUnfilledQty;
-            nlohmann::json newOrder = remaining;
-            sendToExchange_(newOrder);
+            sendToExchange_(remaining);
         }
     } else {
         // 全部成交，直接发送确认和执行回报
@@ -521,7 +500,6 @@ void SecurityCore::resolvePendingMatch(const std::string &activeOrderId) {
 
 // ============================================================
 // sendConfirmAndExecReports —— 发送订单确认 + 成交回报
-// 先发主动单确认，再逐笔发被动方和主动方的成交回报
 // ============================================================
 void SecurityCore::sendConfirmAndExecReports(
     const Order &activeOrder, const std::vector<OrderResponse> &executions) {
@@ -529,52 +507,45 @@ void SecurityCore::sendConfirmAndExecReports(
         return;
 
     if (logger_)
-        logger_->logOrderConfirm(activeOrder.clOrderId);
-    nlohmann::json confirm;
-    confirm["clOrderId"] = activeOrder.clOrderId;
-    confirm["market"] = to_string(activeOrder.market);
-    confirm["securityId"] = activeOrder.securityId;
-    confirm["side"] = to_string(activeOrder.side);
-    confirm["qty"] = activeOrder.qty;
-    confirm["price"] = activeOrder.price;
-    confirm["shareholderId"] = activeOrder.shareholderId;
+        logger_->logOrderConfirm(activeOrder.clOrderId.str());
+    OrderResponse confirm;
+    confirm.clOrderId = activeOrder.clOrderId;
+    confirm.market = activeOrder.market;
+    confirm.securityId = activeOrder.securityId;
+    confirm.side = activeOrder.side;
+    confirm.qty = activeOrder.qty;
+    confirm.price = activeOrder.price;
+    confirm.shareholderId = activeOrder.shareholderId;
+    confirm.type = OrderResponse::CONFIRM;
     sendToClient_(confirm);
 
     for (const auto &exec : executions) {
-        nlohmann::json passiveResponse;
-        passiveResponse["clOrderId"] = exec.clOrderId;
-        passiveResponse["market"] = to_string(exec.market);
-        passiveResponse["securityId"] = exec.securityId;
-        passiveResponse["side"] = to_string(exec.side);
-        passiveResponse["qty"] = exec.qty;
-        passiveResponse["price"] = exec.price;
-        passiveResponse["shareholderId"] = exec.shareholderId;
-        passiveResponse["execId"] = exec.execId;
-        passiveResponse["execQty"] = exec.execQty;
-        passiveResponse["execPrice"] = exec.execPrice;
-        sendToClient_(passiveResponse);
+        // 被动方回报
+        sendToClient_(exec);
 
         if (logger_)
-            logger_->logExecution(exec.execId, exec.clOrderId, exec.securityId,
-                                  exec.side, exec.execQty, exec.execPrice,
-                                  true);
+            logger_->logExecution(exec.execId.str(), exec.clOrderId.str(),
+                                  exec.securityId.str(), exec.side,
+                                  exec.execQty, exec.execPrice, true);
 
-        nlohmann::json activeResponse;
-        activeResponse["clOrderId"] = activeOrder.clOrderId;
-        activeResponse["market"] = to_string(activeOrder.market);
-        activeResponse["securityId"] = activeOrder.securityId;
-        activeResponse["side"] = to_string(activeOrder.side);
-        activeResponse["qty"] = activeOrder.qty;
-        activeResponse["price"] = activeOrder.price;
-        activeResponse["shareholderId"] = activeOrder.shareholderId;
-        activeResponse["execId"] = exec.execId;
-        activeResponse["execQty"] = exec.execQty;
-        activeResponse["execPrice"] = exec.execPrice;
-        sendToClient_(activeResponse);
+        // 主动方回报
+        OrderResponse activeResp;
+        activeResp.clOrderId = activeOrder.clOrderId;
+        activeResp.market = activeOrder.market;
+        activeResp.securityId = activeOrder.securityId;
+        activeResp.side = activeOrder.side;
+        activeResp.qty = activeOrder.qty;
+        activeResp.price = activeOrder.price;
+        activeResp.shareholderId = activeOrder.shareholderId;
+        activeResp.execId = exec.execId;
+        activeResp.execQty = exec.execQty;
+        activeResp.execPrice = exec.execPrice;
+        activeResp.type = OrderResponse::EXECUTION;
+        sendToClient_(activeResp);
 
         if (logger_)
-            logger_->logExecution(exec.execId, activeOrder.clOrderId,
-                                  activeOrder.securityId, activeOrder.side,
+            logger_->logExecution(exec.execId.str(), activeOrder.clOrderId.str(),
+                                  activeOrder.securityId.str(), activeOrder.side,
                                   exec.execQty, exec.execPrice, false);
     }
 }
@@ -585,25 +556,27 @@ nlohmann::json SecurityCore::queryOrderbook() const {
 }
 
 // 查询指定证券的订单簿快照
-nlohmann::json SecurityCore::queryOrderbook(const std::string &securityId,
+nlohmann::json SecurityCore::queryOrderbook(const SecurityId &securityId,
                                             Market market) const {
     return matchingEngine_.getSnapshot(securityId, market);
 }
 
 // 广播该证券最新行情（最优买卖价）
-void SecurityCore::broadcastMarketData(const std::string &securityId,
+void SecurityCore::broadcastMarketData(const SecurityId &securityId,
                                        Market market) {
     if (!sendMarketData_)
         return;
 
     MarketData md = matchingEngine_.getBestQuote(securityId, market);
 
-    nlohmann::json data = nlohmann::json::array();
-    data.push_back({{"market", to_string(market)},
-                    {"securityId", securityId},
-                    {"bidPrice", md.bidPrice},
-                    {"askPrice", md.askPrice}});
-    sendMarketData_(data);
+    std::vector<MarketDataItem> items;
+    MarketDataItem item;
+    item.market = market;
+    item.securityId = securityId;
+    item.bidPrice = md.bidPrice;
+    item.askPrice = md.askPrice;
+    items.push_back(item);
+    sendMarketData_(items);
 }
 
 } // namespace hdf

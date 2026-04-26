@@ -1,6 +1,6 @@
 #include "matching_engine.h"
 #include "types.h"
-#include <format>
+#include <cstdio>
 #include <iostream>
 
 namespace hdf {
@@ -11,9 +11,12 @@ MatchingEngine::~MatchingEngine() {}
 // ============================================================
 // B9: execId 生成
 // ============================================================
-std::string MatchingEngine::generateExecId() {
+ExecIdStr MatchingEngine::generateExecId() {
     const uint64_t currentId = nextExecId_++ % 10000000000000000ULL;
-    return std::format("EXEC{:016}", currentId);
+    ExecIdStr id;
+    std::snprintf(id.data, sizeof(id.data), "EXEC%016llu",
+                  (unsigned long long)currentId);
+    return id;
 }
 
 // ============================================================
@@ -24,7 +27,7 @@ void MatchingEngine::addOrder(const Order &order) {
     if (orderIndex_.find(order.clOrderId) != orderIndex_.end())
         return;
 
-    const std::string bookKey = makeBookKey(order.securityId, order.market);
+    const BookKey bookKey = makeBookKey(order.securityId, order.market);
     SecurityBook &sb = books_[bookKey];
 
     BookEntry entry;
@@ -63,7 +66,7 @@ MatchingEngine::match(const Order &order,
     MatchResult result;
     uint32_t remainingQty = order.qty;
 
-    const std::string bookKey = makeBookKey(order.securityId, order.market);
+    const BookKey bookKey = makeBookKey(order.securityId, order.market);
     auto bookIt = books_.find(bookKey);
     if (bookIt == books_.end()) {
         // 该证券暂无订单簿（无对手方），直接返回
@@ -201,7 +204,7 @@ MatchingEngine::match(const Order &order,
 // ============================================================
 // B7: cancelOrder
 // ============================================================
-CancelResponse MatchingEngine::cancelOrder(const std::string &clOrderId) {
+CancelResponse MatchingEngine::cancelOrder(const OrderId &clOrderId) {
     CancelResponse response;
     response.origClOrderId = clOrderId;
 
@@ -273,8 +276,7 @@ CancelResponse MatchingEngine::cancelOrder(const std::string &clOrderId) {
 // ============================================================
 // B8: reduceOrderQty
 // ============================================================
-void MatchingEngine::reduceOrderQty(const std::string &clOrderId,
-                                    uint32_t qty) {
+void MatchingEngine::reduceOrderQty(const OrderId &clOrderId, uint32_t qty) {
     auto indexIt = orderIndex_.find(clOrderId);
     if (indexIt == orderIndex_.end())
         // 订单不在簿中，忽略（可能已经完全成交或被撤单）
@@ -317,16 +319,16 @@ void MatchingEngine::reduceOrderQty(const std::string &clOrderId,
         reduceInBook(sb.askBook);
 }
 
-bool MatchingEngine::hasOrder(const std::string &clOrderId) const {
+bool MatchingEngine::hasOrder(const OrderId &clOrderId) const {
     return orderIndex_.count(clOrderId) > 0;
 }
 
 // ============================================================
 // getSnapshot(securityId, market) — 单证券快照
 // ============================================================
-nlohmann::json MatchingEngine::getSnapshot(const std::string &securityId,
+nlohmann::json MatchingEngine::getSnapshot(const SecurityId &securityId,
                                            Market market) const {
-    const std::string key = makeBookKey(securityId, market);
+    const BookKey key = makeBookKey(securityId, market);
     auto bookIt = books_.find(key);
     if (bookIt == books_.end()) {
         return {{"bids", nlohmann::json::array()},
@@ -417,10 +419,10 @@ nlohmann::json MatchingEngine::getSnapshot() const {
 // ============================================================
 // getBestQuote — O(1) 直接定位 SecurityBook
 // ============================================================
-MarketData MatchingEngine::getBestQuote(const std::string &securityId,
+MarketData MatchingEngine::getBestQuote(const SecurityId &securityId,
                                         Market market) const {
     MarketData md{0.0, 0.0};
-    const std::string key = makeBookKey(securityId, market);
+    const BookKey key = makeBookKey(securityId, market);
     auto bookIt = books_.find(key);
     if (bookIt == books_.end())
         return md;
