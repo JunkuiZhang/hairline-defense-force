@@ -1,12 +1,11 @@
 #pragma once
 
+#include "fast_hashmap.h"
 #include "types.h"
 #include <cstdint>
 #include <list>
 #include <map>
 #include <optional>
-#include <string>
-#include <unordered_map>
 #include <vector>
 
 namespace hdf {
@@ -75,7 +74,7 @@ class MatchingEngine {
      * @param clOrderId 订单的唯一编号。
      * @return true 如果订单仍在订单簿中。
      */
-    bool hasOrder(const OrderId &clOrderId) const;
+    bool hasOrder(const OrderId &clOrderId);
 
     /**
      * @brief 获取所有证券的订单簿快照，返回买卖盘口的价格档位信息（聚合）。
@@ -106,7 +105,7 @@ class MatchingEngine {
      * @param market 市场（如 XSHG、XHKG）
      * @return MarketData 包含 bidPrice 和 askPrice
      */
-    MarketData getBestQuote(const SecurityId &securityId, Market market) const;
+    MarketData getBestQuote(const SecurityId &securityId, Market market);
 
   private:
     /**
@@ -149,7 +148,8 @@ class MatchingEngine {
      * @brief 所有证券+市场的订单簿集合。
      * key = makeBookKey(securityId, market)
      */
-    std::unordered_map<BookKey, SecurityBook> books_;
+    // std::unordered_map<BookKey, SecurityBook> books_;
+    hdf::FastHashmap<BookKey, SecurityBook> books_;
 
     /**
      * @brief 订单ID到订单簿位置的反向索引。
@@ -159,7 +159,8 @@ class MatchingEngine {
         double price;
         Side side;
     };
-    std::unordered_map<OrderId, OrderLocation> orderIndex_;
+    // std::unordered_map<OrderId, OrderLocation> orderIndex_;
+    hdf::FastHashmap<OrderId, OrderLocation> orderIndex_;
 
     /**
      * @brief 全局成交编号计数器。

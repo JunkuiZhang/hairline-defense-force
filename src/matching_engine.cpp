@@ -1,11 +1,16 @@
 #include "matching_engine.h"
+#include "fast_hashmap.h"
 #include "types.h"
+#include <cstddef>
 #include <cstdio>
 #include <iostream>
 
 namespace hdf {
 
-MatchingEngine::MatchingEngine() {}
+MatchingEngine::MatchingEngine() {
+    books_.set_capacity(1000);
+    orderIndex_.set_capacity(1000000);
+}
 MatchingEngine::~MatchingEngine() {}
 
 // ============================================================
@@ -24,8 +29,11 @@ ExecIdStr MatchingEngine::generateExecId() {
 // 直接定位该证券的 SecurityBook，无需遍历其他证券。
 // ============================================================
 void MatchingEngine::addOrder(const Order &order) {
-    if (orderIndex_.find(order.clOrderId) != orderIndex_.end())
+    // if (orderIndex_.find(order.clOrderId) != orderIndex_.end())
+    //     return;
+    if (orderIndex_.get(order.clOrderId) != nullptr) {
         return;
+    }
 
     const BookKey bookKey = makeBookKey(order.securityId, order.market);
     SecurityBook &sb = books_[bookKey];
@@ -67,13 +75,19 @@ MatchingEngine::match(const Order &order,
     uint32_t remainingQty = order.qty;
 
     const BookKey bookKey = makeBookKey(order.securityId, order.market);
-    auto bookIt = books_.find(bookKey);
-    if (bookIt == books_.end()) {
-        // 该证券暂无订单簿（无对手方），直接返回
+    // auto bookIt = books_.find(bookKey);
+    // if (bookIt == books_.end()) {
+    //     // 该证券暂无订单簿（无对手方），直接返回
+    //     result.remainingQty = remainingQty;
+    //     return result;
+    // }
+    // SecurityBook &sb = bookIt->second;
+    auto book_it = books_.get(bookKey);
+    if (book_it == nullptr) {
         result.remainingQty = remainingQty;
         return result;
     }
-    SecurityBook &sb = bookIt->second;
+    SecurityBook &sb = *book_it;
 
     if (order.side == Side::BUY) {
         // ── 买单：与 askBook 撮合（卖方，价格升序）──
@@ -125,7 +139,8 @@ MatchingEngine::match(const Order &order,
 
                 // 如果对手方完全成交，从订单簿和索引中移除
                 if (entryIt->remainingQty == 0) {
-                    orderIndex_.erase(entryIt->order.clOrderId);
+                    // orderIndex_.erase(entryIt->order.clOrderId);
+                    orderIndex_.remove(entryIt->order.clOrderId);
                     entryIt = level.erase(entryIt);
                 } else {
                     ++entryIt;
@@ -183,7 +198,8 @@ MatchingEngine::match(const Order &order,
 
                 // 如果对手方完全成交，从订单簿和索引中移除
                 if (entryIt->remainingQty == 0) {
-                    orderIndex_.erase(entryIt->order.clOrderId);
+                    // orderIndex_.erase(entryIt->order.clOrderId);
+                    orderIndex_.remove(entryIt->order.clOrderId);
                     entryIt = level.erase(entryIt);
                 } else {
                     ++entryIt;
@@ -208,28 +224,34 @@ CancelResponse MatchingEngine::cancelOrder(const OrderId &clOrderId) {
     CancelResponse response;
     response.origClOrderId = clOrderId;
 
-    auto indexIt = orderIndex_.find(clOrderId);
-    if (indexIt == orderIndex_.end()) {
+    // auto indexIt = orderIndex_.find(clOrderId);
+    // if (indexIt == orderIndex_.end()) {
+    auto indexIt = orderIndex_.get(clOrderId);
+    if (indexIt == nullptr) {
         // 订单不在簿中（可能已完全成交或不存在），返回拒绝
         response.type = CancelResponse::Type::REJECT;
         response.rejectCode = 1;
         response.rejectText = "Order not found in book";
         return response;
     }
-    const OrderLocation &loc = indexIt->second;
+    const OrderLocation &loc = *indexIt;
 
-    auto bookIt = books_.find(loc.bookKey);
-    if (bookIt == books_.end()) {
+    // auto bookIt = books_.find(loc.bookKey);
+    // if (bookIt == books_.end()) {
+    auto bookIt = books_.get(loc.bookKey);
+    if (bookIt == nullptr) {
         // 订单簿不存在，说明订单索引不一致，返回拒绝并清理索引
         std::cerr << "[MatchingEngine] CRITICAL: book not found for key="
                   << loc.bookKey << "\n";
         response.type = CancelResponse::Type::REJECT;
         response.rejectCode = 2;
         response.rejectText = "Order index inconsistency";
-        orderIndex_.erase(indexIt);
+        // orderIndex_.erase(indexIt);
+        orderIndex_.remove(clOrderId);
         return response;
     }
-    SecurityBook &sb = bookIt->second;
+    // SecurityBook &sb = bookIt->second;
+    SecurityBook &sb = *bookIt;
 
     // 通用取消逻辑（模板 lambda 避免买卖方重复）
     auto doCancel = [&](auto &book) -> bool {
@@ -253,7 +275,8 @@ CancelResponse MatchingEngine::cancelOrder(const OrderId &clOrderId) {
             level.erase(entryIt);
             if (level.empty())
                 book.erase(priceIt);
-            orderIndex_.erase(indexIt);
+            // orderIndex_.erase(indexIt);
+            orderIndex_.remove(clOrderId);
             return true;
         }
         return false;
@@ -268,7 +291,8 @@ CancelResponse MatchingEngine::cancelOrder(const OrderId &clOrderId) {
         response.type = CancelResponse::Type::REJECT;
         response.rejectCode = 2;
         response.rejectText = "Order index inconsistency";
-        orderIndex_.erase(indexIt);
+        // orderIndex_.erase(indexIt);
+        orderIndex_.remove(clOrderId);
     }
     return response;
 }
@@ -277,16 +301,22 @@ CancelResponse MatchingEngine::cancelOrder(const OrderId &clOrderId) {
 // B8: reduceOrderQty
 // ============================================================
 void MatchingEngine::reduceOrderQty(const OrderId &clOrderId, uint32_t qty) {
-    auto indexIt = orderIndex_.find(clOrderId);
-    if (indexIt == orderIndex_.end())
+    // auto indexIt = orderIndex_.find(clOrderId);
+    // if (indexIt == orderIndex_.end())
+    auto indexIt = orderIndex_.get(clOrderId);
+    if (indexIt == nullptr)
         // 订单不在簿中，忽略（可能已经完全成交或被撤单）
         return;
 
-    const OrderLocation &loc = indexIt->second;
-    auto bookIt = books_.find(loc.bookKey);
-    if (bookIt == books_.end())
+    // const OrderLocation &loc = indexIt->second;
+    const OrderLocation &loc = *indexIt;
+    // auto bookIt = books_.find(loc.bookKey);
+    // if (bookIt == books_.end())
+    auto bookIt = books_.get(loc.bookKey);
+    if (bookIt == nullptr)
         return;
-    SecurityBook &sb = bookIt->second;
+    // SecurityBook &sb = bookIt->second;
+    SecurityBook &sb = *bookIt;
 
     auto reduceInBook = [&](auto &book) {
         auto priceIt = book.find(loc.price);
@@ -305,7 +335,8 @@ void MatchingEngine::reduceOrderQty(const OrderId &clOrderId, uint32_t qty) {
                 level.erase(entryIt);
                 if (level.empty())
                     book.erase(priceIt);
-                orderIndex_.erase(indexIt);
+                // orderIndex_.erase(indexIt);
+                orderIndex_.remove(clOrderId);
             } else {
                 entryIt->remainingQty -= qty;
             }
@@ -319,56 +350,62 @@ void MatchingEngine::reduceOrderQty(const OrderId &clOrderId, uint32_t qty) {
         reduceInBook(sb.askBook);
 }
 
-bool MatchingEngine::hasOrder(const OrderId &clOrderId) const {
-    return orderIndex_.count(clOrderId) > 0;
+bool MatchingEngine::hasOrder(const OrderId &clOrderId) {
+    // return orderIndex_.count(clOrderId) > 0;
+    return orderIndex_.get(clOrderId) != nullptr;
 }
 
 // ============================================================
 // getSnapshot(securityId, market) — 单证券快照
 // ============================================================
 nlohmann::json MatchingEngine::getSnapshot(const SecurityId &securityId,
-                                           Market market) const {
-    const BookKey key = makeBookKey(securityId, market);
-    auto bookIt = books_.find(key);
-    if (bookIt == books_.end()) {
-        return {{"bids", nlohmann::json::array()},
-                {"asks", nlohmann::json::array()},
-                {"totalOrders", 0}};
-    }
-    const SecurityBook &sb = bookIt->second;
+                                           Market market) const {}
+// nlohmann::json MatchingEngine::getSnapshot(const SecurityId &securityId,
+//                                            Market market) {
+//     const BookKey key = makeBookKey(securityId, market);
+//     // auto bookIt = books_.find(key);
+//     // if (bookIt == books_.end()) {
+//     auto bookIt = books_.get(key);
+//     if (bookIt == nullptr) {
+//         return {{"bids", nlohmann::json::array()},
+//                 {"asks", nlohmann::json::array()},
+//                 {"totalOrders", 0}};
+//     }
+//     // const SecurityBook &sb = bookIt->second;
+//     const SecurityBook &sb = *bookIt;
 
-    nlohmann::json bids = nlohmann::json::array();
-    int cumQty = 0, totalOrders = 0;
-    for (const auto &[price, level] : sb.bidBook) {
-        int qty = 0, cnt = 0;
-        for (const auto &e : level) {
-            qty += (int)e.remainingQty;
-            ++cnt;
-            ++totalOrders;
-        }
-        cumQty += qty;
-        bids.push_back({{"price", price},
-                        {"qty", qty},
-                        {"cumQty", cumQty},
-                        {"orderCount", cnt}});
-    }
-    nlohmann::json asks = nlohmann::json::array();
-    cumQty = 0;
-    for (const auto &[price, level] : sb.askBook) {
-        int qty = 0, cnt = 0;
-        for (const auto &e : level) {
-            qty += (int)e.remainingQty;
-            ++cnt;
-            ++totalOrders;
-        }
-        cumQty += qty;
-        asks.push_back({{"price", price},
-                        {"qty", qty},
-                        {"cumQty", cumQty},
-                        {"orderCount", cnt}});
-    }
-    return {{"bids", bids}, {"asks", asks}, {"totalOrders", totalOrders}};
-}
+//     nlohmann::json bids = nlohmann::json::array();
+//     int cumQty = 0, totalOrders = 0;
+//     for (const auto &[price, level] : sb.bidBook) {
+//         int qty = 0, cnt = 0;
+//         for (const auto &e : level) {
+//             qty += (int)e.remainingQty;
+//             ++cnt;
+//             ++totalOrders;
+//         }
+//         cumQty += qty;
+//         bids.push_back({{"price", price},
+//                         {"qty", qty},
+//                         {"cumQty", cumQty},
+//                         {"orderCount", cnt}});
+//     }
+//     nlohmann::json asks = nlohmann::json::array();
+//     cumQty = 0;
+//     for (const auto &[price, level] : sb.askBook) {
+//         int qty = 0, cnt = 0;
+//         for (const auto &e : level) {
+//             qty += (int)e.remainingQty;
+//             ++cnt;
+//             ++totalOrders;
+//         }
+//         cumQty += qty;
+//         asks.push_back({{"price", price},
+//                         {"qty", qty},
+//                         {"cumQty", cumQty},
+//                         {"orderCount", cnt}});
+//     }
+//     return {{"bids", bids}, {"asks", asks}, {"totalOrders", totalOrders}};
+// }
 
 // ============================================================
 // getSnapshot() — 聚合所有证券快照
@@ -380,20 +417,21 @@ nlohmann::json MatchingEngine::getSnapshot() const {
     std::map<double, std::pair<int, int>> aggAsks;
     int totalOrders = 0;
 
-    for (const auto &[key, sb] : books_) {
-        for (const auto &[price, level] : sb.bidBook)
-            for (const auto &e : level) {
-                aggBids[price].first += (int)e.remainingQty;
-                aggBids[price].second += 1;
-                ++totalOrders;
-            }
-        for (const auto &[price, level] : sb.askBook)
-            for (const auto &e : level) {
-                aggAsks[price].first += (int)e.remainingQty;
-                aggAsks[price].second += 1;
-                ++totalOrders;
-            }
-    }
+    // TODO:
+    // for (const auto &[key, sb] : books_) {
+    //     for (const auto &[price, level] : sb.bidBook)
+    //         for (const auto &e : level) {
+    //             aggBids[price].first += (int)e.remainingQty;
+    //             aggBids[price].second += 1;
+    //             ++totalOrders;
+    //         }
+    //     for (const auto &[price, level] : sb.askBook)
+    //         for (const auto &e : level) {
+    //             aggAsks[price].first += (int)e.remainingQty;
+    //             aggAsks[price].second += 1;
+    //             ++totalOrders;
+    //         }
+    // }
 
     nlohmann::json bids = nlohmann::json::array();
     int cumQty = 0;
@@ -420,13 +458,16 @@ nlohmann::json MatchingEngine::getSnapshot() const {
 // getBestQuote — O(1) 直接定位 SecurityBook
 // ============================================================
 MarketData MatchingEngine::getBestQuote(const SecurityId &securityId,
-                                        Market market) const {
+                                        Market market) {
     MarketData md{0.0, 0.0};
     const BookKey key = makeBookKey(securityId, market);
-    auto bookIt = books_.find(key);
-    if (bookIt == books_.end())
+    // auto bookIt = books_.find(key);
+    // if (bookIt == books_.end())
+    auto bookIt = books_.get(key);
+    if (bookIt == nullptr)
         return md;
-    const SecurityBook &sb = bookIt->second;
+    // const SecurityBook &sb = bookIt->second;
+    const SecurityBook &sb = *bookIt;
 
     // bidBook 降序，首个价格层即为最优买价（空层级已在撮合时清除）
     if (!sb.bidBook.empty())
