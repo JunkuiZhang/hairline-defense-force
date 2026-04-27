@@ -1,6 +1,7 @@
 #pragma once
 
 #include "fixed_str.h"
+#include <cstddef>
 #include <cstdint>
 #include <nlohmann/json.hpp>
 #include <stdexcept>
@@ -95,6 +96,13 @@ struct Order {
     double price;
     uint32_t qty;
     ShareholderId shareholderId;
+
+    std::optional<size_t> prev;
+    std::optional<size_t> next;
+
+    // 订单簿内部状态（不序列化）
+    uint32_t remainingQty = 0;
+    uint32_t cumQty = 0;
 };
 
 inline void from_json(const nlohmann::json &j, Order &o) {

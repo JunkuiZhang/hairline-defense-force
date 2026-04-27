@@ -551,13 +551,13 @@ void SecurityCore::sendConfirmAndExecReports(
 }
 
 // 查询完整订单簿快照
-nlohmann::json SecurityCore::queryOrderbook() const {
+nlohmann::json SecurityCore::queryOrderbook() {
     return matchingEngine_.getSnapshot();
 }
 
 // 查询指定证券的订单簿快照
 nlohmann::json SecurityCore::queryOrderbook(const SecurityId &securityId,
-                                            Market market) const {
+                                            Market market) {
     return matchingEngine_.getSnapshot(securityId, market);
 }
 

@@ -163,6 +163,15 @@ template <typename Key, typename Value> class FastHashmap {
         }
     }
 
+    /// 遍历所有有效元素
+    template <typename Fn> void for_each(Fn &&fn) {
+        for (size_t i = 0; i < capacity; ++i) {
+            if (data[i].probe_length != NULL_INDEX) {
+                fn(data[i].key, data[i].value);
+            }
+        }
+    }
+
   private:
     size_t capacity;
     std::vector<Slot> data;

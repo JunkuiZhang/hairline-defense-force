@@ -93,13 +93,13 @@ class TradeSystem {
     /**
      * @brief 获取内部订单簿快照，返回买卖盘口价格档位。
      */
-    nlohmann::json queryOrderbook() const;
+    nlohmann::json queryOrderbook();
 
     /**
      * @brief 获取指定证券的订单簿快照，路由到对应 WorkerBucket。
      */
     nlohmann::json queryOrderbook(const SecurityId &securityId,
-                                  Market market) const;
+                                  Market market);
 
     // ─── SPSC 命令队列接口（线程安全） ───────────────────────
 

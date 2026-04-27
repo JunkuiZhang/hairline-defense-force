@@ -112,7 +112,7 @@ void TradeSystem::handleResponse(const ExchangeReport &report) {
         ->core.handleResponse(report);
 }
 
-nlohmann::json TradeSystem::queryOrderbook() const {
+nlohmann::json TradeSystem::queryOrderbook() {
     if (buckets_.size() == 1) {
         return buckets_[0]->core.queryOrderbook();
     }
@@ -130,7 +130,7 @@ nlohmann::json TradeSystem::queryOrderbook() const {
 }
 
 nlohmann::json TradeSystem::queryOrderbook(const SecurityId &securityId,
-                                           Market market) const {
+                                           Market market) {
     return buckets_[routeIndex(market, securityId)]
         ->core.queryOrderbook(securityId, market);
 }

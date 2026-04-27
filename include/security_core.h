@@ -52,13 +52,13 @@ class SecurityCore {
     /**
      * @brief 获取内部订单簿快照（所有证券聚合）
      */
-    nlohmann::json queryOrderbook() const;
+    nlohmann::json queryOrderbook();
 
     /**
      * @brief 获取指定证券的订单簿快照
      */
     nlohmann::json queryOrderbook(const SecurityId &securityId,
-                                  Market market) const;
+                                  Market market);
 
   private:
     RiskController riskController_;
