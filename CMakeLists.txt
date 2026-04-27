@@ -76,6 +76,9 @@ target_link_libraries(latency_matching trade_engine)
 # latency/multicore.cpp 撮合引擎多 Bucket 并行扩展性压测
 add_executable(latency_multicore benchmarks/latency/multicore.cpp)
 target_link_libraries(latency_multicore trade_engine)
+# latency/e2e.cpp 纯端到端延迟测试 (无排队)
+add_executable(latency_e2e benchmarks/latency/e2e.cpp)
+target_link_libraries(latency_e2e trade_engine)
 
 # Tests
 enable_testing()
