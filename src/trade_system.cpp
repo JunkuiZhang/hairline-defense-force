@@ -264,26 +264,17 @@ void TradeSystem::workerLoop(WorkerBucket *bucket) {
         hdf::pin_to_core(bucket->coreId);
     }
 
-    constexpr int max_spins = 256;
-    int idle_spins = 0;
-
     while (true) {
         Command cmd;
         if (bucket->taskQueue.pop(cmd)) {
             dispatchCommand(*bucket, cmd);
-            idle_spins = 0; // 重置
             while (bucket->taskQueue.pop(cmd)) {
                 dispatchCommand(*bucket, cmd);
             }
         } else {
             if (!bucket->running.load(std::memory_order_relaxed))
                 break;
-            if (++idle_spins < max_spins) {
-                _mm_pause();
-            } else {
-                std::this_thread::yield();
-                idle_spins = max_spins / 2;
-            }
+            _mm_pause();
         }
     }
     Command cmd;
