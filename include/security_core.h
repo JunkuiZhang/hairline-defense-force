@@ -90,7 +90,7 @@ class SecurityCore {
 
     std::unordered_map<OrderId, PendingConfirm> pendingConfirms_;
     std::unordered_set<OrderId> localOnlyOrders_;
-    std::unordered_map<std::string, MarketData> latestMarketData_;
+    std::unordered_map<BookKey, MarketData> latestMarketData_;
 
     // ─── 内部方法 ─────────────────────────────────────────
     void resolvePendingMatch(const OrderId &activeOrderId);

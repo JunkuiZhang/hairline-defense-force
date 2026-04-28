@@ -1,7 +1,7 @@
 #include "matching_engine.h"
 #include "types.h"
 #include <cstddef>
-#include <cstdio>
+#include <cstring>
 #include <iostream>
 #include <map>
 
@@ -13,14 +13,17 @@ MatchingEngine::MatchingEngine() {
 }
 MatchingEngine::~MatchingEngine() {}
 
-// ============================================================
-// B9: execId 生成
-// ============================================================
 ExecIdStr MatchingEngine::generateExecId() {
-    const uint64_t currentId = nextExecId_++ % 10000000000000000ULL;
+    const uint64_t currentId = nextExecId_++;
     ExecIdStr id;
-    std::snprintf(id.data, sizeof(id.data), "EXEC%016llu",
-                  (unsigned long long)currentId);
+    std::memcpy(id.data, "EXEC", 4);
+    char *p = id.data + 20;
+    *p = '\0';
+    uint64_t v = currentId;
+    for (int i = 0; i < 16; ++i) {
+        *--p = '0' + (v % 10);
+        v /= 10;
+    }
     return id;
 }
 

@@ -162,7 +162,8 @@ class OrderBook {
 
     // ─── 价位索引 ───────────────────────────────────────────
 
-    inline size_t price_to_index(double price) const {
+    [[gnu::hot]]
+    inline size_t price_to_index(double price) const noexcept {
         int idx = static_cast<int>((price - base_price) * 100.0 + 0.5);
         assert(idx >= 0 && static_cast<size_t>(idx) < levels.size());
         return static_cast<size_t>(idx);
@@ -175,6 +176,7 @@ class OrderBook {
     // ─── 插入 ───────────────────────────────────────────────
 
     /// 插入订单，返回 pool 中的索引
+    [[gnu::hot]]
     std::optional<size_t> insert(const Order &order) {
         auto opt = pool.allocate(order);
         if (!opt.has_value())
@@ -218,6 +220,7 @@ class OrderBook {
     // ─── 移除 ───────────────────────────────────────────────
 
     /// 按 pool 索引移除订单（O(1)）
+    [[gnu::hot]]
     void remove(size_t pool_index) {
         Order &o = pool.at(pool_index);
         size_t lvl_idx = price_to_index(o.price);

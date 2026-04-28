@@ -6,6 +6,10 @@ project(hairline_defense_force)
 
 if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
     add_compile_options(-O3 -march=native -Wall -Wextra -Wpedantic)
+    # LTO: cross-module inlining, dead code elimination
+    if(CMAKE_BUILD_TYPE MATCHES "Release")
+        add_link_options(-flto)
+    endif()
 endif()
 
 include_directories(include)

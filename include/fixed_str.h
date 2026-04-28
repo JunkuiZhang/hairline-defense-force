@@ -49,11 +49,11 @@ template <size_t N> struct FixedStr {
 
     std::string str() const { return std::string(data); }
 
-    const char *c_str() const { return data; }
+    const char *c_str() const noexcept { return data; }
 
-    size_t size() const { return std::strlen(data); }
+    size_t size() const noexcept { return std::strlen(data); }
 
-    bool empty() const { return data[0] == '\0'; }
+    bool empty() const noexcept { return data[0] == '\0'; }
 
     // ─── 比较 ─────────────────────────────────────────────
 

@@ -37,44 +37,26 @@ class MatchingEngine {
      * @brief 尝试将订单与订单簿中的订单进行撮合。
      * 此函数为纯匹配操作，不会自动入簿。
      */
+    [[gnu::hot]]
     MatchResult
     match(const Order &order,
           const std::optional<MarketData> &marketData = std::nullopt);
 
-    /**
-     * @brief 添加订单到内部订单簿。
-     */
+    [[gnu::hot]]
     void addOrder(const Order &order);
 
-    /**
-     * @brief 从内部订单簿中移除订单。
-     */
+    [[gnu::hot]]
     CancelResponse cancelOrder(const OrderId &clOrderId);
 
-    /**
-     * @brief 减少订单簿中指定订单的数量。
-     */
     void reduceOrderQty(const OrderId &clOrderId, uint32_t qty);
 
-    /**
-     * @brief 查询指定订单是否仍在订单簿中。
-     */
     bool hasOrder(const OrderId &clOrderId);
 
-    /**
-     * @brief 获取所有证券的订单簿快照（聚合）。
-     */
     nlohmann::json getSnapshot();
 
-    /**
-     * @brief 获取指定证券+市场的订单簿快照。
-     */
     nlohmann::json getSnapshot(const SecurityId &securityId,
                                Market market);
 
-    /**
-     * @brief 获取指定证券的最优买卖报价。
-     */
     MarketData getBestQuote(const SecurityId &securityId, Market market);
 
   private:

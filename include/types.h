@@ -66,7 +66,8 @@ using SecurityId = FixedStr<12>;
 using ShareholderId = FixedStr<16>;
 using ExecIdStr = FixedStr<24>;
 using RejectText = FixedStr<128>;
-using BookKey = FixedStr<24>; // "XSHG+600030"
+using BookKey = FixedStr<24>;  // "XSHG+600030"
+using RiskKey = FixedStr<48>; // "SH0001_0_600000"
 
 // ─── 路由 key 生成 ─────────────────────────────────────
 

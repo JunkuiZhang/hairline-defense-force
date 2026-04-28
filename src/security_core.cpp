@@ -55,9 +55,6 @@ void SecurityCore::handleOrder(const nlohmann::json &input) {
 // 流程: 风控检查 → 撮合匹配 → 发送回报
 // ============================================================
 void SecurityCore::handleOrder(Order order) {
-    if (logger_)
-        logger_->logOrderNew(order);
-
     // 2. 风控检查：检测自成交等违规情形
     auto riskResult = riskController_.checkOrder(order);
 
@@ -83,6 +80,9 @@ void SecurityCore::handleOrder(Order order) {
                                     ORDER_CROSS_TRADE_REJECT_REASON);
     } else {
         // 风控通过，进入撮合流程
+        if (logger_)
+            logger_->logOrderNew(order);
+
         // 纯交易所模式（无上游交易所）：直接回报确认
         if (!sendToExchange_ && sendToClient_) {
             OrderResponse resp;
@@ -101,8 +101,7 @@ void SecurityCore::handleOrder(Order order) {
 
         // 3. 查找该证券最新行情，供撮合引擎参考
         std::optional<MarketData> marketData;
-        const std::string marketKey =
-            to_string(order.market) + "+" + order.securityId.str();
+        const BookKey marketKey = makeRouteKey(order.market, order.securityId);
         auto marketIt = latestMarketData_.find(marketKey);
         if (marketIt != latestMarketData_.end()) {
             marketData = marketIt->second;
@@ -287,8 +286,7 @@ void SecurityCore::handleMarketData(const std::vector<MarketDataItem> &items) {
         MarketData md;
         md.bidPrice = item.bidPrice;
         md.askPrice = item.askPrice;
-        const std::string marketKey =
-            to_string(item.market) + "+" + item.securityId.str();
+        const BookKey marketKey = makeRouteKey(item.market, item.securityId);
         latestMarketData_[marketKey] = md;
 
         if (logger_)
