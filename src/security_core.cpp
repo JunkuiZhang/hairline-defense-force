@@ -38,9 +38,8 @@ void SecurityCore::handleOrder(const nlohmann::json &input) {
             OrderResponse resp;
             resp.clOrderId = input.value("clOrderId", "");
             resp.rejectCode = ORDER_INVALID_FORMAT_REJECT_CODE;
-            std::string msg =
-                std::string(ORDER_INVALID_FORMAT_REJECT_REASON) + ": " +
-                e.what();
+            std::string msg = std::string(ORDER_INVALID_FORMAT_REJECT_REASON) +
+                              ": " + e.what();
             resp.rejectText = msg;
             resp.type = OrderResponse::REJECT;
             sendToClient_(resp);
@@ -210,9 +209,8 @@ void SecurityCore::handleCancel(const nlohmann::json &input) {
             resp.clOrderId = input.value("clOrderId", "");
             resp.origClOrderId = input.value("origClOrderId", "");
             resp.rejectCode = ORDER_INVALID_FORMAT_REJECT_CODE;
-            std::string msg =
-                std::string(ORDER_INVALID_FORMAT_REJECT_REASON) + ": " +
-                e.what();
+            std::string msg = std::string(ORDER_INVALID_FORMAT_REJECT_REASON) +
+                              ": " + e.what();
             resp.rejectText = msg;
             resp.type = CancelResponse::REJECT;
             sendToClient_(resp);
@@ -383,9 +381,8 @@ void SecurityCore::handleResponse(const ExchangeReport &report) {
                 riskController_.onOrderCanceled(origClOrderId);
                 matchingEngine_.cancelOrder(origClOrderId);
                 if (logger_)
-                    logger_->logCancelConfirm(origClOrderId.str(),
-                                              report.canceledQty,
-                                              report.cumQty);
+                    logger_->logCancelConfirm(
+                        origClOrderId.str(), report.canceledQty, report.cumQty);
                 if (sendToClient_) {
                     CancelResponse resp;
                     resp.origClOrderId = origClOrderId;
@@ -547,9 +544,10 @@ void SecurityCore::sendConfirmAndExecReports(
         sendToClient_(activeResp);
 
         if (logger_)
-            logger_->logExecution(exec.execId.str(), activeOrder.clOrderId.str(),
-                                  activeOrder.securityId.str(), activeOrder.side,
-                                  exec.execQty, exec.execPrice, false);
+            logger_->logExecution(
+                exec.execId.str(), activeOrder.clOrderId.str(),
+                activeOrder.securityId.str(), activeOrder.side, exec.execQty,
+                exec.execPrice, false);
     }
 }
 

@@ -54,8 +54,7 @@ class MatchingEngine {
 
     nlohmann::json getSnapshot();
 
-    nlohmann::json getSnapshot(const SecurityId &securityId,
-                               Market market);
+    nlohmann::json getSnapshot(const SecurityId &securityId, Market market);
 
     MarketData getBestQuote(const SecurityId &securityId, Market market);
 

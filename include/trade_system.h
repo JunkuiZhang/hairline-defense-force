@@ -98,8 +98,7 @@ class TradeSystem {
     /**
      * @brief 获取指定证券的订单簿快照，路由到对应 WorkerBucket。
      */
-    nlohmann::json queryOrderbook(const SecurityId &securityId,
-                                  Market market);
+    nlohmann::json queryOrderbook(const SecurityId &securityId, Market market);
 
     // ─── SPSC 命令队列接口（线程安全） ───────────────────────
 
@@ -181,7 +180,8 @@ class TradeSystem {
     // ─── 每 bucket 的队列操作 ────────────────────────────────
     void enqueueToWorker(size_t idx, Command cmd);
     [[gnu::hot]] void workerLoop(WorkerBucket *bucket);
-    [[gnu::hot]] static void dispatchCommand(WorkerBucket &bucket, Command &cmd);
+    [[gnu::hot]] static void dispatchCommand(WorkerBucket &bucket,
+                                             Command &cmd);
 };
 
 } // namespace hdf

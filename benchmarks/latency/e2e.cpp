@@ -40,7 +40,7 @@ int main() {
 
     hdf::pin_to_core(2);
 
-    TradeSystem ts(std::vector<int>{3});  // pin worker to core 3, main on core 2
+    TradeSystem ts(std::vector<int>{3}); // pin worker to core 3, main on core 2
 
     std::vector<uint64_t> end_tscs(ITERATIONS, 0);
     std::atomic<size_t> done_count{0};
@@ -55,8 +55,7 @@ int main() {
                         int idx = std::atoi(r.clOrderId.c_str() + 1);
                         if (idx >= WARMUP && idx < TOTAL) {
                             end_tscs[idx - WARMUP] = hdf::rdtscp_lfence();
-                            done_count.fetch_add(1,
-                                                 std::memory_order_release);
+                            done_count.fetch_add(1, std::memory_order_release);
                         }
                     }
                 }
@@ -136,9 +135,8 @@ int main() {
 
     auto to_ns = [tsc_ghz](uint64_t cycles) { return cycles / tsc_ghz; };
 
-    double mean =
-        std::accumulate(latencies.begin(), latencies.end(), 0.0) /
-        latencies.size();
+    double mean = std::accumulate(latencies.begin(), latencies.end(), 0.0) /
+                  latencies.size();
 
     auto pct = [&](double p) {
         return latencies[size_t(p / 100.0 * (latencies.size() - 1))];

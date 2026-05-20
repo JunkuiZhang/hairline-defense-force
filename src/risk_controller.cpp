@@ -10,8 +10,7 @@ RiskController::RiskController() {
 
 RiskController::~RiskController() {}
 
-RiskController::RiskCheckResult
-RiskController::checkOrder(const Order &order) {
+RiskController::RiskCheckResult RiskController::checkOrder(const Order &order) {
     if (isCrossTrade(order)) {
         return RiskCheckResult::CROSS_TRADE;
     }

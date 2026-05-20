@@ -43,9 +43,7 @@ template <size_t N> struct FixedStr {
     // ─── 转换 ─────────────────────────────────────────────
 
     // NOLINTNEXTLINE(google-explicit-constructor)
-    operator std::string_view() const {
-        return {data, std::strlen(data)};
-    }
+    operator std::string_view() const { return {data, std::strlen(data)}; }
 
     std::string str() const { return std::string(data); }
 

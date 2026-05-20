@@ -70,10 +70,10 @@ class TradeLogger {
     void logOrderReject(std::string_view clOrderId, int32_t rejectCode,
                         std::string_view rejectText);
     void logExecution(std::string_view execId, std::string_view clOrderId,
-                      std::string_view securityId, Side side,
-                      uint32_t execQty, double execPrice, bool isMaker);
-    void logCancelConfirm(std::string_view origClOrderId,
-                          uint32_t canceledQty, uint32_t cumQty);
+                      std::string_view securityId, Side side, uint32_t execQty,
+                      double execPrice, bool isMaker);
+    void logCancelConfirm(std::string_view origClOrderId, uint32_t canceledQty,
+                          uint32_t cumQty);
     void logCancelReject(std::string_view origClOrderId, int32_t rejectCode,
                          std::string_view rejectText);
     void logMarketData(std::string_view securityId, Market market,

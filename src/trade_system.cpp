@@ -108,8 +108,8 @@ void TradeSystem::handleMarketData(const std::vector<MarketDataItem> &items) {
 }
 
 void TradeSystem::handleResponse(const ExchangeReport &report) {
-    buckets_[routeIndex(report.market, report.securityId)]
-        ->core.handleResponse(report);
+    buckets_[routeIndex(report.market, report.securityId)]->core.handleResponse(
+        report);
 }
 
 nlohmann::json TradeSystem::queryOrderbook() {
@@ -131,8 +131,8 @@ nlohmann::json TradeSystem::queryOrderbook() {
 
 nlohmann::json TradeSystem::queryOrderbook(const SecurityId &securityId,
                                            Market market) {
-    return buckets_[routeIndex(market, securityId)]
-        ->core.queryOrderbook(securityId, market);
+    return buckets_[routeIndex(market, securityId)]->core.queryOrderbook(
+        securityId, market);
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -155,9 +155,8 @@ void TradeSystem::submitOrder(const nlohmann::json &input) {
             OrderResponse resp;
             resp.clOrderId = input.value("clOrderId", "");
             resp.rejectCode = ORDER_INVALID_FORMAT_REJECT_CODE;
-            std::string msg =
-                std::string(ORDER_INVALID_FORMAT_REJECT_REASON) + ": " +
-                e.what();
+            std::string msg = std::string(ORDER_INVALID_FORMAT_REJECT_REASON) +
+                              ": " + e.what();
             resp.rejectText = msg;
             resp.type = OrderResponse::REJECT;
             sendToClient_(resp);
@@ -179,9 +178,8 @@ void TradeSystem::submitCancel(const nlohmann::json &input) {
             CancelResponse resp;
             resp.clOrderId = input.value("clOrderId", "");
             resp.rejectCode = ORDER_INVALID_FORMAT_REJECT_CODE;
-            std::string msg =
-                std::string(ORDER_INVALID_FORMAT_REJECT_REASON) + ": " +
-                e.what();
+            std::string msg = std::string(ORDER_INVALID_FORMAT_REJECT_REASON) +
+                              ": " + e.what();
             resp.rejectText = msg;
             resp.type = CancelResponse::REJECT;
             sendToClient_(resp);
@@ -206,7 +204,8 @@ void TradeSystem::submitMarketData(const std::vector<MarketDataItem> &items) {
         // 单 bucket：直接打包
         for (size_t i = 0; i < items.size(); i += 8) {
             CmdMarketData cmd;
-            cmd.count = static_cast<uint8_t>(std::min(size_t(8), items.size() - i));
+            cmd.count =
+                static_cast<uint8_t>(std::min(size_t(8), items.size() - i));
             for (uint8_t j = 0; j < cmd.count; ++j) {
                 cmd.items[j] = items[i + j];
             }
@@ -223,7 +222,8 @@ void TradeSystem::submitMarketData(const std::vector<MarketDataItem> &items) {
         auto &batch = batches[i];
         for (size_t j = 0; j < batch.size(); j += 8) {
             CmdMarketData cmd;
-            cmd.count = static_cast<uint8_t>(std::min(size_t(8), batch.size() - j));
+            cmd.count =
+                static_cast<uint8_t>(std::min(size_t(8), batch.size() - j));
             for (uint8_t k = 0; k < cmd.count; ++k) {
                 cmd.items[k] = batch[j + k];
             }

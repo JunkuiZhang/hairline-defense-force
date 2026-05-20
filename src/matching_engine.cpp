@@ -23,7 +23,6 @@ ExecIdStr MatchingEngine::generateExecId() {
     return id;
 }
 
-
 // ============================================================
 // B2: addOrder
 // ============================================================
@@ -39,8 +38,7 @@ void MatchingEngine::addOrder(const Order &order) {
         sb.init(kPoolCapacityPerSide, kBasePrice, kLevelCount);
     }
 
-    OrderBook &book =
-        (order.side == Side::BUY) ? sb.bidBook : sb.askBook;
+    OrderBook &book = (order.side == Side::BUY) ? sb.bidBook : sb.askBook;
 
     auto opt = book.insert(order);
     if (!opt.has_value())
@@ -116,8 +114,8 @@ MatchingEngine::match(const Order &order,
             std::optional<size_t> nextIdx = entry.next;
 
             if (nextIdx.has_value())
-                __builtin_prefetch(
-                    &counterBook.order_at(nextIdx.value()), 0, 1);
+                __builtin_prefetch(&counterBook.order_at(nextIdx.value()), 0,
+                                   1);
 
             uint32_t matchQty = std::min(remainingQty, entry.remainingQty);
 
@@ -197,8 +195,7 @@ CancelResponse MatchingEngine::cancelOrder(const OrderId &clOrderId) {
         return response;
     }
     SecurityBook &sb = *sbPtr;
-    OrderBook &book =
-        (loc.side == Side::BUY) ? sb.bidBook : sb.askBook;
+    OrderBook &book = (loc.side == Side::BUY) ? sb.bidBook : sb.askBook;
 
     // O(1) 直接访问 order
     Order &entry = book.order_at(loc.pool_index);
@@ -233,8 +230,7 @@ void MatchingEngine::reduceOrderQty(const OrderId &clOrderId, uint32_t qty) {
     if (sbPtr == nullptr)
         return;
     SecurityBook &sb = *sbPtr;
-    OrderBook &book =
-        (loc.side == Side::BUY) ? sb.bidBook : sb.askBook;
+    OrderBook &book = (loc.side == Side::BUY) ? sb.bidBook : sb.askBook;
 
     Order &entry = book.order_at(loc.pool_index);
     entry.cumQty += qty;

@@ -75,9 +75,7 @@ class PriceBitSet {
   public:
     PriceBitSet() = default;
 
-    void init(size_t capacity) {
-        words.assign((capacity + 63) / 64, 0);
-    }
+    void init(size_t capacity) { words.assign((capacity + 63) / 64, 0); }
 
     /// 标记某个价格档位有单
     inline void set(size_t index) {
@@ -91,11 +89,13 @@ class PriceBitSet {
 
     /// 寻找 <= 当前 index 的最高有单价位 (买一撤单或向下遍历时用)
     inline std::optional<size_t> find_prev(size_t index) const {
-        if (words.empty()) return std::nullopt;
+        if (words.empty())
+            return std::nullopt;
         size_t word_idx = index / 64;
-        if (word_idx >= words.size()) word_idx = words.size() - 1;
+        if (word_idx >= words.size())
+            word_idx = words.size() - 1;
         size_t bit_idx = index % 64;
-        
+
         uint64_t word = words[word_idx];
         // 屏蔽高于 bit_idx 的位 (保留 <= bit_idx 的位)
         uint64_t mask = (bit_idx == 63) ? ~0ULL : ((1ULL << (bit_idx + 1)) - 1);
@@ -105,7 +105,8 @@ class PriceBitSet {
             return word_idx * 64 + 63 - __builtin_clzll(word);
         }
 
-        if (word_idx == 0) return std::nullopt;
+        if (word_idx == 0)
+            return std::nullopt;
 
         for (size_t w = word_idx - 1; w != (size_t)-1; --w) {
             if (words[w] != 0) {
@@ -117,9 +118,11 @@ class PriceBitSet {
 
     /// 寻找 >= 当前 index 的最低有单价位 (卖一撤单或向上遍历时用)
     inline std::optional<size_t> find_next(size_t index) const {
-        if (words.empty()) return std::nullopt;
+        if (words.empty())
+            return std::nullopt;
         size_t word_idx = index / 64;
-        if (word_idx >= words.size()) return std::nullopt;
+        if (word_idx >= words.size())
+            return std::nullopt;
         size_t bit_idx = index % 64;
 
         uint64_t word = words[word_idx];
@@ -208,9 +211,11 @@ class OrderBook {
             best_index = lvl_idx;
         } else {
             if (bid_side) {
-                if (lvl_idx > best_index.value()) best_index = lvl_idx;
+                if (lvl_idx > best_index.value())
+                    best_index = lvl_idx;
             } else {
-                if (lvl_idx < best_index.value()) best_index = lvl_idx;
+                if (lvl_idx < best_index.value())
+                    best_index = lvl_idx;
             }
         }
 
@@ -238,15 +243,16 @@ class OrderBook {
             lvl.tail = o.prev;
         }
 
-        lvl.total_volume -=
-            (o.remainingQty <= lvl.total_volume) ? o.remainingQty : lvl.total_volume;
+        lvl.total_volume -= (o.remainingQty <= lvl.total_volume)
+                                ? o.remainingQty
+                                : lvl.total_volume;
         lvl.order_count--;
 
         pool.deallocate(pool_index);
 
         if (!lvl.head.has_value()) {
             bitset.clear(lvl_idx);
-            
+
             if (best_index.has_value() && best_index.value() == lvl_idx) {
                 if (bid_side) {
                     if (lvl_idx > 0) {
@@ -281,7 +287,7 @@ class OrderBook {
     // ─── 快速遍历 ─────────────────────────────────────────
 
     std::optional<size_t> best_level_index() const { return best_index; }
-    
+
     std::optional<double> best_price() const {
         if (!best_index.has_value())
             return std::nullopt;
@@ -290,7 +296,8 @@ class OrderBook {
 
     std::optional<size_t> next_level(size_t current_idx) const {
         if (bid_side) {
-            if (current_idx == 0) return std::nullopt;
+            if (current_idx == 0)
+                return std::nullopt;
             return bitset.find_prev(current_idx - 1);
         } else {
             return bitset.find_next(current_idx + 1);
@@ -301,7 +308,7 @@ class OrderBook {
     OrderPool pool;
     std::vector<PriceLevel> levels;
     PriceBitSet bitset;
-    
+
     double base_price = 0.0;
     bool bid_side = false;
     std::optional<size_t> best_index;

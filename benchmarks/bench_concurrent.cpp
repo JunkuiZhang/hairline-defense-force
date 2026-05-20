@@ -185,9 +185,11 @@ static RoundResult runRound(const Config &cfg, int numThreads) {
     std::atomic<size_t> rejectedCount{0};
 
     system.setSendToClient([&](const hdf::ClientReport &report) {
-        if (std::holds_alternative<hdf::OrderResponse>(report) && !std::get<hdf::OrderResponse>(report).execId.empty())
+        if (std::holds_alternative<hdf::OrderResponse>(report) &&
+            !std::get<hdf::OrderResponse>(report).execId.empty())
             matchedCount.fetch_add(1, std::memory_order_relaxed);
-        else if (std::holds_alternative<hdf::OrderResponse>(report) && std::get<hdf::OrderResponse>(report).rejectCode != 0)
+        else if (std::holds_alternative<hdf::OrderResponse>(report) &&
+                 std::get<hdf::OrderResponse>(report).rejectCode != 0)
             rejectedCount.fetch_add(1, std::memory_order_relaxed);
     });
 
@@ -201,7 +203,7 @@ static RoundResult runRound(const Config &cfg, int numThreads) {
 
     // 3. 为每个线程预生成订单
     int ordersPerThread = cfg.totalOrders / numThreads;
-    int actualTotal = ordersPerThread * numThreads;
+    // int actualTotal = ordersPerThread * numThreads;
     std::vector<std::vector<nlohmann::json>> threadOrders(numThreads);
     for (int t = 0; t < numThreads; ++t) {
         threadOrders[t] =

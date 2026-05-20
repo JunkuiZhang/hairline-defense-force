@@ -148,8 +148,7 @@ void TradeLogger::logOrderConfirm(std::string_view clOrderId) {
     enqueue(std::move(record));
 }
 
-void TradeLogger::logOrderReject(std::string_view clOrderId,
-                                 int32_t rejectCode,
+void TradeLogger::logOrderReject(std::string_view clOrderId, int32_t rejectCode,
                                  std::string_view rejectText) {
     if (!isOpen_)
         return;

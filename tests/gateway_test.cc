@@ -52,10 +52,9 @@ class GatewayTest : public testing::Test {
 
     void SetUp() override {
         // 客户端回报：convert variant to JSON for test assertions
-        gateway.setSendToClient(
-            [this](const ClientReport &report) {
-                clientResponses.push_back(to_json_report(report));
-            });
+        gateway.setSendToClient([this](const ClientReport &report) {
+            clientResponses.push_back(to_json_report(report));
+        });
 
         // 前置 → 交易所：根据 variant 类型区分订单/撤单
         gateway.setSendToExchange([this](const ExchangeRequest &req) {
@@ -76,12 +75,11 @@ class GatewayTest : public testing::Test {
         });
 
         // 交易所 → 前置：交易所的"客户端"就是前置
-        exchange.setSendToClient(
-            [this](const ClientReport &report) {
-                json j = to_json_report(report);
-                ExchangeReport er = j.get<ExchangeReport>();
-                gateway.handleResponse(er);
-            });
+        exchange.setSendToClient([this](const ClientReport &report) {
+            json j = to_json_report(report);
+            ExchangeReport er = j.get<ExchangeReport>();
+            gateway.handleResponse(er);
+        });
 
         // exchange 不设置 sendToExchange_ → 纯撮合模式
     }
@@ -95,14 +93,12 @@ class PureGatewayTest : public testing::Test {
     std::vector<json> exchangeRequests; // gateway转发给交易所的请求
 
     void SetUp() override {
-        system.setSendToClient(
-            [this](const ClientReport &report) {
-                clientResponses.push_back(to_json_report(report));
-            });
-        system.setSendToExchange(
-            [this](const ExchangeRequest &req) {
-                exchangeRequests.push_back(to_json_request(req));
-            });
+        system.setSendToClient([this](const ClientReport &report) {
+            clientResponses.push_back(to_json_report(report));
+        });
+        system.setSendToExchange([this](const ExchangeRequest &req) {
+            exchangeRequests.push_back(to_json_request(req));
+        });
     }
 };
 
@@ -643,7 +639,9 @@ TEST_F(GatewayTest, MultiplePendingMatches_DifferentSecurities) {
 TEST_F(GatewayTest, MarketDataConstraint_PartialMatch) {
     // 交易所 → 前置：行情数据自动推送
     exchange.setSendMarketData(
-        [this](const std::vector<MarketDataItem> &items) { gateway.handleMarketData(items); });
+        [this](const std::vector<MarketDataItem> &items) {
+            gateway.handleMarketData(items);
+        });
 
     // 在交易所设置行情数据，XSHG市场的600030股票，卖价9.5，买价8.5
     exchange.handleOrder(
@@ -695,7 +693,9 @@ TEST_F(GatewayTest, MarketDataConstraint_PartialMatch) {
 TEST_F(GatewayTest, MarketDataConstraint_PartialMatch_Sell) {
     // 交易所 → 前置：行情数据自动推送
     exchange.setSendMarketData(
-        [this](const std::vector<MarketDataItem> &items) { gateway.handleMarketData(items); });
+        [this](const std::vector<MarketDataItem> &items) {
+            gateway.handleMarketData(items);
+        });
 
     // 在交易所设置行情数据，XSHG市场的600030股票，买价9.5，卖价10.5
     exchange.handleOrder(
@@ -929,12 +929,12 @@ TEST_F(PureGatewayTest, PartialMatch_RemainingForwardedToExchange) {
     exchangeRequests.clear();
     // 交易所发送确认回报
     system.handleResponse(json{{"clOrderId", "S1"},
-                           {"market", "XSHG"},
-                           {"securityId", "600030"},
-                           {"side", "S"},
-                           {"qty", 100},
-                           {"price", 10.0},
-                           {"shareholderId", "SH002"}});
+                               {"market", "XSHG"},
+                               {"securityId", "600030"},
+                               {"side", "S"},
+                               {"qty", 100},
+                               {"price", 10.0},
+                               {"shareholderId", "SH002"}});
     ASSERT_EQ(clientResponses.size(), 1); // 卖单确认回报
     clientResponses.clear();
 
@@ -954,15 +954,15 @@ TEST_F(PureGatewayTest, PartialMatch_RemainingForwardedToExchange) {
 
     // 交易所发送撤单确认回报
     system.handleResponse(json{{"clOrderId", "C1"},
-                           {"origClOrderId", "S1"},
-                           {"market", "XSHG"},
-                           {"securityId", "600030"},
-                           {"shareholderId", "SH002"},
-                           {"side", "S"},
-                           {"qty", 100},
-                           {"price", 10.0},
-                           {"canceledQty", 100},
-                           {"cumQty", 0}});
+                               {"origClOrderId", "S1"},
+                               {"market", "XSHG"},
+                               {"securityId", "600030"},
+                               {"shareholderId", "SH002"},
+                               {"side", "S"},
+                               {"qty", 100},
+                               {"price", 10.0},
+                               {"canceledQty", 100},
+                               {"cumQty", 0}});
     clientResponses.clear();
 
     // 交易所收到剩余400的订单
@@ -973,12 +973,12 @@ TEST_F(PureGatewayTest, PartialMatch_RemainingForwardedToExchange) {
     EXPECT_EQ(exchangeRequests[0]["price"], 10.0);
 
     system.handleResponse(json{{"clOrderId", "B1"},
-                           {"market", "XSHG"},
-                           {"securityId", "600030"},
-                           {"side", "B"},
-                           {"qty", 400},
-                           {"price", 10.0},
-                           {"shareholderId", "SH001"}});
+                               {"market", "XSHG"},
+                               {"securityId", "600030"},
+                               {"side", "B"},
+                               {"qty", 400},
+                               {"price", 10.0},
+                               {"shareholderId", "SH001"}});
     ASSERT_EQ(clientResponses.size(), 3);
 
     // 确认回报在最前（原始订单数量500）
@@ -1050,19 +1050,19 @@ TEST_F(PureGatewayTest, MarketDataConstraint_PartialMatch) {
     exchangeRequests.clear();
     // 交易所发送2个确认回报
     system.handleResponse(json{{"clOrderId", "S1"},
-                           {"market", "XSHG"},
-                           {"securityId", "600030"},
-                           {"side", "S"},
-                           {"qty", 100},
-                           {"price", 9.0},
-                           {"shareholderId", "SH002"}});
+                               {"market", "XSHG"},
+                               {"securityId", "600030"},
+                               {"side", "S"},
+                               {"qty", 100},
+                               {"price", 9.0},
+                               {"shareholderId", "SH002"}});
     system.handleResponse(json{{"clOrderId", "S2"},
-                           {"market", "XSHG"},
-                           {"securityId", "600030"},
-                           {"side", "S"},
-                           {"qty", 100},
-                           {"price", 10.0},
-                           {"shareholderId", "SH003"}});
+                               {"market", "XSHG"},
+                               {"securityId", "600030"},
+                               {"side", "S"},
+                               {"qty", 100},
+                               {"price", 10.0},
+                               {"shareholderId", "SH003"}});
     ASSERT_EQ(clientResponses.size(), 2); // 卖单确认回报
     clientResponses.clear();
 
@@ -1079,15 +1079,15 @@ TEST_F(PureGatewayTest, MarketDataConstraint_PartialMatch) {
 
     // 交易所发送撤单确认回报
     system.handleResponse(json{{"clOrderId", "C1"},
-                           {"origClOrderId", "S1"},
-                           {"market", "XSHG"},
-                           {"securityId", "600030"},
-                           {"side", "S"},
-                           {"qty", 100},
-                           {"price", 9.0},
-                           {"cumQty", 0},
-                           {"canceledQty", 100},
-                           {"shareholderId", "SH002"}});
+                               {"origClOrderId", "S1"},
+                               {"market", "XSHG"},
+                               {"securityId", "600030"},
+                               {"side", "S"},
+                               {"qty", 100},
+                               {"price", 9.0},
+                               {"cumQty", 0},
+                               {"canceledQty", 100},
+                               {"shareholderId", "SH002"}});
     clientResponses.clear();
 
     // 交易所收到剩余100的订单
@@ -1100,12 +1100,12 @@ TEST_F(PureGatewayTest, MarketDataConstraint_PartialMatch) {
 
     // 交易所发送剩余100的订单确认回报
     system.handleResponse(json{{"clOrderId", "B1"},
-                           {"market", "XSHG"},
-                           {"securityId", "600030"},
-                           {"side", "B"},
-                           {"qty", 100},
-                           {"price", 10.0},
-                           {"shareholderId", "SH001"}});
+                               {"market", "XSHG"},
+                               {"securityId", "600030"},
+                               {"side", "B"},
+                               {"qty", 100},
+                               {"price", 10.0},
+                               {"shareholderId", "SH001"}});
     ASSERT_EQ(clientResponses.size(),
               3); // 确认回报 + 卖方成交回报 + 买方成交回报
 
@@ -1161,19 +1161,19 @@ TEST_F(PureGatewayTest, MarketDataConstraint_PartialMatch_Sell) {
     exchangeRequests.clear();
     // 交易所发送2个确认回报
     system.handleResponse(json{{"clOrderId", "B1"},
-                           {"market", "XSHG"},
-                           {"securityId", "600030"},
-                           {"side", "B"},
-                           {"qty", 100},
-                           {"price", 9.0},
-                           {"shareholderId", "SH001"}});
+                               {"market", "XSHG"},
+                               {"securityId", "600030"},
+                               {"side", "B"},
+                               {"qty", 100},
+                               {"price", 9.0},
+                               {"shareholderId", "SH001"}});
     system.handleResponse(json{{"clOrderId", "B2"},
-                           {"market", "XSHG"},
-                           {"securityId", "600030"},
-                           {"side", "B"},
-                           {"qty", 100},
-                           {"price", 10.0},
-                           {"shareholderId", "SH002"}});
+                               {"market", "XSHG"},
+                               {"securityId", "600030"},
+                               {"side", "B"},
+                               {"qty", 100},
+                               {"price", 10.0},
+                               {"shareholderId", "SH002"}});
     ASSERT_EQ(clientResponses.size(), 2); // 买单确认回报
     clientResponses.clear();
 
@@ -1190,15 +1190,15 @@ TEST_F(PureGatewayTest, MarketDataConstraint_PartialMatch_Sell) {
 
     // 交易所发送撤单确认回报
     system.handleResponse(json{{"clOrderId", "C1"},
-                           {"origClOrderId", "B2"},
-                           {"market", "XSHG"},
-                           {"securityId", "600030"},
-                           {"side", "B"},
-                           {"qty", 100},
-                           {"price", 10.0},
-                           {"canceledQty", 100},
-                           {"cumQty", 0},
-                           {"shareholderId", "SH002"}});
+                               {"origClOrderId", "B2"},
+                               {"market", "XSHG"},
+                               {"securityId", "600030"},
+                               {"side", "B"},
+                               {"qty", 100},
+                               {"price", 10.0},
+                               {"canceledQty", 100},
+                               {"cumQty", 0},
+                               {"shareholderId", "SH002"}});
     clientResponses.clear();
 
     // 交易所收到剩余100的订单
@@ -1211,12 +1211,12 @@ TEST_F(PureGatewayTest, MarketDataConstraint_PartialMatch_Sell) {
 
     // 交易所发送剩余100的订单确认回报
     system.handleResponse(json{{"clOrderId", "S1"},
-                           {"market", "XSHG"},
-                           {"securityId", "600030"},
-                           {"side", "S"},
-                           {"qty", 100},
-                           {"price", 9.0},
-                           {"shareholderId", "SH003"}});
+                               {"market", "XSHG"},
+                               {"securityId", "600030"},
+                               {"side", "S"},
+                               {"qty", 100},
+                               {"price", 9.0},
+                               {"shareholderId", "SH003"}});
     ASSERT_EQ(clientResponses.size(),
               3); // 确认回报 + 卖方成交回报 + 买方成交回报
 

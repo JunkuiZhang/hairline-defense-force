@@ -71,7 +71,7 @@ using SecurityId = FixedStr<12>;
 using ShareholderId = FixedStr<16>;
 using ExecIdStr = FixedStr<24>;
 using RejectText = FixedStr<128>;
-using BookKey = FixedStr<24>;  // "XSHG+600030"
+using BookKey = FixedStr<24>; // "XSHG+600030"
 // —— 风控复合键，避免字符串拼接 ——
 struct RiskKey {
     ShareholderId shareholderId;

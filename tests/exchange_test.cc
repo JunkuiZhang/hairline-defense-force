@@ -41,10 +41,9 @@ class ExchangeTest : public testing::Test {
     std::vector<json> clientResponses;
 
     void SetUp() override {
-        system.setSendToClient(
-            [this](const ClientReport &report) {
-                clientResponses.push_back(to_json_report(report));
-            });
+        system.setSendToClient([this](const ClientReport &report) {
+            clientResponses.push_back(to_json_report(report));
+        });
         // 不设置 sendToExchange → 纯撮合模式
     }
 };
