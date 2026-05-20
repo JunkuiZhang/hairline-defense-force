@@ -44,59 +44,58 @@ int main(int argc, char *argv[]) {
     hdf::AdminServer adminServer(port);
 
     // ---- 连接 gateway → Admin UI（回报广播） ----
-    gateway.setSendToClient(
-        [&adminServer](const hdf::ClientReport &report) {
-            nlohmann::json output = hdf::to_json_report(report);
-            std::cout << "[→Client] " << output.dump() << std::endl;
-            nlohmann::json gatewayResp = output;
-            gatewayResp["type"] = "response";
-            gatewayResp["source"] = "gateway";
-            adminServer.broadcast(gatewayResp);
-        });
+    gateway.setSendToClient([&adminServer](const hdf::ClientReport &report) {
+        nlohmann::json output = hdf::to_json_report(report);
+        std::cout << "[→Client] " << output.dump() << std::endl;
+        nlohmann::json gatewayResp = output;
+        gatewayResp["type"] = "response";
+        gatewayResp["source"] = "gateway";
+        adminServer.broadcast(gatewayResp);
+    });
 
     // ---- 连接 gateway → exchange（前置转发给交易所） ----
     // 根据 variant 类型区分订单和撤单
-    gateway.setSendToExchange(
-        [&exchange](const hdf::ExchangeRequest &req) {
-            nlohmann::json j = hdf::to_json_request(req);
-            std::cout << "[→Exchange] " << j.dump() << std::endl;
-            std::visit(
-                [&exchange](const auto &r) {
-                    using T = std::decay_t<decltype(r)>;
-                    if constexpr (std::is_same_v<T, hdf::CancelOrder>) {
-                        nlohmann::json cancelJson;
-                        hdf::to_json(cancelJson, r);
-                        exchange.handleCancel(cancelJson);
-                    } else {
-                        nlohmann::json orderJson;
-                        hdf::to_json(orderJson, r);
-                        exchange.handleOrder(orderJson);
-                    }
-                },
-                req);
-        });
+    gateway.setSendToExchange([&exchange](const hdf::ExchangeRequest &req) {
+        nlohmann::json j = hdf::to_json_request(req);
+        std::cout << "[→Exchange] " << j.dump() << std::endl;
+        std::visit(
+            [&exchange](const auto &r) {
+                using T = std::decay_t<decltype(r)>;
+                if constexpr (std::is_same_v<T, hdf::CancelOrder>) {
+                    nlohmann::json cancelJson;
+                    hdf::to_json(cancelJson, r);
+                    exchange.handleCancel(cancelJson);
+                } else {
+                    nlohmann::json orderJson;
+                    hdf::to_json(orderJson, r);
+                    exchange.handleOrder(orderJson);
+                }
+            },
+            req);
+    });
 
     // ---- 连接 exchange → gateway（交易所回报返回前置） ----
     // 同时广播交易所回报供监控（加 source 标记区分来源）
-    exchange.setSendToClient(
-        [&gateway, &adminServer](const hdf::ClientReport &report) {
-            nlohmann::json resp = hdf::to_json_report(report);
-            std::cout << "[←Exchange] " << resp.dump() << std::endl;
-            // 广播交易所回报（加 source 标记供前端区分）
-            nlohmann::json exchangeResp = resp;
-            exchangeResp["type"] = "response";
-            exchangeResp["source"] = "exchange";
-            adminServer.broadcast(exchangeResp);
-            // 回报也需要流入 gateway 处理
-            hdf::ExchangeReport exchangeReport = resp.get<hdf::ExchangeReport>();
-            gateway.handleResponse(exchangeReport);
-        });
+    exchange.setSendToClient([&gateway,
+                              &adminServer](const hdf::ClientReport &report) {
+        nlohmann::json resp = hdf::to_json_report(report);
+        std::cout << "[←Exchange] " << resp.dump() << std::endl;
+        // 广播交易所回报（加 source 标记供前端区分）
+        nlohmann::json exchangeResp = resp;
+        exchangeResp["type"] = "response";
+        exchangeResp["source"] = "exchange";
+        adminServer.broadcast(exchangeResp);
+        // 回报也需要流入 gateway 处理
+        hdf::ExchangeReport exchangeReport = resp.get<hdf::ExchangeReport>();
+        gateway.handleResponse(exchangeReport);
+    });
     // exchange 不设置 sendToExchange_ → 纯撮合模式
 
     // ---- 连接 exchange → gateway（行情推送） ----
     // 交易所订单簿变动时推送 best bid/ask，前置据此做行情约束
     exchange.setSendMarketData(
-        [&gateway, &adminServer](const std::vector<hdf::MarketDataItem> &items) {
+        [&gateway,
+         &adminServer](const std::vector<hdf::MarketDataItem> &items) {
             for (const auto &item : items) {
                 nlohmann::json data;
                 data["market"] = hdf::to_string(item.market);
