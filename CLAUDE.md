@@ -29,6 +29,7 @@ cd admin && ./start.sh
 - C++23, CMake 3.28+, requires `ninja-build`.
 - FetchContent pulls `googletest` (v1.17.0) and `nlohmann/json` (v3.11.3).
 - CI enforces clang-format (LLVM style, 4-space indent) and clang-tidy on PRs.
+- Release builds use `-O3 -march=native -flto`. Benchmarks depend on these flags — changing them invalidates comparisons with `docs/benchmarks/` results.
 
 ## Architecture
 
@@ -53,21 +54,33 @@ Client / Strategy  -->  TradeSystem  -->  [Router by market+securityId hash]
 
 **RiskController** (`include/risk_controller.h`, `src/risk_controller.cpp`) detects cross-trades (same shareholder + same security + opposite side with resting quantity) in O(1) via `shareholderId+market+securityId` composite key maps tracking aggregate buy/sell volumes.
 
-**MatchingEngine** (`include/matching_engine.h`, `src/matching_engine.cpp`) uses a Limit Order Book design per `(market, securityId)`:
+**MatchingEngine** (`include/matching_engine.h`, `src/matching_engine.cpp`) uses a Limit Order Book design per `(market, securityId)`. Core data structures live in `include/lob.h`:
 - `OrderPool` — pre-allocated object pool with freelist, O(1) alloc/free
 - `PriceLevel` — intrusive doubly-linked list per price level, O(1) head/tail insert/remove
-- `PriceBitSet` — bitmap for O(1) best-price scan and next-level traversal
-- `FastHashmap` — Robin Hood open-addressing hash map for book lookup by `BookKey` and order reverse-index by `OrderId`
+- `PriceBitSet` — bitmap with `__builtin_ctzll`/`clzll` for O(1) best-price scan and next-level traversal
+- `OrderBook` — single-side (bid or ask) book combining the above three, with price discretization (tick=0.01) for O(1) level indexing
+- `FastHashmap` (`include/fast_hashmap.h`) — Robin Hood open-addressing hash map for book lookup by `BookKey` and order reverse-index by `OrderId`
+
+### Worker threading & core pinning
+
+Each `WorkerBucket` has a dedicated thread. The `TradeSystem` constructor accepts a `std::vector<int>` of core IDs — each worker thread is pinned to its assigned core via `pthread_setaffinity_np` (`include/utils.h:pin_to_core`). Submit threads push commands to SPSC queues; bucket workers pop and process serially. Worker threads busy-wait on their SPSC queue (no blocking/notification) to minimize wake-up latency.
+
+### Command flow (zero-heap types)
+
+Command variants (`CmdOrder`, `CmdCancel`, `CmdResponse`, `CmdMarketData` — see `include/trade_system.h`) carry parsed structs through the SPSC queue. Producers (submit threads) parse JSON once into structs; workers consume the structs directly. JSON is only rebuilt at the boundary when forwarding to an external exchange or logging. This eliminates per-order heap allocation and parse/re-parse overhead in the hot path.
 
 ### Lock-free SPSC queue
 
-`SpscQueue<T, N>` (`include/spsc.h`) is a pre-allocated lock-free ring buffer (power-of-2 capacity). Each `WorkerBucket` has one. Producers (submit threads) push; the bucket's worker thread pops. Only single-producer, single-consumer is safe.
+`SpscQueue<T, N>` (`include/spsc.h`) is a pre-allocated lock-free ring buffer (power-of-2 capacity, default 4096). Each `WorkerBucket` has one. Producers (submit threads) push; the bucket's worker thread pops. Only single-producer, single-consumer is safe. Uses cached head/tail to reduce cache-coherency traffic.
+
+### TSC measurement utilities
+
+`include/utils.h` provides `rdtsc_lfence`, `rdtscp_lfence`, and `calibrate_tsc_ghz` for cycle-accurate latency measurement. Benchmarks under `benchmarks/latency/` use these to measure end-to-end latency in CPU cycles, converted to nanoseconds via the calibrated TSC frequency.
 
 ### Zero-heap data types
 
 - `FixedStr<N>` (`include/fixed_str.h`) — stack-allocated string for IDs (OrderId, SecurityId, etc.). Avoids heap fragmentation on hot paths.
 - `FastHashmap<K, V>` (`include/fast_hashmap.h`) — Robin Hood hash map with backward-shift deletion. Used for order book index and order reverse-lookup.
-- Command variants (`CmdOrder`, `CmdCancel`, etc.) carry parsed structs through the SPSC queue, avoiding JSON parse/re-parse costs in the worker thread.
 
 ### Admin interface
 
@@ -81,5 +94,6 @@ Client / Strategy  -->  TradeSystem  -->  [Router by market+securityId hash]
 
 - `bin/` — all compiled binaries (set via `EXECUTABLE_OUTPUT_PATH`)
 - `lib/` — `libtrade_engine.a`
-- Key benchmarks: `benchmark` (throughput), `bench_matching` (matching-only), `bench_concurrent` (multi-thread contention), `bench_multicore` (multi-bucket scaling), `latency_e2e` (end-to-end latency with TSC measurements)
+- Throughput benchmarks: `benchmark` (single-thread full pipeline), `bench_matching` (matching-only), `bench_concurrent` (multi-thread contention), `bench_multicore` (multi-bucket scaling), `bench_network` (TCP I/O)
+- Latency benchmarks (TSC, cycle-accurate): `latency_matching` (matching-only latency), `latency_multicore` (multi-bucket latency), `latency_e2e` (end-to-end: SPSC push → worker pop → dispatch → matching → callback)
 - Tests live in `tests/`, benchmarks in `benchmarks/`, example programs in `examples/`

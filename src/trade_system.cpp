@@ -22,8 +22,8 @@ TradeSystem::TradeSystem(const std::vector<int> &cores) {
 
     for (size_t i = 0; i < numBuckets; ++i) {
         auto bucket = std::make_unique<WorkerBucket>();
-        // 记录 Core ID
         bucket->coreId = cores.empty() ? -1 : cores[i];
+        bucket->core.setLogger(&logger_);
         buckets_.push_back(std::move(bucket));
     }
 }
@@ -251,9 +251,7 @@ void TradeSystem::dispatchCommand(WorkerBucket &bucket, Command &cmd) {
             } else if constexpr (std::is_same_v<T, CmdResponse>) {
                 bucket.core.handleResponse(c.report);
             } else if constexpr (std::is_same_v<T, CmdMarketData>) {
-                std::vector<MarketDataItem> items(c.items,
-                                                   c.items + c.count);
-                bucket.core.handleMarketData(items);
+                bucket.core.handleMarketData(c.items, c.count);
             }
         },
         cmd);

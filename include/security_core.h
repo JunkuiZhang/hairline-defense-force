@@ -1,5 +1,6 @@
 #pragma once
 
+#include "fast_hashmap.h"
 #include "matching_engine.h"
 #include "risk_controller.h"
 #include "trade_logger.h"
@@ -47,6 +48,7 @@ class SecurityCore {
     void handleCancel(const nlohmann::json &input);
     void handleCancel(CancelOrder order);
     void handleMarketData(const std::vector<MarketDataItem> &items);
+    void handleMarketData(const MarketDataItem *items, size_t count);
     void handleResponse(const ExchangeReport &report);
 
     /**
@@ -90,7 +92,7 @@ class SecurityCore {
 
     std::unordered_map<OrderId, PendingConfirm> pendingConfirms_;
     std::unordered_set<OrderId> localOnlyOrders_;
-    std::unordered_map<BookKey, MarketData> latestMarketData_;
+    FastHashmap<BookKey, MarketData> latestMarketData_;
 
     // ─── 内部方法 ─────────────────────────────────────────
     void resolvePendingMatch(const OrderId &activeOrderId);

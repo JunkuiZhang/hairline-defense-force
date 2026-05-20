@@ -2,11 +2,16 @@
 
 namespace hdf {
 
-RiskController::RiskController() {}
+RiskController::RiskController() {
+    buySide_.set_capacity(1000);
+    sellSide_.set_capacity(1000);
+    orderMap_.set_capacity(1000);
+}
 
 RiskController::~RiskController() {}
 
-RiskController::RiskCheckResult RiskController::checkOrder(const Order &order) {
+RiskController::RiskCheckResult
+RiskController::checkOrder(const Order &order) {
     if (isCrossTrade(order)) {
         return RiskCheckResult::CROSS_TRADE;
     }
@@ -14,22 +19,22 @@ RiskController::RiskCheckResult RiskController::checkOrder(const Order &order) {
 }
 
 bool RiskController::isCrossTrade(const Order &order) {
-    RiskKey key = makeKey(order.shareholderId, order.market, order.securityId);
+    RiskKey key{order.shareholderId, order.market, order.securityId};
 
     if (order.side == Side::BUY) {
-        auto it = sellSide_.find(key);
-        if (it != sellSide_.end() && it->second > 0)
+        auto *v = sellSide_.get(key);
+        if (v && *v > 0)
             return true;
     } else if (order.side == Side::SELL) {
-        auto it = buySide_.find(key);
-        if (it != buySide_.end() && it->second > 0)
+        auto *v = buySide_.get(key);
+        if (v && *v > 0)
             return true;
     }
     return false;
 }
 
 void RiskController::onOrderAccepted(const Order &order) {
-    RiskKey key = makeKey(order.shareholderId, order.market, order.securityId);
+    RiskKey key{order.shareholderId, order.market, order.securityId};
 
     OrderInfo details;
     details.clOrderId = order.clOrderId;
@@ -50,88 +55,75 @@ void RiskController::onOrderAccepted(const Order &order) {
 }
 
 void RiskController::onOrderCanceled(const OrderId &origClOrderId) {
-    auto it = orderMap_.find(origClOrderId);
-    if (it == orderMap_.end())
+    auto *detailsPtr = orderMap_.get(origClOrderId);
+    if (!detailsPtr)
         return;
 
-    const auto &details = it->second;
-    RiskKey key = makeKey(details.shareholderId, details.market, details.securityId);
+    const auto &details = *detailsPtr;
+    RiskKey key{details.shareholderId, details.market, details.securityId};
 
     if (details.side == Side::BUY) {
-        auto sit = buySide_.find(key);
-        if (sit != buySide_.end()) {
-            if (sit->second >= details.remainingQty)
-                sit->second -= details.remainingQty;
+        auto *v = buySide_.get(key);
+        if (v) {
+            if (*v >= details.remainingQty)
+                *v -= details.remainingQty;
             else
-                sit->second = 0;
-            if (sit->second == 0)
-                buySide_.erase(sit);
+                *v = 0;
+            if (*v == 0)
+                buySide_.remove(key);
         }
     } else if (details.side == Side::SELL) {
-        auto sit = sellSide_.find(key);
-        if (sit != sellSide_.end()) {
-            if (sit->second >= details.remainingQty)
-                sit->second -= details.remainingQty;
+        auto *v = sellSide_.get(key);
+        if (v) {
+            if (*v >= details.remainingQty)
+                *v -= details.remainingQty;
             else
-                sit->second = 0;
-            if (sit->second == 0)
-                sellSide_.erase(sit);
+                *v = 0;
+            if (*v == 0)
+                sellSide_.remove(key);
         }
     }
 
-    orderMap_.erase(it);
+    orderMap_.remove(origClOrderId);
 }
 
 void RiskController::onOrderExecuted(const OrderId &clOrderId,
                                      uint32_t execQty) {
-    auto it = orderMap_.find(clOrderId);
-    if (it == orderMap_.end())
+    auto *detailsPtr = orderMap_.get(clOrderId);
+    if (!detailsPtr)
         return;
 
-    auto &details = it->second;
-    RiskKey key = makeKey(details.shareholderId, details.market, details.securityId);
+    auto &details = *detailsPtr;
+    RiskKey key{details.shareholderId, details.market, details.securityId};
 
     uint32_t reduceQty = std::min(execQty, details.remainingQty);
 
     if (details.side == Side::BUY) {
-        auto sit = buySide_.find(key);
-        if (sit != buySide_.end()) {
-            if (sit->second >= reduceQty)
-                sit->second -= reduceQty;
+        auto *v = buySide_.get(key);
+        if (v) {
+            if (*v >= reduceQty)
+                *v -= reduceQty;
             else
-                sit->second = 0;
-            if (sit->second == 0)
-                buySide_.erase(sit);
+                *v = 0;
+            if (*v == 0)
+                buySide_.remove(key);
         }
     } else if (details.side == Side::SELL) {
-        auto sit = sellSide_.find(key);
-        if (sit != sellSide_.end()) {
-            if (sit->second >= reduceQty)
-                sit->second -= reduceQty;
+        auto *v = sellSide_.get(key);
+        if (v) {
+            if (*v >= reduceQty)
+                *v -= reduceQty;
             else
-                sit->second = 0;
-            if (sit->second == 0)
-                sellSide_.erase(sit);
+                *v = 0;
+            if (*v == 0)
+                sellSide_.remove(key);
         }
     }
 
     details.remainingQty -= reduceQty;
     if (details.remainingQty == 0) {
-        orderMap_.erase(it);
+        orderMap_.remove(clOrderId);
     }
-}
-
-RiskKey RiskController::makeKey(const ShareholderId &shareholderId,
-                                Market market,
-                                const SecurityId &securityId) {
-    RiskKey key;
-    key.append(std::string_view(shareholderId));
-    key.append("_");
-    char m = '0' + static_cast<char>(market);
-    key.append(std::string_view(&m, 1));
-    key.append("_");
-    key.append(std::string_view(securityId));
-    return key;
 }
 
 } // namespace hdf

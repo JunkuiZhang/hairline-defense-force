@@ -180,8 +180,8 @@ class TradeSystem {
 
     // ─── 每 bucket 的队列操作 ────────────────────────────────
     void enqueueToWorker(size_t idx, Command cmd);
-    void workerLoop(WorkerBucket *bucket);
-    static void dispatchCommand(WorkerBucket &bucket, Command &cmd);
+    [[gnu::hot]] void workerLoop(WorkerBucket *bucket);
+    [[gnu::hot]] static void dispatchCommand(WorkerBucket &bucket, Command &cmd);
 };
 
 } // namespace hdf

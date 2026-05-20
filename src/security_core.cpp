@@ -7,7 +7,7 @@
 // 由 TradeSystem 按 hash(market+securityId) 路由分配到对应的 WorkerBucket 中。
 namespace hdf {
 
-SecurityCore::SecurityCore() {}
+SecurityCore::SecurityCore() { latestMarketData_.set_capacity(1000); }
 
 SecurityCore::~SecurityCore() {}
 
@@ -102,9 +102,9 @@ void SecurityCore::handleOrder(Order order) {
         // 3. 查找该证券最新行情，供撮合引擎参考
         std::optional<MarketData> marketData;
         const BookKey marketKey = makeRouteKey(order.market, order.securityId);
-        auto marketIt = latestMarketData_.find(marketKey);
-        if (marketIt != latestMarketData_.end()) {
-            marketData = marketIt->second;
+        auto *mdPtr = latestMarketData_.get(marketKey);
+        if (mdPtr) {
+            marketData = *mdPtr;
         }
 
         // 4. 撮合匹配：尝试与订单簿中的对手方订单成交
@@ -282,7 +282,12 @@ void SecurityCore::handleCancel(CancelOrder order) {
 // 缓存每个证券的最新买一/卖一价，供撮合时参考
 // ============================================================
 void SecurityCore::handleMarketData(const std::vector<MarketDataItem> &items) {
-    for (const auto &item : items) {
+    handleMarketData(items.data(), items.size());
+}
+
+void SecurityCore::handleMarketData(const MarketDataItem *items, size_t count) {
+    for (size_t i = 0; i < count; ++i) {
+        const auto &item = items[i];
         MarketData md;
         md.bidPrice = item.bidPrice;
         md.askPrice = item.askPrice;

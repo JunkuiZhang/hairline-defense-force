@@ -2,7 +2,6 @@
 #include "types.h"
 #include <cstddef>
 #include <cstring>
-#include <iostream>
 #include <map>
 
 namespace hdf {
@@ -14,16 +13,13 @@ MatchingEngine::MatchingEngine() {
 MatchingEngine::~MatchingEngine() {}
 
 ExecIdStr MatchingEngine::generateExecId() {
-    const uint64_t currentId = nextExecId_++;
+    const uint64_t v = nextExecId_++;
     ExecIdStr id;
     std::memcpy(id.data, "EXEC", 4);
-    char *p = id.data + 20;
-    *p = '\0';
-    uint64_t v = currentId;
-    for (int i = 0; i < 16; ++i) {
-        *--p = '0' + (v % 10);
-        v /= 10;
-    }
+    static constexpr char hex[] = "0123456789abcdef";
+    for (int i = 0; i < 16; ++i)
+        id.data[19 - i] = hex[(v >> (i * 4)) & 0xF];
+    id.data[20] = '\0';
     return id;
 }
 
@@ -47,10 +43,8 @@ void MatchingEngine::addOrder(const Order &order) {
         (order.side == Side::BUY) ? sb.bidBook : sb.askBook;
 
     auto opt = book.insert(order);
-    if (!opt.has_value()) {
-        std::cerr << "[MatchingEngine] CRITICAL: OrderPool exhausted\n";
+    if (!opt.has_value())
         return;
-    }
 
     orderIndex_[order.clOrderId] = {bookKey, order.side, opt.value()};
 }
@@ -69,6 +63,7 @@ MatchingEngine::MatchResult
 MatchingEngine::match(const Order &order,
                       const std::optional<MarketData> &marketData) {
     MatchResult result;
+    result.executions.reserve(4); // 消除常见 1-4 笔成交场景的堆分配
     uint32_t remainingQty = order.qty;
 
     const BookKey bookKey = makeBookKey(order.securityId, order.market);
@@ -119,6 +114,10 @@ MatchingEngine::match(const Order &order,
             size_t curIdx = cur.value();
             Order &entry = counterBook.order_at(curIdx);
             std::optional<size_t> nextIdx = entry.next;
+
+            if (nextIdx.has_value())
+                __builtin_prefetch(
+                    &counterBook.order_at(nextIdx.value()), 0, 1);
 
             uint32_t matchQty = std::min(remainingQty, entry.remainingQty);
 
@@ -191,8 +190,6 @@ CancelResponse MatchingEngine::cancelOrder(const OrderId &clOrderId) {
 
     auto *sbPtr = books_.get(loc.bookKey);
     if (sbPtr == nullptr) {
-        std::cerr << "[MatchingEngine] CRITICAL: book not found for key="
-                  << loc.bookKey << "\n";
         response.type = CancelResponse::Type::REJECT;
         response.rejectCode = 2;
         response.rejectText = "Order index inconsistency";

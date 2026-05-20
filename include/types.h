@@ -59,6 +59,11 @@ inline Market market_from_string(const std::string &s) {
     throw std::invalid_argument("Invalid market: " + s);
 }
 
+inline constexpr const char *market_cstr(Market m) {
+    constexpr const char *names[] = {"XSHG", "XSHE", "BJSE", "?"};
+    return names[static_cast<int>(m)];
+}
+
 // ─── 常用定长字符串类型别名 ─────────────────────────────
 
 using OrderId = FixedStr<24>;
@@ -67,12 +72,22 @@ using ShareholderId = FixedStr<16>;
 using ExecIdStr = FixedStr<24>;
 using RejectText = FixedStr<128>;
 using BookKey = FixedStr<24>;  // "XSHG+600030"
-using RiskKey = FixedStr<48>; // "SH0001_0_600000"
+// —— 风控复合键，避免字符串拼接 ——
+struct RiskKey {
+    ShareholderId shareholderId;
+    Market market;
+    SecurityId securityId;
+
+    bool operator==(const RiskKey &o) const {
+        return shareholderId == o.shareholderId && market == o.market &&
+               securityId == o.securityId;
+    }
+};
 
 // ─── 路由 key 生成 ─────────────────────────────────────
 
 inline BookKey makeRouteKey(Market market, const SecurityId &securityId) {
-    BookKey key(to_string(market));
+    BookKey key(market_cstr(market));
     key.append("+");
     key.append(std::string_view(securityId));
     return key;
@@ -90,20 +105,20 @@ inline BookKey makeRouteKey(const std::string &market,
 // 3.1 交易订单
 // ============================================================
 struct Order {
-    OrderId clOrderId;
-    Market market;
-    SecurityId securityId;
-    Side side;
+    // 8 字节对齐字段前置，消除 padding
     double price;
-    uint32_t qty;
-    ShareholderId shareholderId;
-
     std::optional<size_t> prev;
     std::optional<size_t> next;
 
-    // 订单簿内部状态（不序列化）
+    Market market;
+    Side side;
+    uint32_t qty;
     uint32_t remainingQty = 0;
     uint32_t cumQty = 0;
+
+    OrderId clOrderId;
+    SecurityId securityId;
+    ShareholderId shareholderId;
 };
 
 inline void from_json(const nlohmann::json &j, Order &o) {
@@ -373,3 +388,15 @@ inline nlohmann::json to_json_request(const ExchangeRequest &req) {
 }
 
 } // namespace hdf
+
+template <> struct std::hash<hdf::RiskKey> {
+    size_t operator()(const hdf::RiskKey &k) const noexcept {
+        size_t h =
+            std::hash<std::string_view>{}(std::string_view(k.shareholderId));
+        h ^= std::hash<int>{}(static_cast<int>(k.market)) + 0x9e3779b9 +
+             (h << 6) + (h >> 2);
+        h ^= std::hash<std::string_view>{}(std::string_view(k.securityId)) +
+             0x9e3779b9 + (h << 6) + (h >> 2);
+        return h;
+    }
+};

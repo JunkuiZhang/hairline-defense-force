@@ -1,9 +1,7 @@
 #pragma once
 
+#include "fast_hashmap.h"
 #include "types.h"
-#include <string>
-#include <unordered_map>
-#include <vector>
 
 namespace hdf {
 
@@ -34,13 +32,9 @@ class RiskController {
         uint32_t remainingQty;
     };
 
-    RiskKey makeKey(const ShareholderId &shareholderId, Market market,
-                    const SecurityId &securityId);
-
-    std::unordered_map<RiskKey, uint32_t> buySide_;
-    std::unordered_map<RiskKey, uint32_t> sellSide_;
-
-    std::unordered_map<OrderId, OrderInfo> orderMap_;
+    FastHashmap<RiskKey, uint32_t> buySide_;
+    FastHashmap<RiskKey, uint32_t> sellSide_;
+    FastHashmap<OrderId, OrderInfo> orderMap_;
 };
 
 } // namespace hdf
