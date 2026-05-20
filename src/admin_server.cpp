@@ -226,7 +226,10 @@ void AdminServer::acceptNewClients() {
 
         {
             std::lock_guard<std::mutex> lock(clientsMutex_);
-            clients_.emplace(clientFd, ClientInfo{clientFd});
+            clients_.emplace(clientFd, ClientInfo{.fd = clientFd,
+                                                  .readBuffer = {},
+                                                  .writeQueue = {},
+                                                  .wantWrite = false});
         }
 
         if (verbose_) {
