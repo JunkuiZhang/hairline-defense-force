@@ -4,6 +4,14 @@ set(CMAKE_CXX_STANDARD 23)
 
 project(hairline_defense_force)
 
+if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+    add_compile_options(-O3 -march=native -Wall -Wextra -Wpedantic)
+    # LTO: cross-module inlining, dead code elimination
+    if(CMAKE_BUILD_TYPE MATCHES "Release")
+        add_link_options(-flto)
+    endif()
+endif()
+
 include_directories(include)
 include(FetchContent)
 
@@ -66,6 +74,15 @@ target_link_libraries(bench_network trade_engine)
 # bench_multicore.cpp 多 Bucket 并行扩展性压测
 add_executable(bench_multicore benchmarks/bench_multicore.cpp)
 target_link_libraries(bench_multicore trade_engine)
+# latency/matching.cpp 撮合引擎低延迟 Benchmark
+add_executable(latency_matching benchmarks/latency/matching.cpp)
+target_link_libraries(latency_matching trade_engine)
+# latency/multicore.cpp 撮合引擎多 Bucket 并行扩展性压测
+add_executable(latency_multicore benchmarks/latency/multicore.cpp)
+target_link_libraries(latency_multicore trade_engine)
+# latency/e2e.cpp 纯端到端延迟测试 (无排队)
+add_executable(latency_e2e benchmarks/latency/e2e.cpp)
+target_link_libraries(latency_e2e trade_engine)
 
 # Tests
 enable_testing()

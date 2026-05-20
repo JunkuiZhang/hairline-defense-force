@@ -562,7 +562,7 @@ TEST_F(MatchingEngineTest, UniqueExecIds) {
     std::set<std::string> execIds;
     for (const auto &exec : result.executions) {
         EXPECT_FALSE(exec.execId.empty());
-        execIds.insert(exec.execId);
+        execIds.insert(exec.execId.str());
     }
     EXPECT_EQ(execIds.size(), 2); // 两个不同的 execId
 }
@@ -580,7 +580,7 @@ TEST_F(MatchingEngineTest, UniqueExecIdsAcrossMatches) {
     Order buy1 = createOrder("21002", "600030", Side::BUY, 10.0, 500);
     auto result1 = engine.match(buy1);
     ASSERT_FALSE(result1.executions.empty());
-    allExecIds.insert(result1.executions[0].execId);
+    allExecIds.insert(result1.executions[0].execId.str());
 
     // 第二次撮合
     Order sell2 =
@@ -589,7 +589,7 @@ TEST_F(MatchingEngineTest, UniqueExecIdsAcrossMatches) {
     Order buy2 = createOrder("21004", "600030", Side::BUY, 10.0, 500, "SH004");
     auto result2 = engine.match(buy2);
     ASSERT_FALSE(result2.executions.empty());
-    allExecIds.insert(result2.executions[0].execId);
+    allExecIds.insert(result2.executions[0].execId.str());
 
     EXPECT_EQ(allExecIds.size(), 2); // 两个不同的 execId
 }

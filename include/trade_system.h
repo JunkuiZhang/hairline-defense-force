@@ -1,6 +1,7 @@
 #pragma once
 
 #include "security_core.h"
+#include "spsc.h"
 #include "trade_logger.h"
 #include "types.h"
 #include <atomic>
@@ -29,11 +30,13 @@ namespace hdf {
 class TradeSystem {
   public:
     explicit TradeSystem(size_t numBuckets = 0);
+    explicit TradeSystem(const std::vector<int> &cores);
     ~TradeSystem();
 
-    using SendToClient = std::function<void(const nlohmann::json &)>;
-    using SendToExchange = std::function<void(const nlohmann::json &)>;
-    using SendMarketData = std::function<void(const nlohmann::json &)>;
+    using SendToClient = std::function<void(const ClientReport &)>;
+    using SendToExchange = std::function<void(const ExchangeRequest &)>;
+    using SendMarketData =
+        std::function<void(const std::vector<MarketDataItem> &)>;
 
     /**
      * @brief 启用交易历史记录。调用后所有事件将写入指定文件。
@@ -63,10 +66,6 @@ class TradeSystem {
 
     /**
      * @brief 设置行情数据推送接口
-     *
-     * 当订单簿发生变动时，系统会自动通过此回调推送受影响证券的
-     * 最新行情（best bid / best ask）。交易所前置收到后可调用
-     * handleMarketData() 进行行情约束。
      */
     void setSendMarketData(SendMarketData callback);
 
@@ -80,28 +79,31 @@ class TradeSystem {
      * @note 非线程安全，直接在调用线程中同步执行
      */
     void handleCancel(const nlohmann::json &input);
-    void handleMarketData(const nlohmann::json &input);
+    void handleMarketData(const std::vector<MarketDataItem> &items);
     /**
      * @brief 处理来自交易所的回报，图中op3
      * @note 非线程安全，直接在调用线程中同步执行
      */
-    void handleResponse(const nlohmann::json &input);
+    void handleResponse(const ExchangeReport &report);
+    /// Convenience overload: parse JSON at boundary → struct → internal
+    void handleResponse(const nlohmann::json &j) {
+        handleResponse(j.get<ExchangeReport>());
+    }
 
     /**
      * @brief 获取内部订单簿快照，返回买卖盘口价格档位。
      */
-    nlohmann::json queryOrderbook() const;
+    nlohmann::json queryOrderbook();
 
     /**
      * @brief 获取指定证券的订单簿快照，路由到对应 WorkerBucket。
      */
-    nlohmann::json queryOrderbook(const std::string &securityId,
-                                  Market market) const;
+    nlohmann::json queryOrderbook(const SecurityId &securityId, Market market);
 
-    // ─── MPSC 命令队列接口（线程安全） ───────────────────────
+    // ─── SPSC 命令队列接口（线程安全） ───────────────────────
 
     /**
-     * @brief 命令类型，用于 MPSC 队列的 variant
+     * @brief 命令类型，用于 SPSC 队列的 variant（零堆分配）
      */
     struct CmdOrder {
         Order order;
@@ -110,19 +112,17 @@ class TradeSystem {
         CancelOrder order;
     };
     struct CmdResponse {
-        nlohmann::json input;
+        ExchangeReport report;
     };
     struct CmdMarketData {
-        nlohmann::json input;
+        MarketDataItem items[8];
+        uint8_t count = 0;
     };
     using Command =
         std::variant<CmdOrder, CmdCancel, CmdResponse, CmdMarketData>;
 
     /**
      * @brief 启动消费者线程（单线程事件循环）
-     *
-     * 启动后，所有通过 submitXxx() 投递的命令将在专用线程中
-     * 串行执行，无需外部加锁。类似 Redis 的单线程模型。
      */
     void startEventLoop();
 
@@ -133,24 +133,25 @@ class TradeSystem {
 
     /**
      * @brief 线程安全地投递订单到命令队列
-     * 多个线程可同时调用，命令将在消费者线程中串行处理。
      */
     void submitOrder(const nlohmann::json &input);
+    void submitOrder(Order order);
 
     /**
      * @brief 线程安全地投递撤单到命令队列
      */
     void submitCancel(const nlohmann::json &input);
+    void submitCancel(CancelOrder order);
 
     /**
      * @brief 线程安全地投递交易所回报到命令队列
      */
-    void submitResponse(const nlohmann::json &input);
+    void submitResponse(const ExchangeReport &report);
 
     /**
      * @brief 线程安全地投递行情数据到命令队列
      */
-    void submitMarketData(const nlohmann::json &input);
+    void submitMarketData(const std::vector<MarketDataItem> &items);
 
     /**
      * @brief 获取当前命令队列积压深度（监控用）
@@ -161,11 +162,10 @@ class TradeSystem {
     // ─── WorkerBucket：每个 bucket 拥有独立的 SecurityCore + 任务队列 + 线程
     struct WorkerBucket {
         SecurityCore core;
-        std::deque<Command> taskQueue;
-        mutable std::mutex mutex;
-        std::condition_variable cv;
+        hdf::SpscQueue<Command, 4096> taskQueue;
         std::atomic<bool> running{false};
         std::thread thread;
+        int coreId = -1;
     };
 
     std::vector<std::unique_ptr<WorkerBucket>> buckets_;
@@ -173,19 +173,15 @@ class TradeSystem {
     TradeLogger logger_;
 
     // ─── 路由 ────────────────────────────────────────────────
-    static std::string makeRouteKey(const std::string &market,
-                                    const std::string &securityId);
+    size_t routeIndex(Market market, const SecurityId &securityId) const;
     size_t routeIndex(const std::string &market,
-                      const std::string &securityId) const;
-    SecurityCore &coreFor(const std::string &market,
-                          const std::string &securityId);
-    const SecurityCore &coreFor(const std::string &market,
-                                const std::string &securityId) const;
+                      const SecurityId &securityId) const;
 
     // ─── 每 bucket 的队列操作 ────────────────────────────────
     void enqueueToWorker(size_t idx, Command cmd);
-    void workerLoop(WorkerBucket *bucket);
-    static void dispatchCommand(WorkerBucket &bucket, Command &cmd);
+    [[gnu::hot]] void workerLoop(WorkerBucket *bucket);
+    [[gnu::hot]] static void dispatchCommand(WorkerBucket &bucket,
+                                             Command &cmd);
 };
 
 } // namespace hdf

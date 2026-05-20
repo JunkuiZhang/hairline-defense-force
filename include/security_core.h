@@ -1,5 +1,6 @@
 #pragma once
 
+#include "fast_hashmap.h"
 #include "matching_engine.h"
 #include "risk_controller.h"
 #include "trade_logger.h"
@@ -8,6 +9,7 @@
 #include <string>
 #include <unordered_map>
 #include <unordered_set>
+#include <vector>
 
 namespace hdf {
 
@@ -22,9 +24,10 @@ namespace hdf {
  */
 class SecurityCore {
   public:
-    using SendToClient = std::function<void(const nlohmann::json &)>;
-    using SendToExchange = std::function<void(const nlohmann::json &)>;
-    using SendMarketData = std::function<void(const nlohmann::json &)>;
+    using SendToClient = std::function<void(const ClientReport &)>;
+    using SendToExchange = std::function<void(const ExchangeRequest &)>;
+    using SendMarketData =
+        std::function<void(const std::vector<MarketDataItem> &)>;
 
     SecurityCore();
     ~SecurityCore();
@@ -44,19 +47,19 @@ class SecurityCore {
     void handleOrder(Order order);
     void handleCancel(const nlohmann::json &input);
     void handleCancel(CancelOrder order);
-    void handleMarketData(const nlohmann::json &input);
-    void handleResponse(const nlohmann::json &input);
+    void handleMarketData(const std::vector<MarketDataItem> &items);
+    void handleMarketData(const MarketDataItem *items, size_t count);
+    void handleResponse(const ExchangeReport &report);
 
     /**
      * @brief 获取内部订单簿快照（所有证券聚合）
      */
-    nlohmann::json queryOrderbook() const;
+    nlohmann::json queryOrderbook();
 
     /**
      * @brief 获取指定证券的订单簿快照
      */
-    nlohmann::json queryOrderbook(const std::string &securityId,
-                                  Market market) const;
+    nlohmann::json queryOrderbook(const SecurityId &securityId, Market market);
 
   private:
     RiskController riskController_;
@@ -74,28 +77,28 @@ class SecurityCore {
         std::vector<OrderResponse> executions;
         uint32_t remainingQty = 0;
         size_t pendingCancelCount = 0;
-        std::unordered_set<std::string> confirmedIds;
-        std::unordered_set<std::string> rejectedIds;
+        std::unordered_set<OrderId> confirmedIds;
+        std::unordered_set<OrderId> rejectedIds;
     };
 
-    std::unordered_map<std::string, PendingMatch> pendingMatches_;
-    std::unordered_map<std::string, std::string> cancelToActiveOrder_;
+    std::unordered_map<OrderId, PendingMatch> pendingMatches_;
+    std::unordered_map<OrderId, OrderId> cancelToActiveOrder_;
 
     struct PendingConfirm {
         Order activeOrder;
         std::vector<OrderResponse> confirmedExecutions;
     };
 
-    std::unordered_map<std::string, PendingConfirm> pendingConfirms_;
-    std::unordered_set<std::string> localOnlyOrders_;
-    std::unordered_map<std::string, MarketData> latestMarketData_;
+    std::unordered_map<OrderId, PendingConfirm> pendingConfirms_;
+    std::unordered_set<OrderId> localOnlyOrders_;
+    FastHashmap<BookKey, MarketData> latestMarketData_;
 
     // ─── 内部方法 ─────────────────────────────────────────
-    void resolvePendingMatch(const std::string &activeOrderId);
+    void resolvePendingMatch(const OrderId &activeOrderId);
     void
     sendConfirmAndExecReports(const Order &activeOrder,
                               const std::vector<OrderResponse> &executions);
-    void broadcastMarketData(const std::string &securityId, Market market);
+    void broadcastMarketData(const SecurityId &securityId, Market market);
 };
 
 } // namespace hdf

@@ -56,20 +56,24 @@ class RequirementGatewayTest : public testing::Test {
     std::vector<json> exchangeRequests;
 
     void SetUp() override {
-        gateway.setSendToClient(
-            [this](const json &resp) { clientResponses.push_back(resp); });
+        gateway.setSendToClient([this](const ClientReport &report) {
+            clientResponses.push_back(to_json_report(report));
+        });
 
-        gateway.setSendToExchange([this](const json &req) {
-            exchangeRequests.push_back(req);
-            if (req.contains("origClOrderId")) {
-                exchange.handleCancel(req);
+        gateway.setSendToExchange([this](const ExchangeRequest &req) {
+            json j = to_json_request(req);
+            exchangeRequests.push_back(j);
+            if (j.contains("origClOrderId")) {
+                exchange.handleCancel(j);
             } else {
-                exchange.handleOrder(req);
+                exchange.handleOrder(j);
             }
         });
 
-        exchange.setSendToClient(
-            [this](const json &resp) { gateway.handleResponse(resp); });
+        exchange.setSendToClient([this](const ClientReport &report) {
+            json j = to_json_report(report);
+            gateway.handleResponse(j);
+        });
     }
 };
 
@@ -81,8 +85,9 @@ class RequirementExchangeTest : public testing::Test {
     std::vector<json> clientResponses;
 
     void SetUp() override {
-        system.setSendToClient(
-            [this](const json &resp) { clientResponses.push_back(resp); });
+        system.setSendToClient([this](const ClientReport &report) {
+            clientResponses.push_back(to_json_report(report));
+        });
         // 不设置 sendToExchange → 纯撮合模式
     }
 };
@@ -529,20 +534,24 @@ TEST_F(RequirementGatewayTest, R2_1_3_4_OddLot_GatewayMode) {
 // 2.2.1.1 考虑行情信息：能读取解析输入的行情信息
 TEST_F(RequirementGatewayTest, R2_2_1_1_MarketData_CanReceive) {
     // 系统可以接收行情数据而不崩溃
-    json marketData = {{"market", "XSHG"},
-                       {"securityId", "600030"},
-                       {"bidPrice", 9.8},
-                       {"askPrice", 10.2}};
+    std::vector<MarketDataItem> md;
+    MarketDataItem item;
+    item.market = Market::XSHG;
+    item.securityId = "600030";
+    item.bidPrice = 9.8;
+    item.askPrice = 10.2;
+    md.push_back(item);
 
     // handleMarketData 不应抛异常
-    EXPECT_NO_THROW(gateway.handleMarketData(marketData));
+    EXPECT_NO_THROW(gateway.handleMarketData(md));
 }
 
 TEST_F(RequirementGatewayTest, R2_2_1_1_MarketData_ViaExchangePush) {
     // 通过交易所行情推送链路接收行情
-    std::vector<json> receivedMarketData;
-    exchange.setSendMarketData(
-        [&](const json &data) { receivedMarketData.push_back(data); });
+    std::vector<std::vector<MarketDataItem>> receivedMarketData;
+    exchange.setSendMarketData([&](const std::vector<MarketDataItem> &items) {
+        receivedMarketData.push_back(items);
+    });
 
     // 挂单触发行情更新
     exchange.handleOrder(
@@ -557,7 +566,9 @@ TEST_F(RequirementGatewayTest, R2_2_1_2_MarketDataConstraint_BuySide) {
     // 场景：行情卖价 9.5，内部卖盘 9.0 和 10.0
     // 买单 10.0 → 应先吃 9.0 档，10.0 档被行情约束阻止
     exchange.setSendMarketData(
-        [this](const json &data) { gateway.handleMarketData(data); });
+        [this](const std::vector<MarketDataItem> &items) {
+            gateway.handleMarketData(items);
+        });
 
     // 构造行情：交易所挂单形成行情 → bestAsk=9.5
     exchange.handleOrder(
@@ -598,7 +609,9 @@ TEST_F(RequirementGatewayTest, R2_2_1_2_MarketDataConstraint_SellSide) {
     // 场景：行情买价 9.5，内部买盘 9.0 和 10.0
     // 卖单 9.0 → 应先吃 10.0 档，9.0 档被行情约束阻止
     exchange.setSendMarketData(
-        [this](const json &data) { gateway.handleMarketData(data); });
+        [this](const std::vector<MarketDataItem> &items) {
+            gateway.handleMarketData(items);
+        });
 
     // 构造行情：交易所挂单形成行情 → bestBid=9.5
     exchange.handleOrder(

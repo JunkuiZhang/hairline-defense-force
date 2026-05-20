@@ -1,12 +1,11 @@
 #pragma once
 
+#include "fast_hashmap.h"
+#include "lob.h"
 #include "types.h"
+#include <cstddef>
 #include <cstdint>
-#include <list>
-#include <map>
 #include <optional>
-#include <string>
-#include <unordered_map>
 #include <vector>
 
 namespace hdf {
@@ -17,9 +16,12 @@ namespace hdf {
  * 内部按 (market, securityId) 分别维护独立订单簿，撮合时直接定位目标订单簿，
  * 无需遍历跳过不相关证券，消除了 securityId 字符串比较开销。
  *
- * @note 线程安全：此类不是线程安全的。所有对 MatchingEngine
- *       实例的访问必须在外部进行同步。对于高性能交易系统，
- *       建议使用单线程事件循环来串行化对引擎的访问。
+ * 订单簿基于 LOB (Limit Order Book) 设计：
+ *   - OrderPool 预分配对象池 + freelist，O(1) 分配/回收
+ *   - PriceLevel 侵入式双向链表，O(1) 头尾插入/删除
+ *   - 价格离散化 (tick=0.01)，O(1) 价位定位
+ *
+ * @note 线程安全：此类不是线程安全的。
  */
 class MatchingEngine {
   public:
@@ -27,146 +29,75 @@ class MatchingEngine {
     ~MatchingEngine();
 
     struct MatchResult {
-        std::vector<OrderResponse> executions; // 有可能匹配多个订单
-        uint32_t remainingQty = 0;             // 未成交剩余数量
+        std::vector<OrderResponse> executions;
+        uint32_t remainingQty = 0;
     };
 
     /**
      * @brief 尝试将订单与订单簿中的订单进行撮合。
      * 此函数为纯匹配操作，不会自动入簿。
-     * 匹配到的对手方订单会从订单簿中移除或减少数量。
-     * 调用方需根据返回的 remainingQty 自行决定是入簿还是转发。
-     *
-     * @param order 要撮合的订单。
-     * @param marketData 可选的市场数据输入，用于更复杂的撮合逻辑。
-     * @return MatchResult
-     * 包含撮合结果和剩余未成交数量。无成交时 executions 为空，
-     * remainingQty 等于原始订单数量。
      */
+    [[gnu::hot]]
     MatchResult
     match(const Order &order,
           const std::optional<MarketData> &marketData = std::nullopt);
 
-    /**
-     * @brief 添加订单到内部订单簿。
-     * 由调用方在合适的时机显式调用此函数入簿。
-     * 支持传入修改后的数量（如部分成交后的剩余量）。
-     */
+    [[gnu::hot]]
     void addOrder(const Order &order);
 
-    /**
-     * @brief 从内部订单簿中移除订单。
-     */
-    CancelResponse cancelOrder(const std::string &clOrderId);
+    [[gnu::hot]]
+    CancelResponse cancelOrder(const OrderId &clOrderId);
 
-    /**
-     * @brief 减少订单簿中指定订单的数量。
-     * 用于交易所主动成交后同步内部订单簿状态。
-     * 若减少后数量为0，则从订单簿中移除该订单。
-     *
-     * @param clOrderId 订单的唯一编号。
-     * @param qty 要减少的数量。
-     */
-    void reduceOrderQty(const std::string &clOrderId, uint32_t qty);
+    void reduceOrderQty(const OrderId &clOrderId, uint32_t qty);
 
-    /**
-     * @brief 查询指定订单是否仍在订单簿中。
-     *
-     * @param clOrderId 订单的唯一编号。
-     * @return true 如果订单仍在订单簿中。
-     */
-    bool hasOrder(const std::string &clOrderId) const;
+    bool hasOrder(const OrderId &clOrderId);
 
-    /**
-     * @brief 获取所有证券的订单簿快照，返回买卖盘口的价格档位信息（聚合）。
-     *
-     * 跨所有 (market, securityId) 聚合后，买盘按价格降序、卖盘按价格升序，
-     * 每档含价格、总量和累积量。
-     *
-     * @return nlohmann::json 包含 bids 和 asks 数组的 JSON 对象。
-     */
-    nlohmann::json getSnapshot() const;
+    nlohmann::json getSnapshot();
 
-    /**
-     * @brief 获取指定证券+市场的订单簿快照。
-     *
-     * @param securityId 证券代码
-     * @param market 市场
-     * @return nlohmann::json 包含 bids 和 asks 数组的 JSON 对象。
-     */
-    nlohmann::json getSnapshot(const std::string &securityId,
-                               Market market) const;
+    nlohmann::json getSnapshot(const SecurityId &securityId, Market market);
 
-    /**
-     * @brief 获取指定证券的最优买卖报价（best bid / best ask）。
-     *
-     * 直接定位该证券的 SecurityBook，O(1) 查找后取首档价格。
-     *
-     * @param securityId 证券代码
-     * @param market 市场（如 XSHG、XHKG）
-     * @return MarketData 包含 bidPrice 和 askPrice
-     */
-    MarketData getBestQuote(const std::string &securityId, Market market) const;
+    MarketData getBestQuote(const SecurityId &securityId, Market market);
 
   private:
-    /**
-     * @brief 生成订单簿的查找 key。
-     *
-     * 格式为 "MARKET+securityId"，例如 "XSHG+600000"。
-     * 每个 (market, securityId) 对应一个独立的 SecurityBook，
-     * 保证不同市场或不同证券的订单完全隔离，撮合时无需 securityId 比较。
-     */
-    static std::string makeBookKey(const std::string &securityId,
-                                   Market market) {
-        return to_string(market) + "+" + securityId;
+    static BookKey makeBookKey(const SecurityId &securityId, Market market) {
+        return makeRouteKey(market, securityId);
     }
 
-    /**
-     * @brief 订单簿中的订单条目，记录订单信息及已成交累计量。
-     */
-    struct BookEntry {
-        Order order;
-        uint32_t remainingQty = 0;
-        uint32_t cumQty = 0;
-    };
+    // ─── LOB 订单簿结构 ──────────────────────────────────────
 
-    /**
-     * @brief 同一价格档位上的订单队列（时间优先）。
-     */
-    using PriceLevel = std::list<BookEntry>;
-
-    /**
-     * @brief 单个 (market, securityId) 的订单簿。
-     *
-     * bidBook 按价格降序，askBook 按价格升序。
-     * 只存放同一证券的订单，撮合时无需跳过不相关条目。
-     */
+    /// 单个 (market, securityId) 的订单簿，包含 bid 和 ask 两侧
     struct SecurityBook {
-        std::map<double, PriceLevel, std::greater<double>> bidBook;
-        std::map<double, PriceLevel> askBook;
+        OrderBook bidBook;
+        OrderBook askBook;
+
+        void init(size_t pool_capacity_per_side, double base_price,
+                  size_t level_count) {
+            bidBook.init(pool_capacity_per_side, base_price, level_count);
+            bidBook.set_bid_side(true);
+            askBook.init(pool_capacity_per_side, base_price, level_count);
+            askBook.set_bid_side(false);
+        }
     };
 
-    /**
-     * @brief 所有证券+市场的订单簿集合。
-     * key = makeBookKey(securityId, market)
-     */
-    std::unordered_map<std::string, SecurityBook> books_;
+    /// 所有证券+市场的订单簿集合
+    hdf::FastHashmap<BookKey, SecurityBook> books_;
 
-    /**
-     * @brief 订单ID到订单簿位置的反向索引。
-     */
+    /// 订单ID到订单簿位置的反向索引
     struct OrderLocation {
-        std::string bookKey; // 所属 SecurityBook 的 key
-        double price;
+        BookKey bookKey;
         Side side;
+        size_t pool_index; // Order 在 OrderBook pool 中的索引
     };
-    std::unordered_map<std::string, OrderLocation> orderIndex_;
+    hdf::FastHashmap<OrderId, OrderLocation> orderIndex_;
 
-    /**
-     * @brief 全局成交编号计数器。
-     */
+    /// 全局成交编号计数器
     uint64_t nextExecId_ = 1;
-    std::string generateExecId();
+    ExecIdStr generateExecId();
+
+    // ─── 配置 ────────────────────────────────────────────────
+    static constexpr size_t kPoolCapacityPerSide = 500000;
+    static constexpr double kBasePrice = 0.0;
+    static constexpr size_t kLevelCount = 500001; // 0.00 ~ 5000.00
 };
 
 } // namespace hdf

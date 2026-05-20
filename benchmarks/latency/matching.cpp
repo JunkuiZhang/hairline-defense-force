@@ -1,18 +1,15 @@
 /**
- * @file bench_matching.cpp
- * @brief 撮合引擎专项 Benchmark
+ * @file latency_matching.cpp
+ * @brief 撮合引擎专项 Benchmark (Low-Latency 改造版)
  *
  * 绕过 JSON 解析、风控、日志，直接用 Order 结构体驱动 MatchingEngine，
  * 隔离测量 addOrder / match 各自的延时和吞吐。
- *
- * 用法:
- *   cmake --build build --target bench_matching
- *   ./bin/bench_matching [--orders N] [--securities M] [--depth D]
+ * 使用 RDTSC 指令记录周期数 (Cycles) 并转换为纳秒 (ns) 输出。
  */
 
 #include "matching_engine.h"
+#include "utils.h"
 #include <algorithm>
-#include <chrono>
 #include <cstdlib>
 #include <iomanip>
 #include <iostream>
@@ -22,8 +19,8 @@
 #include <string>
 #include <vector>
 
-using Clock = std::chrono::high_resolution_clock;
-using namespace std::chrono;
+// ── 全局变量：TSC 频率 (GHz) ──────────────────────────────────
+static double g_tsc_ghz = 1.0;
 
 // ── 配置 ────────────────────────────────────────────────────
 struct Config {
@@ -32,30 +29,6 @@ struct Config {
     int bookDepth = 5000;   // 每只证券预挂单深度（买+卖各一半）
     int warmup = 1000;      // 热身订单数
 };
-
-static Config parseArgs(int argc, char *argv[]) {
-    Config cfg;
-    for (int i = 1; i < argc; ++i) {
-        std::string a = argv[i];
-        if (a == "--orders" && i + 1 < argc)
-            cfg.numOrders = std::atoi(argv[++i]);
-        else if (a == "--securities" && i + 1 < argc)
-            cfg.numSecurities = std::atoi(argv[++i]);
-        else if (a == "--depth" && i + 1 < argc)
-            cfg.bookDepth = std::atoi(argv[++i]);
-        else if (a == "--warmup" && i + 1 < argc)
-            cfg.warmup = std::atoi(argv[++i]);
-        else if (a == "--help" || a == "-h") {
-            std::cout << "用法: bench_matching [选项]\n"
-                      << "  --orders N      测量订单数 (默认 100000)\n"
-                      << "  --securities M  证券种类 (默认 10)\n"
-                      << "  --depth D       每只证券预挂单深度 (默认 5000)\n"
-                      << "  --warmup W      热身订单数 (默认 1000)\n";
-            std::exit(0);
-        }
-    }
-    return cfg;
-}
 
 // ── 订单工厂 ────────────────────────────────────────────────
 static std::string makeSecId(int i) {
@@ -79,36 +52,52 @@ static hdf::Order makeOrder(int id, const std::string &secId, hdf::Side side,
 
 // ── 延时统计 ────────────────────────────────────────────────
 struct LatStats {
-    double mean_us, p50_us, p95_us, p99_us, max_us;
+    double mean_cycles, p50_cycles, p95_cycles, p99_cycles, max_cycles;
     double throughput;
     size_t count;
 };
 
-static LatStats calcStats(std::vector<double> &lat, double elapsed_s) {
+// 现在直接接收纯净的 TSC 周期数进行统计
+static LatStats calcStats(std::vector<uint64_t> &lat_cycles, double elapsed_s) {
     LatStats s{};
-    s.count = lat.size();
+    s.count = lat_cycles.size();
     if (s.count == 0)
         return s;
-    std::sort(lat.begin(), lat.end());
-    s.mean_us = std::accumulate(lat.begin(), lat.end(), 0.0) / s.count;
-    auto pct = [&](double p) { return lat[size_t(p / 100.0 * (s.count - 1))]; };
-    s.p50_us = pct(50);
-    s.p95_us = pct(95);
-    s.p99_us = pct(99);
-    s.max_us = lat.back();
+    std::sort(lat_cycles.begin(), lat_cycles.end());
+
+    s.mean_cycles =
+        std::accumulate(lat_cycles.begin(), lat_cycles.end(), 0.0) / s.count;
+    auto pct = [&](double p) {
+        return (double)lat_cycles[size_t(p / 100.0 * (s.count - 1))];
+    };
+    s.p50_cycles = pct(50);
+    s.p95_cycles = pct(95);
+    s.p99_cycles = pct(99);
+    s.max_cycles = (double)lat_cycles.back();
+
     s.throughput = s.count / elapsed_s;
     return s;
 }
 
 static void printStats(const LatStats &s, const std::string &label) {
-    std::cout << std::fixed << std::setprecision(2);
+    // 换算公式: ns = cycles / GHz
+    auto to_ns = [](double cycles) { return cycles / g_tsc_ghz; };
+
+    std::cout << std::fixed << std::setprecision(1); // 保留一位小数
     std::cout << "  [" << label << "]  N=" << s.count
-              << "  tput=" << s.throughput << " op/s\n"
-              << "    mean=" << s.mean_us << " us  "
-              << "p50=" << s.p50_us << "  "
-              << "p95=" << s.p95_us << "  "
-              << "p99=" << s.p99_us << "  "
-              << "max=" << s.max_us << " us\n";
+              << "  tput=" << (uint64_t)s.throughput << " op/s\n";
+
+    // 对齐打印 Cycles 和 ns
+    std::cout << "    mean: " << std::setw(8) << s.mean_cycles << " cycles  ("
+              << std::setw(8) << to_ns(s.mean_cycles) << " ns)\n"
+              << "    p50:  " << std::setw(8) << s.p50_cycles << " cycles  ("
+              << std::setw(8) << to_ns(s.p50_cycles) << " ns)\n"
+              << "    p95:  " << std::setw(8) << s.p95_cycles << " cycles  ("
+              << std::setw(8) << to_ns(s.p95_cycles) << " ns)\n"
+              << "    p99:  " << std::setw(8) << s.p99_cycles << " cycles  ("
+              << std::setw(8) << to_ns(s.p99_cycles) << " ns)\n"
+              << "    max:  " << std::setw(8) << s.max_cycles << " cycles  ("
+              << std::setw(8) << to_ns(s.max_cycles) << " ns)\n";
 }
 
 // ── Bench 1: addOrder ───────────────────────────────────────
@@ -135,23 +124,24 @@ static void benchAddOrder(const Config &cfg) {
         orders.push_back(makeOrder(i, secIds[secDist(rng)], side, price, qty));
     }
 
-    // 热身
     for (int i = 0; i < cfg.warmup; ++i)
         engine.addOrder(orders[i]);
 
-    // 测量
-    std::vector<double> lat;
-    lat.reserve(cfg.numOrders);
-    auto wall0 = Clock::now();
+    // 使用 uint64_t 记录原生的 CPU 周期差
+    std::vector<uint64_t> lat_cycles;
+    lat_cycles.reserve(cfg.numOrders);
+
+    uint64_t wall0 = hdf::rdtsc_lfence();
     for (int i = cfg.warmup; i < cfg.warmup + cfg.numOrders; ++i) {
-        auto t0 = Clock::now();
+        uint64_t t0 = hdf::rdtsc_lfence();
         engine.addOrder(orders[i]);
-        auto t1 = Clock::now();
-        lat.push_back(duration_cast<nanoseconds>(t1 - t0).count() / 1000.0);
+        uint64_t t1 = hdf::rdtscp_lfence();
+        lat_cycles.push_back(t1 - t0); // 只存周期数，极低开销
     }
-    auto wall1 = Clock::now();
-    double elapsed = duration_cast<microseconds>(wall1 - wall0).count() / 1e6;
-    auto s = calcStats(lat, elapsed);
+    uint64_t wall1 = hdf::rdtscp_lfence();
+
+    double elapsed_s = (wall1 - wall0) / g_tsc_ghz / 1e9;
+    auto s = calcStats(lat_cycles, elapsed_s);
     printStats(s, "addOrder");
 }
 
@@ -169,7 +159,6 @@ static void benchMatchHit(const Config &cfg) {
     for (int i = 0; i < cfg.numSecurities; ++i)
         secIds[i] = makeSecId(i);
 
-    // 填充订单簿：每只证券挂 depth/2 买单 + depth/2 卖单
     int id = 0;
     int halfDepth = cfg.bookDepth / 2;
     for (int sec = 0; sec < cfg.numSecurities; ++sec) {
@@ -186,44 +175,43 @@ static void benchMatchHit(const Config &cfg) {
     }
     std::cout << "  订单簿已填充 " << id << " 笔\n";
 
-    // 生成可成交的测试订单（价格覆盖簿中的范围，保证能撮合）
     std::vector<hdf::Order> testOrders;
     testOrders.reserve(cfg.warmup + cfg.numOrders);
     for (int i = 0; i < cfg.warmup + cfg.numOrders; ++i) {
         int sec = secDist(rng);
-        // 交替产生买卖：买单出高价，卖单出低价，确保能匹配
         bool isBuy = (i % 2 == 0);
-        double price = isBuy ? 50.0 : 5.0; // 激进价格保证成交
-        uint32_t qty = 100;                // 小量，只匹配一笔
+        double price = isBuy ? 50.0 : 5.0;
+        uint32_t qty = 100;
         auto side = isBuy ? hdf::Side::BUY : hdf::Side::SELL;
         testOrders.push_back(makeOrder(id++, secIds[sec], side, price, qty));
     }
 
-    // 热身
     for (int i = 0; i < cfg.warmup; ++i)
         engine.match(testOrders[i]);
 
-    // 测量
-    std::vector<double> lat;
-    lat.reserve(cfg.numOrders);
+    std::vector<uint64_t> lat_cycles;
+    lat_cycles.reserve(cfg.numOrders);
     size_t totalExecs = 0;
-    auto wall0 = Clock::now();
+
+    uint64_t wall0 = hdf::rdtsc_lfence();
     for (int i = cfg.warmup; i < cfg.warmup + cfg.numOrders; ++i) {
-        auto t0 = Clock::now();
+        uint64_t t0 = hdf::rdtsc_lfence();
         auto result = engine.match(testOrders[i]);
-        auto t1 = Clock::now();
-        lat.push_back(duration_cast<nanoseconds>(t1 - t0).count() / 1000.0);
+        uint64_t t1 = hdf::rdtscp_lfence();
+
+        lat_cycles.push_back(t1 - t0);
         totalExecs += result.executions.size();
-        // 剩余量入簿（维持簿深度）
+
         if (result.remainingQty > 0) {
             hdf::Order rem = testOrders[i];
             rem.qty = result.remainingQty;
             engine.addOrder(rem);
         }
     }
-    auto wall1 = Clock::now();
-    double elapsed = duration_cast<microseconds>(wall1 - wall0).count() / 1e6;
-    auto s = calcStats(lat, elapsed);
+    uint64_t wall1 = hdf::rdtscp_lfence();
+
+    double elapsed_s = (wall1 - wall0) / g_tsc_ghz / 1e9;
+    auto s = calcStats(lat_cycles, elapsed_s);
     printStats(s, "match(hit)");
     std::cout << "    成交笔数: " << totalExecs << "\n";
 }
@@ -240,7 +228,6 @@ static void benchMatchMiss(const Config &cfg) {
     for (int i = 0; i < cfg.numSecurities; ++i)
         secIds[i] = makeSecId(i);
 
-    // 填充订单簿：只挂买单（价格 10~20）
     int id = 0;
     for (int sec = 0; sec < cfg.numSecurities; ++sec) {
         for (int d = 0; d < cfg.bookDepth; ++d) {
@@ -251,7 +238,6 @@ static void benchMatchMiss(const Config &cfg) {
     }
     std::cout << "  订单簿已填充 " << id << " 笔 (仅买单)\n";
 
-    // 测试订单：卖价 > 所有买价，不会成交，但 match() 仍需遍历检查
     std::vector<hdf::Order> testOrders;
     testOrders.reserve(cfg.warmup + cfg.numOrders);
     for (int i = 0; i < cfg.warmup + cfg.numOrders; ++i) {
@@ -260,23 +246,23 @@ static void benchMatchMiss(const Config &cfg) {
             makeOrder(id++, secIds[sec], hdf::Side::SELL, 999.0, 100));
     }
 
-    // 热身
     for (int i = 0; i < cfg.warmup; ++i)
         engine.match(testOrders[i]);
 
-    // 测量
-    std::vector<double> lat;
-    lat.reserve(cfg.numOrders);
-    auto wall0 = Clock::now();
+    std::vector<uint64_t> lat_cycles;
+    lat_cycles.reserve(cfg.numOrders);
+
+    uint64_t wall0 = hdf::rdtsc_lfence();
     for (int i = cfg.warmup; i < cfg.warmup + cfg.numOrders; ++i) {
-        auto t0 = Clock::now();
+        uint64_t t0 = hdf::rdtsc_lfence();
         auto result = engine.match(testOrders[i]);
-        auto t1 = Clock::now();
-        lat.push_back(duration_cast<nanoseconds>(t1 - t0).count() / 1000.0);
+        uint64_t t1 = hdf::rdtscp_lfence();
+        lat_cycles.push_back(t1 - t0);
     }
-    auto wall1 = Clock::now();
-    double elapsed = duration_cast<microseconds>(wall1 - wall0).count() / 1e6;
-    auto s = calcStats(lat, elapsed);
+    uint64_t wall1 = hdf::rdtscp_lfence();
+
+    double elapsed_s = (wall1 - wall0) / g_tsc_ghz / 1e9;
+    auto s = calcStats(lat_cycles, elapsed_s);
     printStats(s, "match(miss)");
 }
 
@@ -294,7 +280,6 @@ static void benchCancel(const Config &cfg) {
     for (int i = 0; i < cfg.numSecurities; ++i)
         secIds[i] = makeSecId(i);
 
-    // 先填充订单簿
     int total = cfg.warmup + cfg.numOrders;
     std::vector<hdf::OrderId> orderIds;
     orderIds.reserve(total);
@@ -306,34 +291,39 @@ static void benchCancel(const Config &cfg) {
         orderIds.push_back(o.clOrderId);
     }
 
-    // 打乱顺序（模拟随机撤单）
     std::shuffle(orderIds.begin(), orderIds.end(), rng);
 
-    // 热身
     for (int i = 0; i < cfg.warmup; ++i)
         engine.cancelOrder(orderIds[i]);
 
-    // 测量
-    std::vector<double> lat;
-    lat.reserve(cfg.numOrders);
-    auto wall0 = Clock::now();
+    std::vector<uint64_t> lat_cycles;
+    lat_cycles.reserve(cfg.numOrders);
+
+    uint64_t wall0 = hdf::rdtsc_lfence();
     for (int i = cfg.warmup; i < total; ++i) {
-        auto t0 = Clock::now();
+        uint64_t t0 = hdf::rdtsc_lfence();
         engine.cancelOrder(orderIds[i]);
-        auto t1 = Clock::now();
-        lat.push_back(duration_cast<nanoseconds>(t1 - t0).count() / 1000.0);
+        uint64_t t1 = hdf::rdtscp_lfence();
+        lat_cycles.push_back(t1 - t0);
     }
-    auto wall1 = Clock::now();
-    double elapsed = duration_cast<microseconds>(wall1 - wall0).count() / 1e6;
-    auto s = calcStats(lat, elapsed);
+    uint64_t wall1 = hdf::rdtscp_lfence();
+
+    double elapsed_s = (wall1 - wall0) / g_tsc_ghz / 1e9;
+    auto s = calcStats(lat_cycles, elapsed_s);
     printStats(s, "cancelOrder");
 }
 
 // ── main ────────────────────────────────────────────────────
-int main(int argc, char *argv[]) {
-    Config cfg = parseArgs(argc, argv);
+int main() {
+    int test_core_id = 2;
+    hdf::pin_to_core(test_core_id);
+    g_tsc_ghz = hdf::calibrate_tsc_ghz();
 
-    std::cout << "=== MatchingEngine 专项 Benchmark ===\n"
+    Config cfg;
+
+    std::cout << "=== MatchingEngine 专项 Benchmark (Cycles + ns 版) ===\n"
+              << "  当前绑核: " << test_core_id << "\n"
+              << "  TSC 频率: " << g_tsc_ghz << " GHz\n"
               << "  订单数: " << cfg.numOrders
               << "  证券数: " << cfg.numSecurities
               << "  簿深度: " << cfg.bookDepth << "  热身: " << cfg.warmup

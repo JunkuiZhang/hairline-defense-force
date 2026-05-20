@@ -8,6 +8,7 @@
 #include <nlohmann/json.hpp>
 #include <queue>
 #include <string>
+#include <string_view>
 #include <thread>
 
 namespace hdf {
@@ -65,17 +66,17 @@ class TradeLogger {
     // ============================================================
 
     void logOrderNew(const Order &order);
-    void logOrderConfirm(const std::string &clOrderId);
-    void logOrderReject(const std::string &clOrderId, int32_t rejectCode,
-                        const std::string &rejectText);
-    void logExecution(const std::string &execId, const std::string &clOrderId,
-                      const std::string &securityId, Side side,
-                      uint32_t execQty, double execPrice, bool isMaker);
-    void logCancelConfirm(const std::string &origClOrderId,
-                          uint32_t canceledQty, uint32_t cumQty);
-    void logCancelReject(const std::string &origClOrderId, int32_t rejectCode,
-                         const std::string &rejectText);
-    void logMarketData(const std::string &securityId, Market market,
+    void logOrderConfirm(std::string_view clOrderId);
+    void logOrderReject(std::string_view clOrderId, int32_t rejectCode,
+                        std::string_view rejectText);
+    void logExecution(std::string_view execId, std::string_view clOrderId,
+                      std::string_view securityId, Side side, uint32_t execQty,
+                      double execPrice, bool isMaker);
+    void logCancelConfirm(std::string_view origClOrderId, uint32_t canceledQty,
+                          uint32_t cumQty);
+    void logCancelReject(std::string_view origClOrderId, int32_t rejectCode,
+                         std::string_view rejectText);
+    void logMarketData(std::string_view securityId, Market market,
                        double bidPrice, double askPrice);
 
   private:
