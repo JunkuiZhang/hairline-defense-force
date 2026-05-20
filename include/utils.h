@@ -1,13 +1,13 @@
 #pragma once
 
-#include <print>
+#include <iostream>
 #include <pthread.h>
 
 namespace hdf {
 
 static inline int pin_to_core(int core_id) {
     auto pid = pthread_self();
-    std::println("Pinning thread {} to core {}.", pid, core_id);
+    std::cout << "Pinning thread " << pid << " to core " << core_id << ".\n";
     cpu_set_t cpuset;
     CPU_ZERO(&cpuset);
     CPU_SET(core_id, &cpuset);
